@@ -1,0 +1,48 @@
+package be.nabu.glue.impl.executors;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import be.nabu.glue.api.ExecutionContext;
+import be.nabu.glue.api.ExecutionException;
+import be.nabu.glue.api.Executor;
+import be.nabu.glue.api.ExecutorContext;
+import be.nabu.glue.api.ExecutorGroup;
+import be.nabu.libs.evaluator.EvaluationException;
+import be.nabu.libs.evaluator.api.Operation;
+
+public class SwitchExecutor extends BaseExecutor implements ExecutorGroup {
+
+	private List<Executor> children = new ArrayList<Executor>();
+	private Operation<ExecutionContext> toMatch;
+	private String variableName;
+	
+	public SwitchExecutor(ExecutorGroup parent, ExecutorContext context, Operation<ExecutionContext> condition, String variableName, Operation<ExecutionContext> toMatch, Executor...children) {
+		super(parent, context, condition);
+		this.variableName = variableName;
+		this.toMatch = toMatch;
+	}
+
+	@Override
+	public void execute(ExecutionContext context) throws ExecutionException {
+		try {
+			context.getPipeline().put(variableName, toMatch == null ? true : toMatch.evaluate(context));
+			for (Executor child : children) {
+				if (child.shouldExecute(context)) {
+					child.execute(context);
+					break;
+				}
+			}
+			context.getPipeline().put(variableName, null);
+		}
+		catch (EvaluationException e) {
+			throw new ExecutionException(e);
+		}
+	}
+
+	@Override
+	public List<Executor> getChildren() {
+		return children;
+	}
+
+}
