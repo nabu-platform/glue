@@ -1,6 +1,7 @@
 package be.nabu.glue.impl.parsers;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,13 +45,14 @@ public class GlueParser implements Parser {
 	}
 	
 	@Override
-	public ExecutorGroup parse(ReadableContainer<CharBuffer> reader) throws IOException, ParseException {
+	public ExecutorGroup parse(Reader reader) throws IOException, ParseException {
+		ReadableContainer<CharBuffer> container = IOUtils.wrap(reader);
 		String line = null;
 		int lineNumber = -1;
 		Stack<ExecutorGroup> executorGroups = new Stack<ExecutorGroup>();
 		StringBuilder rootComment = new StringBuilder();
 		boolean codeHasBegun = false;
-		PushbackContainer<CharBuffer> pushback = IOUtils.pushback(reader);
+		PushbackContainer<CharBuffer> pushback = IOUtils.pushback(container);
 		// note that how the parsing is done now, you can NOT set annotations on the first line!
 		// the annotations before the first line will be set on the root instead
 		Map<String, String> annotations = new HashMap<String, String>();

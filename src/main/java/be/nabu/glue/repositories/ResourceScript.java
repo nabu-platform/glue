@@ -1,6 +1,7 @@
 package be.nabu.glue.repositories;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 
 import be.nabu.glue.api.ExecutorGroup;
@@ -8,7 +9,7 @@ import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ResourceScriptRepository;
 import be.nabu.glue.api.Script;
 import be.nabu.libs.resources.api.ReadableResource;
-import be.nabu.libs.resources.api.ResourceContainer;
+import be.nabu.utils.io.IOUtils;
 
 public class ResourceScript implements Script {
 	private ResourceScriptRepository repository;
@@ -67,12 +68,13 @@ public class ResourceScript implements Script {
 	}
 	
 	@Override
-	public ReadableResource getSource() throws IOException {
-		return (ReadableResource) repository.resolve(getPath(true));
+	public InputStream getSource() throws IOException {
+		return IOUtils.toInputStream(((ReadableResource) repository.resolve(getPath(true))).getReadable());
 	}
 
 	@Override
-	public ResourceContainer<?> getResources() throws IOException {
-		return (ResourceContainer<?>) repository.resolve(getPath(false));
+	public InputStream getResource(String name) throws IOException {
+		ReadableResource resource = (ReadableResource) repository.resolve(getPath(false) + "/" + name);
+		return resource == null ? null : IOUtils.toInputStream(resource.getReadable());
 	}
 }

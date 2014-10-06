@@ -45,7 +45,7 @@ public class ScannableScriptRepository implements ResourceScriptRepository {
 			else {
 				Parser parser = parserProvider.newParser(this, child.getName());
 				if (parser != null) {
-					ExecutorGroup executor = parser.parse(IOUtils.wrapReadable(((ReadableResource) child).getReadable(), charset));
+					ExecutorGroup executor = parser.parse(IOUtils.toReader(IOUtils.wrapReadable(((ReadableResource) child).getReadable(), charset)));
 					Script script = new ResourceScript(this, charset, namespace, child.getName(), executor, parser);
 					scripts.put(ScriptUtils.getFullName(script), script);
 				}
