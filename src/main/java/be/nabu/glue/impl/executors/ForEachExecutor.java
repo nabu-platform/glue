@@ -39,6 +39,16 @@ public class ForEachExecutor extends SequenceExecutor {
 				else if (original instanceof Object[]) {
 					elements.addAll(Arrays.asList((Object[]) original));
 				}
+				else if (original instanceof Integer) {
+					for (int i = 0; i < (Integer) original; i++) {
+						elements.add(i);
+					}
+				}
+				else if (original instanceof Long) {
+					for (long i = 0; i < (Long) original; i++) {
+						elements.add(i);
+					}
+				}
 				else {
 					throw new ExecutionException("The variable " + forEach + " is not of type array or collection");
 				}
