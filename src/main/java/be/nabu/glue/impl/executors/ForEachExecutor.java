@@ -69,4 +69,16 @@ public class ForEachExecutor extends SequenceExecutor {
 			throw new ExecutionException(e);
 		}
 	}
+
+	public Operation<ExecutionContext> getForEach() {
+		return forEach;
+	}
+
+	public String getTemporaryVariable() {
+		return temporaryVariable;
+	}
+
+	public String getTemporaryIndex() {
+		return temporaryIndex;
+	}
 }

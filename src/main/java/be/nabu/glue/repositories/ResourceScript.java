@@ -3,6 +3,7 @@ package be.nabu.glue.repositories;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.text.ParseException;
 
 import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.api.Parser;
@@ -18,13 +19,14 @@ public class ResourceScript implements Script {
 	private String namespace;
 	private Parser parser;
 	private Charset charset;
+	private ReadableResource resource;
 
-	ResourceScript(ResourceScriptRepository repository, Charset charset, String namespace, String name, ExecutorGroup root, Parser parser) {
+	ResourceScript(ResourceScriptRepository repository, Charset charset, String namespace, String name, ReadableResource resource, Parser parser) {
 		this.repository = repository;
 		this.charset = charset;
 		this.namespace = namespace;
 		this.name = name;
-		this.root = root;
+		this.resource = resource;
 		this.parser = parser;
 	}
 
@@ -45,7 +47,10 @@ public class ResourceScript implements Script {
 	}
 
 	@Override
-	public ExecutorGroup getRoot() {
+	public ExecutorGroup getRoot() throws IOException, ParseException {
+		if (root == null) {
+			root = getParser().parse(IOUtils.toReader(IOUtils.wrapReadable(resource.getReadable(), charset)));
+		}
 		return root;
 	}
 

@@ -37,26 +37,29 @@ abstract public class BaseExecutor implements Executor {
 
 	@Override
 	public boolean shouldExecute(ExecutionContext context) throws ExecutionException {
+		boolean shouldExecute = true;
 		if (getContext().getLabel() != null) {
-			return context.getLabelEvaluator() != null
+			shouldExecute = context.getLabelEvaluator() != null
 				? context.getLabelEvaluator().shouldExecute(getContext().getLabel(), context.getExecutionEnvironment())
 				: getContext().getLabel().equalsIgnoreCase(context.getExecutionEnvironment().getName());
 		}
-		else if (condition != null) {
+		if (shouldExecute && condition != null) {
 			try {
-				return (Boolean) condition.evaluate(context);
+				shouldExecute = (Boolean) condition.evaluate(context);
 			}
 			catch (EvaluationException e) {
 				throw new ExecutionException(e);
 			}
 		}
-		else {
-			return true;
-		}
+		return shouldExecute;
 	}
 
 	@Override
 	public ExecutorGroup getParent() {
 		return parent;
+	}
+
+	public Operation<ExecutionContext> getCondition() {
+		return condition;
 	}
 }

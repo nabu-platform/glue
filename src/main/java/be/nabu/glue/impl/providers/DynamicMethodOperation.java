@@ -10,6 +10,7 @@ import be.nabu.libs.evaluator.QueryPart;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 import be.nabu.libs.evaluator.base.BaseOperation;
+import be.nabu.libs.evaluator.impl.MethodOperation;
 
 public class DynamicMethodOperation extends BaseOperation<ExecutionContext> {
 
@@ -32,7 +33,7 @@ public class DynamicMethodOperation extends BaseOperation<ExecutionContext> {
 			return value;
 		}
 		else {
-			throw new IllegalStateException("No method or script found");
+			throw new EvaluationException("Could not resolve a method with the name: " + getParts().get(0).getContent());
 		}
 	}
 
@@ -40,15 +41,13 @@ public class DynamicMethodOperation extends BaseOperation<ExecutionContext> {
 	public void finish() throws ParseException {
 		if (operation == null) {
 			String fullName = (String) getParts().get(0).getContent();
-			// first check if it is a delegator method
 			operation = getOperation(fullName);
-			if (operation == null) {
-				throw new ParseException("Could not resolve operation: " + fullName, 0);
+			if (operation != null) {
+				for (QueryPart part : getParts()) {
+					operation.add(new QueryPart(part.getType(), part.getContent()));
+				}
+				operation.finish();
 			}
-			for (QueryPart part : getParts()) {
-				operation.add(new QueryPart(part.getType(), part.getContent()));
-			}
-			operation.finish();
 		}
 	}
 
@@ -59,11 +58,24 @@ public class DynamicMethodOperation extends BaseOperation<ExecutionContext> {
 				return operation;
 			}
 		}
+		// if no operations were found, just return a method operation, it will fail later on but at least it will show something
 		return null;
 	}
 	
 	@Override
 	public OperationType getType() {
 		return OperationType.METHOD;
+	}
+	
+	@Override
+	public String toString() {
+		Operation<ExecutionContext> operation = this.operation;
+		if (operation == null) {
+			operation = new MethodOperation<ExecutionContext>();
+			for (QueryPart part : getParts()) {
+				operation.add(new QueryPart(part.getType(), part.getContent()));
+			}
+		}
+		return operation.toString();
 	}
 }

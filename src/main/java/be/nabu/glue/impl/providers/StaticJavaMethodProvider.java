@@ -40,7 +40,7 @@ public class StaticJavaMethodProvider implements MethodProvider {
 	public Operation<ExecutionContext> resolve(String name) {
 		MethodOperation<ExecutionContext> methodOperation = new MethodOperation<ExecutionContext>(methodClasses);
 		try {
-			if (methodOperation.getMethod(name) != null) {
+			if (methodOperation.findMethod(name) != null) {
 				return methodOperation;
 			}
 		}

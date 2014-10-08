@@ -45,4 +45,11 @@ public class SwitchExecutor extends BaseExecutor implements ExecutorGroup {
 		return children;
 	}
 
+	public Operation<ExecutionContext> getToMatch() {
+		return toMatch;
+	}
+
+	public String getVariableName() {
+		return variableName;
+	}
 }

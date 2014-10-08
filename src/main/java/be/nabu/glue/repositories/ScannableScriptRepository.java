@@ -2,13 +2,11 @@ package be.nabu.glue.repositories;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 import be.nabu.glue.ScriptUtils;
-import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ParserProvider;
 import be.nabu.glue.api.ResourceScriptRepository;
@@ -18,7 +16,6 @@ import be.nabu.libs.resources.ResourceUtils;
 import be.nabu.libs.resources.api.ReadableResource;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
-import be.nabu.utils.io.IOUtils;
 
 public class ScannableScriptRepository implements ResourceScriptRepository {
 
@@ -28,7 +25,7 @@ public class ScannableScriptRepository implements ResourceScriptRepository {
 	private Charset charset;
 	private ScriptRepository parent;
 
-	public ScannableScriptRepository(ScriptRepository parent, ResourceContainer<?> root, ParserProvider parserProvider, Charset charset) throws IOException, ParseException {
+	public ScannableScriptRepository(ScriptRepository parent, ResourceContainer<?> root, ParserProvider parserProvider, Charset charset) throws IOException {
 		this.parent = parent;
 		this.root = root;
 		this.parserProvider = parserProvider;
@@ -36,7 +33,7 @@ public class ScannableScriptRepository implements ResourceScriptRepository {
 		scripts = scan(root, null);
 	}
 	
-	private Map<String, Script> scan(ResourceContainer<?> folder, String namespace) throws IOException, ParseException {
+	private Map<String, Script> scan(ResourceContainer<?> folder, String namespace) throws IOException {
 		Map<String, Script> scripts = new HashMap<String, Script>();
 		for (Resource child : folder) {
 			if (child instanceof ResourceContainer) {
@@ -45,8 +42,7 @@ public class ScannableScriptRepository implements ResourceScriptRepository {
 			else {
 				Parser parser = parserProvider.newParser(this, child.getName());
 				if (parser != null) {
-					ExecutorGroup executor = parser.parse(IOUtils.toReader(IOUtils.wrapReadable(((ReadableResource) child).getReadable(), charset)));
-					Script script = new ResourceScript(this, charset, namespace, child.getName(), executor, parser);
+					Script script = new ResourceScript(this, charset, namespace, child.getName(), (ReadableResource) child, parser);
 					scripts.put(ScriptUtils.getFullName(script), script);
 				}
 			}

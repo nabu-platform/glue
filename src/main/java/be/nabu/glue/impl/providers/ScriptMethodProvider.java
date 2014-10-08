@@ -49,7 +49,15 @@ public class ScriptMethodProvider implements MethodProvider {
 	public List<MethodDescription> getAvailableMethods() {
 		List<MethodDescription> descriptions = new ArrayList<MethodDescription>();
 		for (Script script : repository) {
-			descriptions.add(new SimpleMethodDescription(script.getName(), script.getRoot().getContext().getComment(), ScriptUtils.getInputs(script).toArray(new ParameterDescription[0])));
+			try {
+				descriptions.add(new SimpleMethodDescription(script.getName(), script.getRoot().getContext().getComment(), ScriptUtils.getInputs(script).toArray(new ParameterDescription[0])));
+			}
+			catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			catch (ParseException e) {
+				throw new RuntimeException(e);
+			}
 		}
 		return descriptions;
 	}
@@ -66,17 +74,25 @@ public class ScriptMethodProvider implements MethodProvider {
 		@Override
 		public Object evaluate(ExecutionContext context) throws EvaluationException {
 			Map<String, Object> input = new HashMap<String, Object>();
-			List<ParameterDescription> keys = ScriptUtils.getInputs(script);
-			for (int i = 1; i < getParts().size(); i++) {
-				if (i > keys.size()) {
-					throw new EvaluationException("Too many parameters, expecting: " + keys);
+			try {
+				List<ParameterDescription> keys = ScriptUtils.getInputs(script);
+				for (int i = 1; i < getParts().size(); i++) {
+					if (i > keys.size()) {
+						throw new EvaluationException("Too many parameters, expecting: " + keys);
+					}
+					Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
+					input.put(keys.get(i - 1).getName(), argumentOperation.evaluate(context));
 				}
-				Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
-				input.put(keys.get(i - 1).getName(), argumentOperation.evaluate(context));
+				ScriptRuntime runtime = new ScriptRuntime(script, context.getExecutionEnvironment(), false, input);
+				runtime.run();
+				return runtime.getExecutionContext();
 			}
-			ScriptRuntime runtime = new ScriptRuntime(script, context.getExecutionEnvironment(), false, input);
-			runtime.run();
-			return runtime.getExecutionContext();
+			catch (IOException e) {
+				throw new EvaluationException(e);
+			}
+			catch (ParseException e) {
+				throw new EvaluationException(e);
+			}
 		}
 
 		@Override

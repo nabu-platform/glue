@@ -19,7 +19,6 @@ import be.nabu.libs.resources.URIUtils;
 import be.nabu.libs.resources.api.ReadableResource;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceRoot;
-import be.nabu.utils.io.IOUtils;
 
 public class TargetedScriptRepository implements ResourceScriptRepository {
 
@@ -56,7 +55,7 @@ public class TargetedScriptRepository implements ResourceScriptRepository {
 				if (resource != null) {
 					Parser parser = parserProvider.newParser(this, path);
 					int index = name.lastIndexOf('.');
-					scripts.put(name, new ResourceScript(this, charset, index >= 0 ? name.substring(0, index) : null, index >= 0 ? name.substring(index + 1) : name, parser.parse(IOUtils.toReader(IOUtils.wrapReadable(((ReadableResource) resource).getReadable(), charset))), parser));
+					scripts.put(name, new ResourceScript(this, charset, index >= 0 ? name.substring(0, index) : null, index >= 0 ? name.substring(index + 1) : name, (ReadableResource) resource, parser));
 					break;
 				}
 			}
