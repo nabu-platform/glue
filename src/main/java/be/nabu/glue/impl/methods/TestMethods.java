@@ -22,6 +22,10 @@ public class TestMethods {
 		check(message, result, false);
 	}	
 	
+	public static boolean not(Boolean value) {
+		return value == null || !value ? true : false;
+	}
+	
 	@SuppressWarnings("unchecked")
 	public static void check(String message, Boolean result, boolean fail) {
 		ScriptRuntime runtime = ScriptRuntime.getRuntime();
