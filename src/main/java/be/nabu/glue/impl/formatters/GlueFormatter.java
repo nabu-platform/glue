@@ -37,7 +37,13 @@ public class GlueFormatter implements Formatter {
 			if (executor instanceof EvaluateExecutor) {
 				EvaluateExecutor evaluateExecutor = (EvaluateExecutor) executor;
 				if (evaluateExecutor.getVariableName() != null) {
-					writer.print(evaluateExecutor.getVariableName() + " = ");
+					writer.print(evaluateExecutor.getVariableName());
+					if (evaluateExecutor.isOverwriteIfExists()) {
+						writer.println(" = ");
+					}
+					else {
+						writer.println(" ?= ");
+					}
 				}
 				writer.print(evaluateExecutor.getOperation());
 				if (executor.getContext().getComment() != null) {

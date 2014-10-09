@@ -13,6 +13,7 @@ import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.api.Parser;
+import be.nabu.glue.impl.GlueQueryParser;
 import be.nabu.glue.impl.SimpleExecutorContext;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.glue.impl.executors.ForEachExecutor;
@@ -20,7 +21,6 @@ import be.nabu.glue.impl.executors.SequenceExecutor;
 import be.nabu.glue.impl.executors.SwitchExecutor;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.PathAnalyzer;
-import be.nabu.libs.evaluator.QueryParser;
 import be.nabu.libs.evaluator.api.Analyzer;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.api.OperationProvider;
@@ -114,7 +114,7 @@ public class GlueParser implements Parser {
 			annotations.clear();
 			if (line.matches("^if[\\s]*\\(.*\\)$")) {
 				line = line.replaceAll("^if[\\s]*\\((.*)\\)$", "$1");
-				SequenceExecutor sequenceExecutor = new SequenceExecutor(executorGroups.peek(), context, analyzer.analyze(QueryParser.getInstance().parse(line)));
+				SequenceExecutor sequenceExecutor = new SequenceExecutor(executorGroups.peek(), context, analyzer.analyze(GlueQueryParser.getInstance().parse(line)));
 				executorGroups.peek().getChildren().add(sequenceExecutor);
 				executorGroups.push(sequenceExecutor);
 			}
@@ -127,7 +127,7 @@ public class GlueParser implements Parser {
 					variableName = line.substring(0, index).trim();
 					line = line.substring(index + 1).trim();
 				}
-				Operation<ExecutionContext> operation = analyzer.analyze(QueryParser.getInstance().parse(line));
+				Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(line));
 				ForEachExecutor forEachExecutor = new ForEachExecutor(executorGroups.peek(), context, null, operation, variableName, indexName);
 				executorGroups.peek().getChildren().add(forEachExecutor);
 				executorGroups.push(forEachExecutor);
@@ -137,7 +137,7 @@ public class GlueParser implements Parser {
 				Operation<ExecutionContext> operation = null;
 				if (!line.equals("switch")) {
 					line = line.replaceAll("^switch[\\s]*\\((.*)\\)$", "$1");
-					operation = analyzer.analyze(QueryParser.getInstance().parse(line));
+					operation = analyzer.analyze(GlueQueryParser.getInstance().parse(line));
 				}
 				SwitchExecutor switchExecutor = new SwitchExecutor(executorGroups.peek(), context, null, variableName, operation);
 				executorGroups.peek().getChildren().add(switchExecutor);
@@ -148,7 +148,7 @@ public class GlueParser implements Parser {
 				if (!(executorGroups.peek() instanceof SwitchExecutor)) {
 					throw new ParseException("A case can only exist inside a switch", 0);
 				}
-				Operation<ExecutionContext> operation = analyzer.analyze(QueryParser.getInstance().parse("$value == (" + line + ")"));
+				Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse("$value == (" + line + ")"));
 				SequenceExecutor sequenceExecutor = new SequenceExecutor(executorGroups.peek(), context, operation);
 				executorGroups.peek().getChildren().add(sequenceExecutor);
 				executorGroups.push(sequenceExecutor);
@@ -198,7 +198,7 @@ public class GlueParser implements Parser {
 						variableName = variableName.substring(0, variableName.length() - 1).trim();
 					}
 				}
-				Operation<ExecutionContext> operation = analyzer.analyze(QueryParser.getInstance().parse(line));
+				Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(line));
 				executorGroups.peek().getChildren().add(new EvaluateExecutor(executorGroups.peek(), context, null, variableName, operation, overwriteIfExists));
 			}
 		}
@@ -231,7 +231,7 @@ public class GlueParser implements Parser {
 			ScriptRuntime runtime = ScriptRuntime.getRuntime();
 			while (matcher.find()) {
 				String query = matcher.group().replaceAll(pattern.pattern(), "$1");
-				Operation<ExecutionContext> operation = analyzer.analyze(QueryParser.getInstance().parse(query));
+				Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(query));
 				String result = runtime.getConverter().convert(operation.evaluate(context), String.class);
 				value = value.replaceAll(Pattern.quote(matcher.group()), result == null ? "" : Matcher.quoteReplacement(result));
 			}
