@@ -128,7 +128,7 @@ public class Main {
 			thread.setDaemon(true);
 			thread.start();
 			while (thread.isAlive()) {
-				if (thread.getState() == State.TIMED_WAITING) {
+				if (thread.getState() == State.TIMED_WAITING && runtime.getExecutionContext().getBreakpoint() != null) {
 					System.out.print("\tCommand: ");
 					char [] response = System.console().readLine().toCharArray();
 					if (response[0] == 'q') {
@@ -141,9 +141,7 @@ public class Main {
 						// when tracing, set the next breakpoint
 						if (trace && response[0] != 'r') {
 							Executor next = getNextStep(runtime.getExecutionContext().getCurrent(), response[0] == 'i');
-							if (next != null) {
-								runtime.getExecutionContext().setBreakpoint(next.getId());
-							}
+							runtime.getExecutionContext().setBreakpoint(next != null ? next.getId() : null);
 						}
 						thread.interrupt();
 						while (thread.getState() == State.TIMED_WAITING);

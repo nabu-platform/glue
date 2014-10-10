@@ -8,9 +8,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import be.nabu.glue.ScriptRuntime;
-import be.nabu.libs.resources.ResourceReadableContainer;
-import be.nabu.libs.resources.api.ReadableResource;
-import be.nabu.utils.io.IOUtils;
 
 public class ScriptMethods {
 	
