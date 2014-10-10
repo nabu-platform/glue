@@ -214,6 +214,15 @@ for (myRange)
 	doSomething(myRange[$index])
 ```
 
+You can also pass a number to the for loop and it will iterate that many times.
+
+```
+for (10)
+	echo("This is the " + $index + "th loop")
+```
+
+This will run 10 times with the index range [0, 9]
+
 ## Multiline Expressions
 
 You can spread a command over multiple lines by adding additional depth to the next line(s). Note that this does **not work** for statements that start a new code block. The lines will be merged with one space between them so for example:
