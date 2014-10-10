@@ -58,4 +58,9 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 	public Operation<ExecutionContext> getOperation() {
 		return operation;
 	}
+	
+	@Override
+	public String toString() {
+		return operation.toString();
+	}
 }

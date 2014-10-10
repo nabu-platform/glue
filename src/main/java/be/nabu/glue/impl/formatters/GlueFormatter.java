@@ -39,10 +39,10 @@ public class GlueFormatter implements Formatter {
 				if (evaluateExecutor.getVariableName() != null) {
 					writer.print(evaluateExecutor.getVariableName());
 					if (evaluateExecutor.isOverwriteIfExists()) {
-						writer.println(" = ");
+						writer.print(" = ");
 					}
 					else {
-						writer.println(" ?= ");
+						writer.print(" ?= ");
 					}
 				}
 				writer.print(evaluateExecutor.getOperation());

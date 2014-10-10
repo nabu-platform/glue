@@ -49,7 +49,6 @@ public class ResourceScript implements Script {
 	@Override
 	public ExecutorGroup getRoot() throws IOException, ParseException {
 		if (root == null) {
-			System.out.println("Script = " + getName());
 			root = getParser().parse(IOUtils.toReader(IOUtils.wrapReadable(resource.getReadable(), charset)));
 		}
 		return root;

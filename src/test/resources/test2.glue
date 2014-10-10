@@ -1,12 +1,17 @@
+# This is an example script
+@tags = test
+
 LOCAL: 	name ?= "alex"		# default value on LOCAL
 DEV: 	name ?= "john"		# default value on DEV
 
+# switch type 1
 switch(name)
 	case ("alex")
 		isNameAlex = true
 	case ("john")
 		isNameJohn = true
-		
+
+# switch type 2		
 switch
 	case (name == "alex")
 		isNameReallyAlex = true
@@ -15,8 +20,7 @@ switch
 		isNameReallyJohn = true
 			&& true
 		
-# testing multiline
-
+# testing multiline statements
 isAlexForSure = isNameAlex != null 
 	&& isNameReallyAlex != null 
 	&& isNameAlex 
