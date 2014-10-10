@@ -39,6 +39,7 @@ public class StaticJavaMethodProvider implements MethodProvider {
 	@Override
 	public Operation<ExecutionContext> resolve(String name) {
 		MethodOperation<ExecutionContext> methodOperation = new MethodOperation<ExecutionContext>(methodClasses);
+		methodOperation.setCaseSensitive(false);
 		try {
 			if (methodOperation.findMethod(name) != null) {
 				return methodOperation;

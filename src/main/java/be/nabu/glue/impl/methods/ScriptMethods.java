@@ -71,7 +71,7 @@ public class ScriptMethods {
 	}
 	
 	private static InputStream getInputStream(String name) throws IOException {
-		return IOUtils.toInputStream(new ResourceReadableContainer((ReadableResource) ScriptRuntime.getRuntime().getExecutionContext().getContent(name)));
+		return ScriptRuntime.getRuntime().getExecutionContext().getContent(name);
 	}
 	
 	private static byte [] toBytesAndClose(InputStream input) throws IOException {

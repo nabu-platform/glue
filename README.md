@@ -243,7 +243,7 @@ result = isState1 && isState2 && isState3 && isState4
 This however is **not valid** as the "for" command starts a new code block:
 
 ```
-for (field :
+for (field : record)
 	range(0, 10))
 ```
 
