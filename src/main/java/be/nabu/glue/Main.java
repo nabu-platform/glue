@@ -12,9 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import be.nabu.glue.MultipleRepository;
-import be.nabu.glue.ScriptRuntime;
-import be.nabu.glue.ScriptUtils;
 import be.nabu.glue.api.DynamicMethodOperationProvider;
 import be.nabu.glue.api.Executor;
 import be.nabu.glue.api.ExecutorGroup;
@@ -37,7 +34,7 @@ public class Main {
 	public static void main(String...arguments) throws IOException, ParseException, URISyntaxException {
 		DynamicMethodOperationProvider operationProvider = new GlueOperationProvider(new SPIMethodProvider(), new StaticJavaMethodProvider());
 		Charset charset = Charset.forName(getArgument("charset", "UTF-8", arguments));
-		String environment = getArgument("environment", "local", arguments);
+		String environmentName = getArgument("environment", "local", arguments);
 		boolean debug = new Boolean(getArgument("debug", "false", arguments));
 		boolean trace = new Boolean(getArgument("trace", "false", arguments));
 		debug |= trace;
@@ -102,9 +99,10 @@ public class Main {
 				parameters.put(inputs.get(i - 1).getName(), commands.get(i));
 			}
 			
+			SimpleExecutionEnvironment environment = new SimpleExecutionEnvironment(environmentName);
 			ScriptRuntime runtime = new ScriptRuntime(
 				script,
-				new SimpleExecutionEnvironment(environment), 
+				environment, 
 				debug,
 				parameters
 			);
@@ -121,6 +119,7 @@ public class Main {
 				System.out.println("\t* r: resume");
 				System.out.println("\t* v: view variables");
 				System.out.println("\t* q: quit");
+				System.out.println("\t* [number]: skip to this line");
 				System.out.println("---------------------------------");
 			}
 			
@@ -130,25 +129,61 @@ public class Main {
 			while (thread.isAlive()) {
 				if (thread.getState() == State.TIMED_WAITING && runtime.getExecutionContext().getBreakpoint() != null) {
 					System.out.print("\tCommand: ");
-					char [] response = System.console().readLine().toCharArray();
-					if (response[0] == 'q') {
-						break;
-					}
-					else if (response[0] == 'v') {
-						System.out.println(runtime.getExecutionContext());
-					}
-					else {
-						// when tracing, set the next breakpoint
-						if (trace && response[0] != 'r') {
-							Executor next = getNextStep(runtime.getExecutionContext().getCurrent(), response[0] == 'i');
-							runtime.getExecutionContext().setBreakpoint(next != null ? next.getId() : null);
+					char [] response = System.console().readLine().trim().toCharArray();
+					if (response.length == 1) {
+						if (response[0] == 'q') {
+							break;
 						}
-						thread.interrupt();
-						while (thread.getState() == State.TIMED_WAITING);
+						else if (response[0] == 'v') {
+							System.out.println(runtime.getExecutionContext());
+						}
+						else {
+							// when tracing, set the next breakpoint
+							if (trace && response[0] != 'r') {
+								Executor next = getNextStep(runtime.getExecutionContext().getCurrent(), response[0] == 'i');
+								runtime.getExecutionContext().setBreakpoint(next != null ? next.getId() : null);
+							}
+							thread.interrupt();
+							while (thread.getState() == State.TIMED_WAITING);
+						}
+					}
+					else if (new String(response).matches("[0-9]+")) {
+						Executor next = getLine(script.getRoot(), new Integer(new String(response)) - 1);
+						if (next == null) {
+							System.err.println("Can not find line number " + new String(response));
+						}
+						else {
+							runtime.getExecutionContext().setBreakpoint(next.getId());
+							thread.interrupt();
+							while (thread.getState() == State.TIMED_WAITING);
+						}
+					}
+					else if (response.length > 1) {
+						try {
+							runtime.fork(new VirtualScript(script, new String(response).replace(';', '\n'))).run();
+						}
+						catch (Exception e) {
+							e.printStackTrace();
+						}
 					}
 				}
 			}
 		}
+	}
+	
+	private static Executor getLine(ExecutorGroup group, int line) {
+		for (Executor child : group.getChildren()) {
+			if (child.getContext().getLineNumber() == line) {
+				return child;
+			}
+			else if (child instanceof ExecutorGroup) {
+				Executor target = getLine((ExecutorGroup) child, line);
+				if (target != null) {
+					return target;
+				}
+			}
+		}
+		return null;
 	}
 	
 	private static Executor getNextStep(Executor current, boolean goInto) {
