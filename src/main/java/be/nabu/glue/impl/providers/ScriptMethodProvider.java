@@ -123,7 +123,7 @@ public class ScriptMethodProvider implements MethodProvider {
 					builder.append("\"" + part.getContent().toString() + "\"");
 				}
 				else {
-					builder.append(part.getContent().toString());
+					builder.append(part.getContent() == null ? "null" : part.getContent().toString());
 				}
 			}
 			builder.append(")");
