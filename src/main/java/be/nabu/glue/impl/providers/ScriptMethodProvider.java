@@ -85,7 +85,7 @@ public class ScriptMethodProvider implements MethodProvider {
 					Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
 					input.put(keys.get(i - 1).getName(), argumentOperation.evaluate(context));
 				}
-				ScriptRuntime runtime = new ScriptRuntime(script, context.getExecutionEnvironment(), false, input);
+				ScriptRuntime runtime = new ScriptRuntime(script, context.getExecutionEnvironment(), ScriptRuntime.getRuntime().getExecutionContext().isDebug(), input);
 				runtime.run();
 				return runtime.getExecutionContext();
 			}

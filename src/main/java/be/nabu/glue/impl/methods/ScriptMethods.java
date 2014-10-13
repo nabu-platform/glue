@@ -13,8 +13,10 @@ public class ScriptMethods {
 	
 	private static List<String> extensions = Arrays.asList(new String [] { "xml", "json", "txt", "ini", "properties", "sql", "csv", "html", "htm", "glue", "py", "c++", "cpp", "c", "php", "js", "java" });
 	
-	public static void echo(String message) throws IOException {
-		ScriptRuntime.getRuntime().log(message);
+	public static void echo(Object message) throws IOException {
+		if (message != null) {
+			ScriptRuntime.getRuntime().log(message.toString());
+		}
 	}
 	
 	public static String environment(String name) {
@@ -40,6 +42,10 @@ public class ScriptMethods {
 		else {
 			return bytes(name);
 		}
+	}
+	
+	public static String typeof(Object object) {
+		return object == null ? "null" : object.getClass().getName();
 	}
 
 	public static String string(String name) throws IOException {

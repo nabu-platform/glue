@@ -19,6 +19,7 @@ import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.Script;
+import be.nabu.glue.impl.EnvironmentLabeLEvaluator;
 import be.nabu.glue.impl.SimpleExecutionEnvironment;
 import be.nabu.glue.impl.operations.GlueOperationProvider;
 import be.nabu.glue.impl.parsers.GlueParserProvider;
@@ -35,6 +36,7 @@ public class Main {
 		DynamicMethodOperationProvider operationProvider = new GlueOperationProvider(new SPIMethodProvider(), new StaticJavaMethodProvider());
 		Charset charset = Charset.forName(getArgument("charset", "UTF-8", arguments));
 		String environmentName = getArgument("environment", "local", arguments);
+		String label = getArgument("label", null, arguments);
 		boolean debug = new Boolean(getArgument("debug", "false", arguments));
 		boolean trace = new Boolean(getArgument("trace", "false", arguments));
 		debug |= trace;
@@ -106,6 +108,11 @@ public class Main {
 				debug,
 				parameters
 			);
+			
+			// this is the field the label is checked against in your environment list
+			if (label != null) {
+				runtime.setLabelEvaluator(new EnvironmentLabeLEvaluator(label));
+			}
 			
 			if (trace) {
 				runtime.setInitialBreakpoint(script.getRoot().getChildren().get(0).getId());

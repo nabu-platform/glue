@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutionException;
 import be.nabu.glue.api.Executor;
@@ -37,6 +38,9 @@ public class SequenceExecutor extends BaseExecutor implements ExecutorGroup {
 			}
 			if (child.shouldExecute(context)) {
 				child.execute(context);
+			}
+			else if (ScriptRuntime.getRuntime().getExecutionContext().isDebug()) {
+				ScriptRuntime.getRuntime().log("Skipping " + child.getContext().getLine());
 			}
 		}
 	}
