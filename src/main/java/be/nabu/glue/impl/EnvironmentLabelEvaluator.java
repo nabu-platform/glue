@@ -3,11 +3,11 @@ package be.nabu.glue.impl;
 import be.nabu.glue.api.ExecutionEnvironment;
 import be.nabu.glue.api.LabelEvaluator;
 
-public class EnvironmentLabeLEvaluator implements LabelEvaluator {
+public class EnvironmentLabelEvaluator implements LabelEvaluator {
 
 	private String fieldToCheck;
 
-	public EnvironmentLabeLEvaluator(String fieldToCheck) {
+	public EnvironmentLabelEvaluator(String fieldToCheck) {
 		this.fieldToCheck = fieldToCheck;
 	}
 	
@@ -17,12 +17,17 @@ public class EnvironmentLabeLEvaluator implements LabelEvaluator {
 			return true;
 		}
 		else if (fieldToCheck == null) {
-			return label.equalsIgnoreCase(environment.getName());
+			return label.trim().equalsIgnoreCase(environment.getName());
 		}
 		else {
 			// if the value does not exist for an environment, the label will never be executed
 			String value = environment.getParameters().get(fieldToCheck);
-			return label.equalsIgnoreCase(value);
+			if (value == null) {
+				return true;
+			}
+			else {
+				return label.trim().equalsIgnoreCase(value.trim());
+			}
 		}
 	}
 

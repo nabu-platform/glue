@@ -44,7 +44,7 @@ public class TestMethods {
 		// 0 is the method name
 		// 1 is the the string message
 		// 2 is the operation to be executed
-		String validation = operation.getParts().get(2).toString();
+		String validation = operation.getParts().size() >= 3 ? operation.getParts().get(2).toString() : null;
 		
 		if (!runtime.getContext().containsKey(VALIDATION)) {
 			runtime.getContext().put(VALIDATION, new ArrayList<Validation>());

@@ -20,16 +20,31 @@ public class GlueFormatter implements Formatter {
 	@Override
 	public void format(ExecutorGroup group, Writer writer) throws IOException {
 		PrintWriter printer = new PrintWriter(writer);
+		if (group.getContext().getComment() != null) {
+			for (String comment : group.getContext().getComment().split("[\n]+")) {
+				printer.println("# " + comment.trim());
+			}
+		}
+		printAnnotations(group, printer, 0);
 		format(group, printer, 0);
 		printer.flush();
 	}
 
+	private void printAnnotations(Executor executor, PrintWriter writer, int depth) throws IOException {
+		for (String key : executor.getContext().getAnnotations().keySet()) {
+			pad(writer, depth);
+			writer.print("@" + key);
+			String value = executor.getContext().getAnnotations().get(key);
+			if (value != null && !value.equalsIgnoreCase("true")) {
+				writer.print(" = " + value);
+			}
+			writer.println();
+		}
+	}
+	
 	private void format(ExecutorGroup group, PrintWriter writer, int depth) throws IOException {
 		for (Executor executor : group.getChildren()) {
-			for (String key : executor.getContext().getAnnotations().keySet()) {
-				pad(writer, depth);
-				writer.println("@" + key + " = " + executor.getContext().getAnnotations().get(key));
-			}
+			printAnnotations(executor, writer, depth);
 			pad(writer, depth);
 			if (executor.getContext().getLabel() != null) {
 				writer.print(executor.getContext().getLabel() + ": ");

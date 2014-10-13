@@ -19,7 +19,7 @@ import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.Script;
-import be.nabu.glue.impl.EnvironmentLabeLEvaluator;
+import be.nabu.glue.impl.EnvironmentLabelEvaluator;
 import be.nabu.glue.impl.SimpleExecutionEnvironment;
 import be.nabu.glue.impl.operations.GlueOperationProvider;
 import be.nabu.glue.impl.parsers.GlueParserProvider;
@@ -39,8 +39,8 @@ public class Main {
 		String label = getArgument("label", null, arguments);
 		boolean debug = new Boolean(getArgument("debug", "false", arguments));
 		boolean trace = new Boolean(getArgument("trace", "false", arguments));
+		boolean duration = new Boolean(getArgument("duration", "false", arguments));
 		debug |= trace;
-		
 		MultipleRepository repository = new MultipleRepository(null);
 		for (String path : getArgument("path", System.getenv("PATH"), arguments).split(System.getProperty("path.separator", ":"))) {
 			URI uri = new URI("file:/" + path.replace("\\ ", " ").trim());
@@ -110,9 +110,7 @@ public class Main {
 			);
 			
 			// this is the field the label is checked against in your environment list
-			if (label != null) {
-				runtime.setLabelEvaluator(new EnvironmentLabeLEvaluator(label));
-			}
+			runtime.setLabelEvaluator(new EnvironmentLabelEvaluator(label));
 			
 			if (trace) {
 				runtime.setInitialBreakpoint(script.getRoot().getChildren().get(0).getId());
@@ -121,12 +119,14 @@ public class Main {
 			if (trace) {
 				System.out.println("---------------------------------");
 				System.out.println("Trace commands:");
+				System.out.println("\t* c: check label");
 				System.out.println("\t* o: step over");
 				System.out.println("\t* i: step into");
 				System.out.println("\t* r: resume");
 				System.out.println("\t* v: view variables");
 				System.out.println("\t* q: quit");
 				System.out.println("\t* [number]: skip to this line");
+				System.out.println("\t* [script]:[number]: skip to this line in another script");
 				System.out.println("---------------------------------");
 			}
 			
@@ -136,38 +136,62 @@ public class Main {
 			while (thread.isAlive()) {
 				if (thread.getState() == State.TIMED_WAITING && runtime.getExecutionContext().getBreakpoint() != null) {
 					System.out.print("\tCommand: ");
-					char [] response = System.console().readLine().trim().toCharArray();
-					if (response.length == 1) {
-						if (response[0] == 'q') {
+					String response = System.console().readLine().trim();
+					if (response.length() == 1) {
+						if (response.charAt(0) == 'q') {
 							break;
 						}
-						else if (response[0] == 'v') {
-							System.out.println(runtime.getExecutionContext());
+						else if (response.charAt(0) == 'c') {
+							String labelToCheck = getCurrent(runtime).getExecutionContext().getCurrent().getContext().getLabel();
+							System.out.println("Label " + labelToCheck + ": " + 
+									getCurrent(runtime).getExecutionContext().getLabelEvaluator().shouldExecute(labelToCheck, getCurrent(runtime).getExecutionContext().getExecutionEnvironment()));
+						}
+						else if (response.charAt(0) == 'v') {
+							System.out.println(getCurrent(runtime).getExecutionContext());
 						}
 						else {
 							// when tracing, set the next breakpoint
-							if (trace && response[0] != 'r') {
-								Executor next = getNextStep(runtime.getExecutionContext().getCurrent(), response[0] == 'i');
-								runtime.getExecutionContext().setBreakpoint(next != null ? next.getId() : null);
+							if (trace && response.charAt(0) != 'r') {
+//								Executor next = getNextStep(runtime.getExecutionContext().getCurrent(), response.charAt(0) == 'i');
+								Executor next = getNextStep(runtime, response.charAt(0) == 'i');
+								getCurrent(runtime).getExecutionContext().setBreakpoint(next != null ? next.getId() : null);
 							}
 							thread.interrupt();
 							while (thread.getState() == State.TIMED_WAITING);
 						}
 					}
-					else if (new String(response).matches("[0-9]+")) {
-						Executor next = getLine(script.getRoot(), new Integer(new String(response)) - 1);
+					// you want a breakpoint in a specific script
+					else if (response.matches("[\\w]+:[0-9]+")) {
+						String scriptName = response.replaceAll(":.*", "");
+						Script target = repository.getScript(scriptName);
+						if (target == null) {
+							System.err.println("Can not find target script: " + scriptName);
+						}
+						Executor next = getLine(target.getRoot(), new Integer(response.substring(scriptName.length() + 1)) - 1);
 						if (next == null) {
-							System.err.println("Can not find line number " + new String(response));
+							System.err.println("Can not find line number " + response + " in target script: " + scriptName);
 						}
 						else {
-							runtime.getExecutionContext().setBreakpoint(next.getId());
+							getCurrent(runtime).getExecutionContext().setBreakpoint(next.getId());
 							thread.interrupt();
 							while (thread.getState() == State.TIMED_WAITING);
 						}
 					}
-					else if (response.length > 1) {
+					// switch to line number in this script
+					else if (response.matches("[0-9]+")) {
+						Executor next = getLine(script.getRoot(), new Integer(response) - 1);
+						if (next == null) {
+							System.err.println("Can not find line number " + response);
+						}
+						else {
+							getCurrent(runtime).getExecutionContext().setBreakpoint(next.getId());
+							thread.interrupt();
+							while (thread.getState() == State.TIMED_WAITING);
+						}
+					}
+					else if (response.length() > 1) {
 						try {
-							runtime.fork(new VirtualScript(script, new String(response).replace(';', '\n'))).run();
+							getCurrent(runtime).fork(new VirtualScript(getCurrent(runtime).getScript(), response.replace(';', '\n'))).run();
 						}
 						catch (Exception e) {
 							e.printStackTrace();
@@ -175,7 +199,17 @@ public class Main {
 					}
 				}
 			}
+			if (duration) {
+				System.out.println("Executed in " + (runtime.getDuration() / 1000d) + "s");
+			}
 		}
+	}
+	
+	private static ScriptRuntime getCurrent(ScriptRuntime runtime) {
+		while (runtime.getChild() != null) {
+			runtime = runtime.getChild();
+		}
+		return runtime;
 	}
 	
 	private static Executor getLine(ExecutorGroup group, int line) {
@@ -191,6 +225,13 @@ public class Main {
 			}
 		}
 		return null;
+	}
+	
+	private static Executor getNextStep(ScriptRuntime runtime, boolean goInto) {
+		while(runtime.getChild() != null) {
+			runtime = runtime.getChild();
+		}
+		return getNextStep(runtime.getExecutionContext().getCurrent(), goInto);
 	}
 	
 	private static Executor getNextStep(Executor current, boolean goInto) {
