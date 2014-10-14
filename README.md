@@ -14,7 +14,8 @@ There are a few parameters that you can pass in but all of them have sensible de
 - environment: you can set the environment glue should use to run the script (default "local")
 - debug: if set to "true", it will enable some output logging (default "false")
 - trace: if set to "true", it will allow you to trace through the code line by line. It will also activate debug. (default "false")
-- path: a list of file paths where glue should look for scripts, the separator is dependent on your OS and should match the one you use to separate class paths. (default is the "PATH" environment variable) 
+- path: a list of file paths where glue should look for scripts, the separator is dependent on your OS and should match the one you use to separate class paths. (default is the "PATH" environment variable)
+- label: you can set a custom environment field to evaluate instead of the environment name to see if labels should be executed 
 
 Once you have glue set up correctly with the glue.sh file on your path and the dependencies in place, create a file called "hello.glue" in any folder listed in the PATH variable. Add the following line to it:
 
@@ -28,7 +29,9 @@ This will print out: `Hello World!`
 
 ## Available Methods
 
-You can run `glue -l` to get a list of all available methods.
+You can run `glue -l` to get a list of all available methods. The problem with this is though that it needs to parse **all** available glue scripts to create its compendium which can be slow if you have thousands of scripts. Aside from that it will also check all available methods apart from the glue scripts.
+
+A better way to find scripts or read the information about them is to run `glue man <name>` which will find all scripts that match the given name. The wildcard `*` is allowed and it is a case insensitive search. For example if you want to find all scripts that have the word "test" in their name, use `glue man *test*`.
 
 # Concepts
 
@@ -68,6 +71,20 @@ QLTY: 	endpoint = "http://qlty.example.com/endpoint"
 
 The lines will only be executed if the label matches the environment it is being run upon.
 
+Note that label matching is a configurable feature, the default is environment matching but you can match any environment variable, suppose you have the following in your configuration:
+
+`
+local.version = 2
+dev.version = 1
+`
+
+You can run glue with the additional parameter: `glue label=version ...` which means in the script you can use:
+
+`
+1: doThisInOldCode()
+2: doThisInNewCode()
+`
+
 ## Optional Assignments
 
 When you are creating your script, you can assign a value to a variable in two ways:
@@ -80,6 +97,7 @@ myVar ?= "test"
 The difference between the two is that on the first line, the value is always assigned but on the second line it is only assigned if it doesn't exist yet.
 These "optional assignments" are also used to detect the input parameters of a script. They are assigned in the order that they are detected so don't move them too much.
 Additionally it is best practice to put these optional input parameters at the top of a script for easy readability.
+On the to do list is to (optionally) support named parameters that bypass the order of the parameters.
 
 ## Comments
 

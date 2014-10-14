@@ -55,7 +55,7 @@ public class Main {
 			}
 		}
 		if (new Boolean(getArgument("man", "false", arguments))) {
-			String nameToMatch = commands.get(1).replace("*", ".*");
+			String nameToMatch = "(?i)" + commands.get(1).replace("*", ".*");
 			for (Script script : repository) {
 				if (script.getName().matches(nameToMatch)) {
 					System.out.println("> " + script.getName());
