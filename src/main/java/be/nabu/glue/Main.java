@@ -23,6 +23,7 @@ import be.nabu.glue.impl.EnvironmentLabelEvaluator;
 import be.nabu.glue.impl.SimpleExecutionEnvironment;
 import be.nabu.glue.impl.operations.GlueOperationProvider;
 import be.nabu.glue.impl.parsers.GlueParserProvider;
+import be.nabu.glue.impl.providers.ScriptMethodProvider;
 import be.nabu.glue.impl.providers.StaticJavaMethodProvider;
 import be.nabu.glue.repositories.ScannableScriptRepository;
 import be.nabu.glue.repositories.TargetedScriptRepository;
@@ -33,7 +34,6 @@ import be.nabu.libs.resources.api.ResourceContainer;
 public class Main {
 	
 	public static void main(String...arguments) throws IOException, ParseException, URISyntaxException {
-		DynamicMethodOperationProvider operationProvider = new GlueOperationProvider(new SPIMethodProvider(), new StaticJavaMethodProvider());
 		Charset charset = Charset.forName(getArgument("charset", "UTF-8", arguments));
 		String environmentName = getArgument("environment", "local", arguments);
 		String label = getArgument("label", null, arguments);
@@ -48,8 +48,37 @@ public class Main {
 		}
 		repository.add(new TargetedScriptRepository(repository, new URI("classpath:/"), null, new GlueParserProvider(), charset, "glue"));
 		
-		
-		if (new Boolean(getArgument("-l", "false", arguments))) {
+		List<String> commands = new ArrayList<String>();
+		for (String argument : arguments) {
+			if (!argument.contains("=")) {
+				commands.add(argument);
+			}
+		}
+		if (new Boolean(getArgument("man", "false", arguments))) {
+			String nameToMatch = commands.get(1).replace("*", ".*");
+			for (Script script : repository) {
+				if (script.getName().matches(nameToMatch)) {
+					System.out.println("> " + script.getName());
+					if (script.getRoot().getContext().getComment() != null) {
+						System.out.println("\t\t* " + script.getRoot().getContext().getComment().replace("\n", "\n\t\t* "));
+					}
+					for(ParameterDescription parameter : ScriptUtils.getInputs(script)) {
+						System.out.print("\t- ");
+						if (parameter.getType() != null) {
+							System.out.print(parameter.getType() + " ");
+						}
+						System.out.print(parameter.getName());
+						if (parameter.getDescription() != null) {
+							System.out.print(": " + parameter.getDescription());
+						}
+						System.out.println();
+					}
+				}
+			}
+		}
+		else if (new Boolean(getArgument("-l", "false", arguments))) {
+			DynamicMethodOperationProvider operationProvider = new GlueOperationProvider(new ScriptMethodProvider(repository), new SPIMethodProvider(), new StaticJavaMethodProvider());
+
 			Map<String, MethodDescription> sortedDescriptions = new TreeMap<String, MethodDescription>();
 			for (MethodProvider provider : operationProvider.getMethodProviders()) {
 				for (MethodDescription description : provider.getAvailableMethods()) {
@@ -60,7 +89,7 @@ public class Main {
 				MethodDescription sortedDescription = sortedDescriptions.get(key);
 				System.out.println(key + "()");
 				if (sortedDescription.getDescription() != null) {
-					System.out.println("\t\t" +sortedDescription.getDescription().replaceAll(System.getProperty("line.separator"), System.getProperty("line.separator") + "\t\t"));
+					System.out.println("\t\t" + sortedDescription.getDescription().replaceAll(System.getProperty("line.separator"), System.getProperty("line.separator") + "\t\t"));
 				}
 				if (sortedDescription.getParameters().size() > 0) {
 					for (ParameterDescription description : sortedDescription.getParameters()) {
@@ -79,12 +108,6 @@ public class Main {
 			}
 		}
 		else {
-			List<String> commands = new ArrayList<String>();
-			for (String argument : arguments) {
-				if (!argument.contains("=")) {
-					commands.add(argument);
-				}
-			}
 			if (commands.isEmpty()) {
 				throw new IllegalArgumentException("No command found");
 			}
@@ -137,7 +160,7 @@ public class Main {
 				if (thread.getState() == State.TIMED_WAITING && runtime.getExecutionContext().getBreakpoint() != null) {
 					System.out.print("\tCommand: ");
 					String response = System.console().readLine().trim();
-					if (response.length() == 1) {
+					if (response.length() == 1 && !response.matches("[0-9]")) {
 						if (response.charAt(0) == 'q') {
 							break;
 						}

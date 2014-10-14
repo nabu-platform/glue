@@ -48,8 +48,9 @@ public class ScriptMethods {
 		return object == null ? "null" : object.getClass().getName();
 	}
 
-	public static String string(String name) throws IOException {
-		return new String(bytes(name), ScriptRuntime.getRuntime().getScript().getCharset());
+	public static String string(Object object) throws IOException {
+		byte [] bytes = bytes(object);
+		return bytes == null ? null : new String(bytes, ScriptRuntime.getRuntime().getScript().getCharset());
 	}
 	
 	public static InputStream resource(String name) throws IOException {
@@ -69,8 +70,14 @@ public class ScriptMethods {
 		throw new IOException("Can not convert " + content.getClass() + " to input stream");
 	}
 	
-	public static byte [] bytes(String name) throws IOException {
-		return toBytesAndClose(getInputStream(name));
+	public static byte [] bytes(Object object) throws IOException {
+		if (object instanceof String) {
+			InputStream data = getInputStream((String) object);
+			if (data != null) {
+				object = data;
+			}
+		}
+		return toBytesAndClose(toStream(object));
 	}
 	
 	private static InputStream getInputStream(String name) throws IOException {
@@ -78,6 +85,9 @@ public class ScriptMethods {
 	}
 	
 	private static byte [] toBytesAndClose(InputStream input) throws IOException {
+		if (input == null) {
+			return null;
+		}
 		byte [] buffer = new byte[4096];
 		int read = 0;
 		ByteArrayOutputStream output = new ByteArrayOutputStream();

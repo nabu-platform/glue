@@ -55,10 +55,13 @@ public class ScriptMethodProvider implements MethodProvider {
 				descriptions.add(new SimpleMethodDescription(script.getName(), script.getRoot().getContext().getComment(), ScriptUtils.getInputs(script).toArray(new ParameterDescription[0])));
 			}
 			catch (IOException e) {
-				throw new RuntimeException(e);
+				// ignore
 			}
 			catch (ParseException e) {
-				throw new RuntimeException(e);
+				// ignore
+			}
+			catch (RuntimeException e) {
+				// ignore
 			}
 		}
 		return descriptions;
