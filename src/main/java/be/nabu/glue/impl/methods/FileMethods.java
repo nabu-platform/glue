@@ -1,11 +1,16 @@
 package be.nabu.glue.impl.methods;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import be.nabu.glue.ScriptRuntime;
 
 public class FileMethods {
 	
@@ -44,5 +49,24 @@ public class FileMethods {
 	 */
 	private static File resolve(String fileName) {
 		return new File(fileName);
+	}
+	
+	public static byte [] zip(String...fileNames) throws IOException {
+		ByteArrayOutputStream output = new ByteArrayOutputStream();
+		ZipOutputStream zip = new ZipOutputStream(output);
+		for (String fileName : fileNames) {
+			Object content = ScriptMethods.file(fileName);
+			if (content == null) {
+				throw new FileNotFoundException("Could not find file " + fileName);
+			}
+			if (content instanceof String) {
+				content = ScriptRuntime.getRuntime().getScript().getParser().substitute((String) content, ScriptRuntime.getRuntime().getExecutionContext()).getBytes();
+			}
+			ZipEntry entry = new ZipEntry(fileName);
+			zip.putNextEntry(entry);
+			zip.write((byte[]) content);
+		}
+		zip.close();
+		return output.toByteArray();
 	}
 }
