@@ -16,6 +16,9 @@ public class ScriptVariableOperation<T> extends VariableOperation<T> {
 			}
 			return object;
 		}
+		else if (ScriptRuntime.getRuntime().getExecutionContext().getPipeline().containsKey(name)) {
+			return ScriptRuntime.getRuntime().getExecutionContext().getPipeline().get(name);
+		}
 		else {
 			return super.get(context, name);
 		}

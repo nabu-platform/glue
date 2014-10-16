@@ -4,10 +4,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
 
 import be.nabu.glue.ScriptRuntime;
+import be.nabu.libs.converter.ConverterFactory;
 
 public class ScriptMethods {
 	
@@ -23,6 +25,18 @@ public class ScriptMethods {
 		return ScriptRuntime.getRuntime().getExecutionContext().getExecutionEnvironment().getParameters().get(name);
 	}
 
+	public static Object[] array(Object...objects) {
+		if (objects.length == 0) {
+			return objects;
+		}
+		Class<?> componentType = objects[0].getClass();
+		Object[] result = (Object[]) Array.newInstance(componentType, objects.length);
+		for (int i = 0; i < objects.length; i++) {
+			result[i] = ConverterFactory.getInstance().getConverter().convert(objects[i], componentType);
+		}
+		return result;
+	}
+	
 	public static Object file(String name) throws IOException {
 		int index = name.lastIndexOf('.');
 		if (index > 0) {
