@@ -9,7 +9,7 @@ public class Validation {
 	
 	public enum Level {
 		INFO,
-		WARNING,
+		WARN,
 		ERROR
 	}
 	
@@ -60,5 +60,10 @@ public class Validation {
 
 	public ExecutorContext getContext() {
 		return context;
+	}
+	
+	@Override
+	public String toString() {
+		return "[" + getLevel() + "] " + getMessage() + ": " + getValidation();
 	}
 }

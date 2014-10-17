@@ -15,8 +15,8 @@ public class ScriptMethods {
 	
 	private static List<String> extensions = Arrays.asList(new String [] { "xml", "json", "txt", "ini", "properties", "sql", "csv", "html", "htm", "glue", "py", "c++", "cpp", "c", "php", "js", "java" });
 	
-	public static void echo(Object message) throws IOException {
-		if (message != null) {
+	public static void echo(Object...messages) throws IOException {
+		for (Object message : messages) {
 			ScriptRuntime.getRuntime().log(message.toString());
 		}
 	}

@@ -44,7 +44,13 @@ public class Main {
 		MultipleRepository repository = new MultipleRepository(null);
 		for (String path : getArgument("path", System.getenv("PATH"), arguments).split(System.getProperty("path.separator", ":"))) {
 			URI uri = new URI("file:/" + path.replace("\\ ", " ").trim());
-			repository.add(new ScannableScriptRepository(repository, (ResourceContainer<?>) ResourceFactory.getInstance().resolve(uri, null), new GlueParserProvider(), charset));
+			ResourceContainer<?> container = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(uri, null);
+			if (container == null) {
+				System.err.println("The directory " + uri + " does not exist");
+			}
+			else {
+				repository.add(new ScannableScriptRepository(repository, container, new GlueParserProvider(), charset));
+			}
 		}
 		repository.add(new TargetedScriptRepository(repository, new URI("classpath:/"), null, new GlueParserProvider(), charset, "glue"));
 		
