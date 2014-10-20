@@ -19,10 +19,21 @@ import be.nabu.utils.io.api.Container;
 
 public class FileMethods {
 	
+	/**
+	 * Reads a file from the file system
+	 */
 	public static InputStream read(String fileName) throws FileNotFoundException {
 		return new FileInputStream(resolve(fileName));
 	}
-	
+
+	/**
+	 * Lists all files that match the given regex in the given directory
+	 * @param path
+	 * @param fileRegex
+	 * @param directoryRegex
+	 * @param recursive
+	 * @return
+	 */
 	public static String [] list(String path, String fileRegex, String directoryRegex, boolean recursive) {
 		return list(new File(path), fileRegex, directoryRegex, recursive, null).toArray(new String[0]);
 	}
@@ -47,6 +58,14 @@ public class FileMethods {
 		return results;
 	}
 	
+	/**
+	 * Allows you to merge all files from one directory to another
+	 * @param fromDirectory
+	 * @param toDirectory
+	 * @param recursive
+	 * @param overwriteIfExists
+	 * @throws IOException
+	 */
 	public static void merge(String fromDirectory, String toDirectory, boolean recursive, boolean overwriteIfExists) throws IOException {
 		File from = new File(fromDirectory);
 		File to = new File(toDirectory);
@@ -89,6 +108,12 @@ public class FileMethods {
 		}
 	}
 	
+	/**
+	 * Write the content to a given file
+	 * @param fileName
+	 * @param content
+	 * @throws IOException
+	 */
 	public static void write(String fileName, Object content) throws IOException {
 		if (content != null) {
 			InputStream input = ScriptMethods.toStream(content);
@@ -111,8 +136,23 @@ public class FileMethods {
 		}
 	}
 	
-	public static void remove(String fileName) {
-		resolve(fileName).delete();
+	/**
+	 * Delete a file, this will delete recursively if its a directory
+	 */
+	public static void delete(String fileName) {
+		File file = resolve(fileName);
+		if (file.exists()) {
+			delete(file);
+		}
+	}
+	
+	private static void delete(File file) {
+		if (file.isDirectory()) {
+			for (File child : file.listFiles()) {
+				delete(child);
+			}
+		}
+		file.delete();
 	}
 	
 	/**
@@ -121,12 +161,33 @@ public class FileMethods {
 	private static File resolve(String fileName) {
 		return new File(fileName);
 	}
-	
+
+	/**
+	 * This allows you to create zip files
+	 * You can pass in the names of the files that you want to add to the zip, alternatively you can map the files to new ones or add strings by using the syntax:
+	 * 		<filename>=<filename>
+	 * 		<filename>=<content>
+	 * They are differentiated by a best effort
+	 */
 	public static byte [] zip(String...fileNames) throws IOException {
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		ZipOutputStream zip = new ZipOutputStream(output);
 		for (String fileName : fileNames) {
-			Object content = ScriptMethods.file(fileName);
+			Object content = null;
+			int index = fileName.indexOf('=');
+			if (index >= 0) {
+				String fileContent = fileName.substring(index + 1);
+				fileName = fileName.substring(0, index);
+				content = ScriptMethods.file(fileContent);
+				if (content == null) {
+					content = fileContent;
+				}
+			}
+			else {
+				content = ScriptMethods.file(fileName);
+				// remove path (if any)
+				fileName = fileName.replaceAll(".*/", "");
+			}
 			if (content == null) {
 				throw new FileNotFoundException("Could not find file " + fileName);
 			}

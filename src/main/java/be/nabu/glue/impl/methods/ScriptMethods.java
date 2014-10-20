@@ -14,18 +14,27 @@ import be.nabu.libs.converter.ConverterFactory;
 
 public class ScriptMethods {
 	
-	private static List<String> extensions = Arrays.asList(new String [] { "xml", "json", "txt", "ini", "properties", "sql", "csv", "html", "htm", "glue", "py", "c++", "cpp", "c", "php", "js", "java" });
-	
+	public static List<String> extensions = Arrays.asList(new String [] { "xml", "json", "txt", "ini", "properties", "sql", "csv", "html", "htm", "glue", "py", "c++", "cpp", "c", "php", "js", "java" });
+
+	/**
+	 * All the objects passed into this method are logged one after another to the runtime's output
+	 */
 	public static void echo(Object...messages) throws IOException {
 		for (Object message : messages) {
 			ScriptRuntime.getRuntime().log(message == null ? "null" : message.toString());
 		}
 	}
-		
+	
+	/**
+	 * Returns the value of an environment variable
+	 */
 	public static String environment(String name) {
 		return ScriptRuntime.getRuntime().getExecutionContext().getExecutionEnvironment().getParameters().get(name);
 	}
 
+	/**
+	 * Creates an array of objects. If the objects themselves contain arrays, they are merged
+	 */
 	public static Object[] array(Object...objects) {
 		if (objects.length == 0) {
 			return objects;
@@ -56,51 +65,27 @@ public class ScriptMethods {
 		return results.toArray((Object[]) Array.newInstance(componentType, results.size()));
 	}
 	
-	public static Object file(String name) throws IOException {
-		int index = name.lastIndexOf('.');
-		if (index > 0) {
-			String extension = name.substring(index + 1).toLowerCase();
-			if (extensions.contains(extension)) {
-				return string(name);
-			}
-			else {
-				return bytes(name);
-			}
-		}
-		// assume a hidden text file
-		else if (index == 0) {
-			return string(name);
-		}
-		// assume binary blob
-		else {
-			return bytes(name);
-		}
-	}
-	
+	/**
+	 * Returns the type of the given object
+	 */
 	public static String typeof(Object object) {
 		return object == null ? "null" : object.getClass().getName();
 	}
 
-	public static String string(Object object) throws IOException {
-		byte [] bytes = bytes(object);
-		return bytes == null ? null : new String(bytes, ScriptRuntime.getRuntime().getScript().getCharset());
-	}
 	
+	/**
+	 * Loads a resource as inputstream
+	 */
 	public static InputStream resource(String name) throws IOException {
 		return getInputStream(name);
 	}
 	
-	public static InputStream toStream(Object content) throws IOException {
-		if (content instanceof String) {
-			return new ByteArrayInputStream(((String) content).getBytes(ScriptRuntime.getRuntime().getScript().getCharset())); 
-		}
-		else if (content instanceof byte[]) {
-			return new ByteArrayInputStream((byte []) content);
-		}
-		else if (content instanceof InputStream) {
-			return (InputStream) content;
-		}
-		throw new IOException("Can not convert " + content.getClass() + " to input stream");
+	/**
+	 * Will stringify the object
+	 */
+	public static String string(Object object) throws IOException {
+		byte [] bytes = bytes(object);
+		return bytes == null ? null : new String(bytes, ScriptRuntime.getRuntime().getScript().getCharset());
 	}
 	
 	public static byte [] bytes(Object object) throws IOException {
@@ -113,8 +98,48 @@ public class ScriptMethods {
 		return toBytesAndClose(toStream(object));
 	}
 	
+	static InputStream toStream(Object content) throws IOException {
+		if (content instanceof String) {
+			return new ByteArrayInputStream(((String) content).getBytes(ScriptRuntime.getRuntime().getScript().getCharset())); 
+		}
+		else if (content instanceof byte[]) {
+			return new ByteArrayInputStream((byte []) content);
+		}
+		else if (content instanceof InputStream) {
+			return (InputStream) content;
+		}
+		else if (ConverterFactory.getInstance().getConverter().canConvert(content.getClass(), String.class)) {
+			return new ByteArrayInputStream(ConverterFactory.getInstance().getConverter().convert(content, String.class).getBytes(ScriptRuntime.getRuntime().getScript().getCharset())); 
+		}
+		else {
+			return new ByteArrayInputStream(content.toString().getBytes(ScriptRuntime.getRuntime().getScript().getCharset()));
+		}
+	}
+	
+	static Object file(String name) throws IOException {
+		int index = name.lastIndexOf('.');
+		if (index > 0) {
+			String extension = name.substring(index + 1).toLowerCase();
+			byte [] bytes = bytes(name);
+			return extensions.contains(extension) ? string(bytes) : bytes;
+		}
+		// assume a hidden text file
+		else if (index == 0) {
+			return string(name);
+		}
+		// assume binary blob
+		else {
+			return bytes(name);
+		}
+	}
+	
 	private static InputStream getInputStream(String name) throws IOException {
-		return ScriptRuntime.getRuntime().getExecutionContext().getContent(name);
+		InputStream input = ScriptRuntime.getRuntime().getExecutionContext().getContent(name);
+		if (input == null) {
+			// not found in resources, check file system
+			input = FileMethods.read(name);
+		}
+		return input;
 	}
 	
 	private static byte [] toBytesAndClose(InputStream input) throws IOException {
