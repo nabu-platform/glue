@@ -30,7 +30,9 @@ public class ScriptMethods {
 	 * Returns the value of an environment variable
 	 */
 	public static String environment(String name) {
-		return ScriptRuntime.getRuntime().getExecutionContext().getExecutionEnvironment().getParameters().get(name);
+		return ScriptRuntime.getRuntime().getExecutionContext().getExecutionEnvironment().getParameters().containsKey(name) 
+			? ScriptRuntime.getRuntime().getExecutionContext().getExecutionEnvironment().getParameters().get(name)
+			: System.getProperty(name);
 	}
 	
 	public static void fail(String message) {
@@ -44,12 +46,15 @@ public class ScriptMethods {
 		if (objects.length == 0) {
 			return objects;
 		}
-		Class<?> componentType = objects[0].getClass();
-		if (componentType.isArray()) {
-			componentType = componentType.getComponentType();
-		}
+		Class<?> componentType = null;
 		List<Object> results = new ArrayList<Object>();
 		for (int i = 0; i < objects.length; i++) {
+			if (componentType == null || componentType.equals(Object.class)) {
+				componentType = objects[i].getClass();
+				while (componentType.isArray()) {
+					componentType = componentType.getComponentType();
+				}
+			}
 			if (objects[i] instanceof Object[]) {
 				for (Object single : (Object[]) objects[i]) {
 					Object converted = ConverterFactory.getInstance().getConverter().convert(single, componentType);

@@ -1,0 +1,22 @@
+targetFileName ?= "glue.zip"
+dependencies = unique(split(":", environment("java.class.path")))
+bash = array("\#!/bin/bash")
+bat = array()
+
+files = array()
+for (dependency : dependencies)
+	fileName = find(".*/(.*)", dependency)
+	files = array(files, "lib/" + fileName[0] + "=" + dependency)
+	switch($index)
+		case (0)
+			bash = array(bash, "export CLASSPATH=lib/" + fileName[0])
+			bat = array(bat, "set CLASSPATH=lib/" + fileName[0])
+		default
+			bash = array(bash, "export CLASSPATH=$CLASSPATH:lib/" + fileName[0])
+			bat = array(bat, "set CLASSPATH=%CLASSPATH%;lib/" + fileName[0])
+
+bash = array(bash, "java -cp $CLASSPATH be.nabu.glue.Main label=version \"$@\"")
+bat = array(bat, "java -cp %CLASSPATH% be.nabu.glue.Main label=version %*")
+
+zip = zip(array(files, "glue.sh=" + join("\n", bash), "glue.bat=" + join("\n", bat)))
+write(targetFileName, zip)
