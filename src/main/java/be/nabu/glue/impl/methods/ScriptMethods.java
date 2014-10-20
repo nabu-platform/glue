@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import be.nabu.glue.ScriptRuntime;
+import be.nabu.glue.ScriptRuntimeException;
 import be.nabu.libs.converter.ConverterFactory;
 
 public class ScriptMethods {
@@ -30,6 +31,10 @@ public class ScriptMethods {
 	 */
 	public static String environment(String name) {
 		return ScriptRuntime.getRuntime().getExecutionContext().getExecutionEnvironment().getParameters().get(name);
+	}
+	
+	public static void fail(String message) {
+		throw new ScriptRuntimeException(ScriptRuntime.getRuntime(), message);
 	}
 
 	/**
@@ -61,6 +66,28 @@ public class ScriptMethods {
 				}
 				results.add(converted);
 			}
+		}
+		return results.toArray((Object[]) Array.newInstance(componentType, results.size()));
+	}
+	
+	/**
+	 * Makes sure all elements are unique within the array
+	 * @param objects
+	 * @return
+	 */
+	public static Object [] unique(Object...objects) {
+		List<Object> results = new ArrayList<Object>();
+		Class<?> componentType = null;
+		for (Object object : array(objects)) {
+			if (componentType == null && object != null) {
+				componentType = object.getClass();
+			}
+			if (!results.contains(object)) {
+				results.add(object);
+			}
+		}
+		if (componentType == null) {
+			componentType = Object.class;
 		}
 		return results.toArray((Object[]) Array.newInstance(componentType, results.size()));
 	}

@@ -178,8 +178,10 @@ public class FileMethods {
 			if (index >= 0) {
 				String fileContent = fileName.substring(index + 1);
 				fileName = fileName.substring(0, index);
-				content = ScriptMethods.file(fileContent);
-				if (content == null) {
+				if (fileContent.matches("[\\w./-]+")) {
+					content = ScriptMethods.file(fileContent);
+				}
+				else {
 					content = fileContent;
 				}
 			}
