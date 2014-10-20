@@ -47,6 +47,7 @@ public class GlueParser implements Parser {
 	@Override
 	public ExecutorGroup parse(Reader reader) throws IOException, ParseException {
 		ReadableContainer<CharBuffer> container = IOUtils.wrap(reader);
+		container = IOUtils.bufferReadable(container, IOUtils.newCharBuffer(409600, true));
 		String line = null;
 		int lineNumber = -1;
 		Stack<ExecutorGroup> executorGroups = new Stack<ExecutorGroup>();

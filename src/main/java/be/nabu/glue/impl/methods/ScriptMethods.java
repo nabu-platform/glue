@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -17,10 +18,10 @@ public class ScriptMethods {
 	
 	public static void echo(Object...messages) throws IOException {
 		for (Object message : messages) {
-			ScriptRuntime.getRuntime().log(message.toString());
+			ScriptRuntime.getRuntime().log(message == null ? "null" : message.toString());
 		}
 	}
-	
+		
 	public static String environment(String name) {
 		return ScriptRuntime.getRuntime().getExecutionContext().getExecutionEnvironment().getParameters().get(name);
 	}
@@ -30,11 +31,29 @@ public class ScriptMethods {
 			return objects;
 		}
 		Class<?> componentType = objects[0].getClass();
-		Object[] result = (Object[]) Array.newInstance(componentType, objects.length);
-		for (int i = 0; i < objects.length; i++) {
-			result[i] = ConverterFactory.getInstance().getConverter().convert(objects[i], componentType);
+		if (componentType.isArray()) {
+			componentType = componentType.getComponentType();
 		}
-		return result;
+		List<Object> results = new ArrayList<Object>();
+		for (int i = 0; i < objects.length; i++) {
+			if (objects[i] instanceof Object[]) {
+				for (Object single : (Object[]) objects[i]) {
+					Object converted = ConverterFactory.getInstance().getConverter().convert(single, componentType);
+					if (converted == null && single != null) {
+						throw new ClassCastException("Can not cast " + single.getClass().getName() + " to " + componentType.getName());
+					}
+					results.add(ConverterFactory.getInstance().getConverter().convert(single, componentType));	
+				}
+			}
+			else {
+				Object converted = ConverterFactory.getInstance().getConverter().convert(objects[i], componentType);
+				if (converted == null && objects[i] != null) {
+					throw new ClassCastException("Can not cast " + objects[i].getClass().getName() + " to " + componentType.getName());
+				}
+				results.add(converted);
+			}
+		}
+		return results.toArray((Object[]) Array.newInstance(componentType, results.size()));
 	}
 	
 	public static Object file(String name) throws IOException {

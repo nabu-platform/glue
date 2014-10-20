@@ -1,25 +1,12 @@
 package be.nabu.glue.impl.methods;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class StringMethods {
-	
-	public static String find(String original, String regex) {
-		Pattern pattern = Pattern.compile(regex);
-		Matcher matcher = pattern.matcher(original);
-		if (matcher.find()) {
-			if (matcher.groupCount() > 0) {
-				return matcher.group(1);
-			}
-			else {
-				return matcher.group();
-			}
-		}
-		return null;
-	}
 	
 	public static Object replace(String regex, String replacement, String...original) {
 		String [] result = new String[original.length];
@@ -29,7 +16,7 @@ public class StringMethods {
 		return result.length == 1 ? result[0] : result;
 	}
 	
-	public static String [] findAll(String regex, String...original) {
+	public static String [] find(String regex, String...original) {
 		List<String> matches = new ArrayList<String>();
 		Pattern pattern = Pattern.compile(regex);
 		for (String single : original) {
@@ -55,5 +42,13 @@ public class StringMethods {
 			builder.append(strings[i]);
 		}
 		return builder.toString();
+	}
+	
+	public static String [] split(String regex, String...strings) {
+		List<String> results = new ArrayList<String>();
+		for (String string : strings) {
+			results.addAll(Arrays.asList(string.split(regex)));
+		}
+		return results.toArray(new String[0]);
 	}
 }

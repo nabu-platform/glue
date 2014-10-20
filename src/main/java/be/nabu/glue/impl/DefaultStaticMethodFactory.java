@@ -7,6 +7,7 @@ import be.nabu.glue.api.StaticMethodFactory;
 import be.nabu.glue.impl.methods.FileMethods;
 import be.nabu.glue.impl.methods.ScriptMethods;
 import be.nabu.glue.impl.methods.StringMethods;
+import be.nabu.glue.impl.methods.SystemMethods;
 import be.nabu.glue.impl.methods.TestMethods;
 
 public class DefaultStaticMethodFactory implements StaticMethodFactory {
@@ -18,6 +19,7 @@ public class DefaultStaticMethodFactory implements StaticMethodFactory {
 		classes.add(FileMethods.class);
 		classes.add(TestMethods.class);
 		classes.add(StringMethods.class);
+		classes.add(SystemMethods.class);
 		return classes;
 	}
 }
