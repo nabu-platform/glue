@@ -1,7 +1,7 @@
 targetFileName ?= "glue.zip"
 dependencies = unique(split("(:|;)", environment("java.class.path")))
 bash = array("\#!/bin/bash")
-bat = array()
+bat = array("@echo off")
 
 files = array()
 for (dependency : dependencies)
