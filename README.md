@@ -73,17 +73,17 @@ The lines will only be executed if the label matches the environment it is being
 
 Note that label matching is a configurable feature, the default is environment matching but you can match any environment variable, suppose you have the following in your configuration:
 
-`
+```
 local.version = 2
 dev.version = 1
-`
+```
 
 You can run glue with the additional parameter: `glue label=version ...` which means in the script you can use:
 
-`
+```
 1: doThisInOldCode()
 2: doThisInNewCode()
-`
+```
 
 ## Optional Assignments
 
