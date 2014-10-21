@@ -131,6 +131,12 @@ public class Main {
 			}
 			
 			SimpleExecutionEnvironment environment = new SimpleExecutionEnvironment(environmentName);
+			environment.getParameters().put("runtime.label", getArgument("label", null, arguments));
+			environment.getParameters().put("runtime.environment", getArgument("environment", null, arguments));
+			environment.getParameters().put("runtime.charset", getArgument("charset", null, arguments));
+			environment.getParameters().put("runtime.debug", getArgument("debug", null, arguments));
+			environment.getParameters().put("runtime.trace", getArgument("trace", null, arguments));
+			environment.getParameters().put("runtime.duration", getArgument("duration", null, arguments));
 			ScriptRuntime runtime = new ScriptRuntime(
 				script,
 				environment, 

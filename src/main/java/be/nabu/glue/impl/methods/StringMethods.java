@@ -11,7 +11,7 @@ public class StringMethods {
 	public static Object replace(String regex, String replacement, String...original) {
 		String [] result = new String[original.length];
 		for (int i = 0; i < original.length; i++) {
-			result[i] = original[i].replaceAll(regex, replacement);
+			result[i] = original[i] == null ? null : original[i].replaceAll(regex, replacement);
 		}
 		return result.length == 1 ? result[0] : result;
 	}
@@ -20,6 +20,9 @@ public class StringMethods {
 		List<String> matches = new ArrayList<String>();
 		Pattern pattern = Pattern.compile(regex);
 		for (String single : original) {
+			if (single == null) {
+				continue;
+			}
 			Matcher matcher = pattern.matcher(single);
 			while (matcher.find()) {
 				if (matcher.groupCount() > 0) {
@@ -36,7 +39,10 @@ public class StringMethods {
 	public static String join(String separator, String...strings) {
 		StringBuilder builder = new StringBuilder();
 		for (int i = 0; i < strings.length; i++) {
-			if (i != 0) {
+			if (strings[i] == null) {
+				continue;
+			}
+			if (!builder.toString().isEmpty()) {
 				builder.append(separator);
 			}
 			builder.append(strings[i]);
@@ -47,6 +53,9 @@ public class StringMethods {
 	public static String [] split(String regex, String...strings) {
 		List<String> results = new ArrayList<String>();
 		for (String string : strings) {
+			if (string == null) {
+				continue;
+			}
 			results.addAll(Arrays.asList(string.split(regex)));
 		}
 		return results.toArray(new String[0]);

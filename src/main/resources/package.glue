@@ -1,12 +1,19 @@
 targetFileName ?= "glue.zip"
+
+# Get all the dependencies that we are currently using to run this glue instance
 dependencies = unique(split("(:|;)", environment("java.class.path")))
+
+# The headers for bash & bat file
 bash = array("\#!/bin/bash")
 bat = array("@echo off")
 
-files = array()
+# Create an array of all the files that should be added
 for (dependency : dependencies)
+	# Get the filename of the dependency
 	fileName = first(find(".*/(.*)", dependency))
+	# Add it to the list of files but prefix with "lib"
 	files = array(files, "lib/" + fileName + "=" + dependency)
+	# Update the bash/bat files to update the classpath
 	switch($index)
 		case (0)
 			bash = array(bash, "export CLASSPATH=lib/" + fileName)
@@ -15,14 +22,27 @@ for (dependency : dependencies)
 			bash = array(bash, "export CLASSPATH=$CLASSPATH:lib/" + fileName)
 			bat = array(bat, "set CLASSPATH=%CLASSPATH%;lib/" + fileName)
 
-bash = array(bash, "java -cp $CLASSPATH be.nabu.glue.Main label=version \"$@\"")
-bat = array(bat, "java -cp %CLASSPATH% be.nabu.glue.Main label=version %*")
+# Include the current runtime parameters (if any)
+if (environment("runtime.label") != null)
+	commands = array(commands, "label=" + environment("runtime.label"))
+if (environment("runtime.environment") != null)
+	commands = array(commands, "environment=" + environment("runtime.environment"))
+if (environment("runtime.charset") != null)
+	commands = array(commands, "charset=" + environment("runtime.charset"))
 
+# Add the actual java command to the bash/bat files
+bash = array(bash, "java -cp $CLASSPATH be.nabu.glue.Main " + join(" ", commands) + " \"$@\"")
+bat = array(bat, "java -cp %CLASSPATH% be.nabu.glue.Main " + join(" ", commands) + " %*")
+
+# Check if there is a configuration file for glue
 switch
 	case (exists(environment("user.dir") + "/.glue"))
-		environment = environment("user.dir") + "/.glue"
+		configuration = environment("user.dir") + "/.glue"
 	case (exists(environment("user.home") + "/.glue"))
-		environment = environment("user.home") + "/.glue"
+		configuration = environment("user.home") + "/.glue"
 
-zip = zip(array(files, environment, "glue.sh=" + join("\n", bash), "glue.bat=" + join("\r\n", bat)))
+# Create the zip
+zip = zip(array(files, configuration, "glue.sh=" + join("\n", bash), "glue.bat=" + join("\r\n", bat)))
+
+# Write it to the given filename
 write(targetFileName, zip)

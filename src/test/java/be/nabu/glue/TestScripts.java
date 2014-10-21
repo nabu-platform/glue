@@ -17,7 +17,7 @@ import be.nabu.glue.repositories.TargetedScriptRepository;
 public class TestScripts extends TestCase {
 	public void test() throws IOException, ParseException, URISyntaxException {
 		ScriptRepository repository = new TargetedScriptRepository(null, new URI("classpath:/"), null, new GlueParserProvider(), Charset.forName("UTF-8"), "glue");
-		Script script = repository.getScript("test1");
+		Script script = repository.getScript("testAll");
 		ScriptRuntime runtime = new ScriptRuntime(
 			script,
 			new SimpleExecutionEnvironment("LOCAL"), 

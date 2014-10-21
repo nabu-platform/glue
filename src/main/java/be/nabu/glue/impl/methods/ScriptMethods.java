@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import be.nabu.glue.ScriptRuntime;
@@ -50,7 +51,7 @@ public class ScriptMethods {
 		List<Object> results = new ArrayList<Object>();
 		for (int i = 0; i < objects.length; i++) {
 			if (componentType == null || componentType.equals(Object.class)) {
-				componentType = objects[i].getClass();
+				componentType = objects[i] == null ? Object.class : objects[i].getClass();
 				while (componentType.isArray()) {
 					componentType = componentType.getComponentType();
 				}
@@ -75,6 +76,10 @@ public class ScriptMethods {
 		return results.toArray((Object[]) Array.newInstance(componentType, results.size()));
 	}
 	
+	public static Collection<?> tuple(Object...objects) {
+		return Arrays.asList(objects);
+	}
+
 	public static Object first(Object...array) {
 		return array.length == 0 ? null : array[0];
 	}
@@ -111,7 +116,6 @@ public class ScriptMethods {
 	public static String typeof(Object object) {
 		return object == null ? "null" : object.getClass().getName();
 	}
-
 	
 	/**
 	 * Loads a resource as inputstream
