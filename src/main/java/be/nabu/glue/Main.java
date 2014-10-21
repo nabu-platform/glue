@@ -43,7 +43,7 @@ public class Main {
 		debug |= trace;
 		MultipleRepository repository = new MultipleRepository(null);
 		for (String path : getArgument("path", System.getenv("PATH"), arguments).split(System.getProperty("path.separator", ":"))) {
-			URI uri = new URI("file:/" + path.replace("\\ ", " ").trim());
+			URI uri = new URI("file:/" + path.replace("\\ ", " ").trim().replace('\\', '/'));
 			ResourceContainer<?> container = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(uri, null);
 			if (container == null) {
 				System.err.println("The directory " + uri + " does not exist");

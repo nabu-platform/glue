@@ -136,6 +136,10 @@ public class FileMethods {
 		}
 	}
 	
+	public static boolean exists(String target) {
+		return new File(target).exists();
+	}
+	
 	/**
 	 * Delete a file, this will delete recursively if its a directory
 	 */
@@ -159,7 +163,7 @@ public class FileMethods {
 	 * Allow for some kind of traversal system (start in user.home)
 	 */
 	private static File resolve(String fileName) {
-		return new File(fileName);
+		return new File(fileName.replace('\\', '/'));
 	}
 
 	/**
@@ -173,6 +177,9 @@ public class FileMethods {
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		ZipOutputStream zip = new ZipOutputStream(output);
 		for (String fileName : fileNames) {
+			if (fileName == null) {
+				continue;
+			}
 			Object content = null;
 			int index = fileName.indexOf('=');
 			if (index >= 0) {

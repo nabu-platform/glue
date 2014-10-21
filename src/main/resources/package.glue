@@ -1,5 +1,5 @@
 targetFileName ?= "glue.zip"
-dependencies = unique(split(":", environment("java.class.path")))
+dependencies = unique(split("(:|;)", environment("java.class.path")))
 bash = array("\#!/bin/bash")
 bat = array()
 
@@ -18,5 +18,11 @@ for (dependency : dependencies)
 bash = array(bash, "java -cp $CLASSPATH be.nabu.glue.Main label=version \"$@\"")
 bat = array(bat, "java -cp %CLASSPATH% be.nabu.glue.Main label=version %*")
 
-zip = zip(array(files, "glue.sh=" + join("\n", bash), "glue.bat=" + join("\n", bat)))
+switch
+	case (exists(environment("user.dir") + "/.glue"))
+		environment = environment("user.dir") + "/.glue"
+	case (exists(environment("user.home") + "/.glue"))
+		environment = environment("user.home") + "/.glue"
+
+zip = zip(array(files, environment, "glue.sh=" + join("\n", bash), "glue.bat=" + join("\r\n", bat)))
 write(targetFileName, zip)

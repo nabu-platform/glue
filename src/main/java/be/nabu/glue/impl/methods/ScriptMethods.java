@@ -75,6 +75,14 @@ public class ScriptMethods {
 		return results.toArray((Object[]) Array.newInstance(componentType, results.size()));
 	}
 	
+	public static Object first(Object...array) {
+		return array.length == 0 ? null : array[0];
+	}
+	
+	public static Object last(Object...array) {
+		return array.length == 0 ? null : array[array.length - 1];
+	}
+	
 	/**
 	 * Makes sure all elements are unique within the array
 	 * @param objects
@@ -166,7 +174,7 @@ public class ScriptMethods {
 	}
 	
 	private static InputStream getInputStream(String name) throws IOException {
-		InputStream input = ScriptRuntime.getRuntime().getExecutionContext().getContent(name);
+		InputStream input = ScriptRuntime.getRuntime().getExecutionContext().getContent(name.replace('\\', '/'));
 		if (input == null) {
 			// not found in resources, check file system
 			input = FileMethods.read(name);
