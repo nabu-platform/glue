@@ -15,7 +15,7 @@ public class GlueQueryParser extends QueryParser {
 	
 	protected GlueQueryParser() {
 		super();
-		getParts().put(Type.NOT_IN, "!§|\\bin\\b");
-		getParts().put(Type.IN, "§|\\bin\\b");
+		getParts().put(Type.NOT_IN, "!\\?|\\bin\\b");
+		getParts().put(Type.IN, "\\?|\\bin\\b");
 	}
 }
