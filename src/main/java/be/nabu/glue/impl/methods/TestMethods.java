@@ -1,6 +1,7 @@
 package be.nabu.glue.impl.methods;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import be.nabu.glue.ScriptRuntime;
@@ -19,6 +20,12 @@ public class TestMethods {
 	}
 	
 	public static void confirm(String message, Object expected, Object actual) {
+		if (expected instanceof Object[]) {
+			expected = Arrays.asList((Object[]) expected);
+		}
+		if (actual instanceof Object[]) {
+			actual = Arrays.asList((Object[]) actual);
+		}
 		boolean result = (expected == null && actual == null) || (expected != null && expected.equals(actual));
 		check(message, result, result ? expected.toString() : expected + " != " + actual, true);
 	}
@@ -28,6 +35,12 @@ public class TestMethods {
 	}
 	
 	public static void validate(String message, Object expected, Object actual) {
+		if (expected instanceof Object[]) {
+			expected = Arrays.asList((Object[]) expected);
+		}
+		if (actual instanceof Object[]) {
+			actual = Arrays.asList((Object[]) actual);
+		}
 		boolean result = (expected == null && actual == null) || (expected != null && expected.equals(actual));
 		check(message, result, result ? expected.toString() : expected + " != " + actual, false);
 	}
@@ -49,7 +62,7 @@ public class TestMethods {
 		// 0 is the method name
 		// 1 is the the string message
 		// 2 is the operation to be executed
-		return operation.getParts().size() >= 3 ? operation.getParts().get(2).toString() : null;
+		return operation.getParts().size() >= 3 ? operation.getParts().get(2).getContent().toString() : null;
 	}
 	
 	@SuppressWarnings("unchecked")

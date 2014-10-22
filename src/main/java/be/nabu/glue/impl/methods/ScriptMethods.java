@@ -8,7 +8,11 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.ScriptRuntimeException;
@@ -49,6 +53,7 @@ public class ScriptMethods {
 		}
 		Class<?> componentType = null;
 		List<Object> results = new ArrayList<Object>();
+		boolean componentTypeAccurate = true;
 		for (int i = 0; i < objects.length; i++) {
 			if (componentType == null || componentType.equals(Object.class)) {
 				componentType = objects[i] == null ? Object.class : objects[i].getClass();
@@ -66,18 +71,64 @@ public class ScriptMethods {
 				}
 			}
 			else {
-				Object converted = ConverterFactory.getInstance().getConverter().convert(objects[i], componentType);
-				if (converted == null && objects[i] != null) {
-					throw new ClassCastException("Can not cast " + objects[i].getClass().getName() + " to " + componentType.getName());
+				Object value = objects[i];
+				if (ConverterFactory.getInstance().getConverter().canConvert(objects[i].getClass(), componentType)) {
+					value = ConverterFactory.getInstance().getConverter().convert(objects[i], componentType);
+					if (value == null && objects[i] != null) {
+						throw new ClassCastException("Can not cast " + objects[i].getClass().getName() + " to " + componentType.getName());
+					}
 				}
-				results.add(converted);
+				else {
+					componentTypeAccurate = false;
+				}
+				results.add(value);
 			}
 		}
-		return results.toArray((Object[]) Array.newInstance(componentType, results.size()));
+		return componentTypeAccurate ? results.toArray((Object[]) Array.newInstance(componentType, results.size())) : results.toArray();
 	}
 	
 	public static Collection<?> tuple(Object...objects) {
 		return Arrays.asList(objects);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object>[] map(Object...objects) {
+		// this will merge arrays etc
+		objects = array(objects);
+		Set<String> keys = new LinkedHashSet<String>();
+		List<Map<String, Object>> maps = new ArrayList<Map<String, Object>>();
+		for (Object object : objects) {
+			if (object == null) {
+				continue;
+			}
+			else if (object instanceof String) {
+				keys.add((String) object);
+			}
+			else if (object instanceof Map) {
+				keys.addAll(((Map<String, Object>) object).keySet());
+				maps.add((Map<String, Object>) object);
+			}
+			else if (object instanceof Object[] || object instanceof Collection) {
+				if (keys.isEmpty()) {
+					throw new IllegalArgumentException("The map has no defined keys");
+				}
+				List<Object> elements = object instanceof Object[] ? Arrays.asList((Object[]) object) : new ArrayList<Object>((Collection<Object>) object);
+				// use linked hashmaps to retain key order
+				Map<String, Object> result = new LinkedHashMap<String, Object>();
+				if (elements.size() > keys.size()) {
+					throw new IllegalArgumentException("There are " + elements.size() + " objects but only " + keys.size() + " keys");
+				}
+				int i = 0;
+				for (String key : keys) {
+					result.put(key, elements.get(i++));
+				}
+				maps.add(result);
+			}
+			else {
+				throw new IllegalArgumentException("Invalid object for a map: " + object);
+			}
+		}
+		return maps.toArray(new Map[0]);
 	}
 
 	public static Object first(Object...array) {
