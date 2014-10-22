@@ -31,11 +31,18 @@ public class ScriptVariableOperation<T> extends VariableOperation<T> {
 			}
 			return object;
 		}
-		else if (ScriptRuntime.getRuntime().getExecutionContext().getPipeline().containsKey(name)) {
-			return ScriptRuntime.getRuntime().getExecutionContext().getPipeline().get(name);
-		}
 		else {
-			return super.get(context, name);
+			// try to first get it from the current context
+			try {
+				return super.get(context, name);
+			}
+			catch (EvaluationException e) {
+				// if that didn't work, check the runtime, perhaps you are referencing something at the root?
+				if (ScriptRuntime.getRuntime().getExecutionContext().getPipeline().containsKey(name)) {
+					return ScriptRuntime.getRuntime().getExecutionContext().getPipeline().get(name);
+				}
+				throw e;
+			}
 		}
 	}
 

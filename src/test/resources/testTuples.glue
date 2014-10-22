@@ -6,3 +6,7 @@ single = first(array(tuple("a", "b")))
 confirm("Check indexed access", "a", single[0])
 confirm("Identifiable tuple", tuple("a", "b"), single)
 confirm("Check pseudo access", "a", single/$0)
+
+index = 1
+confirm("Check indexed access", "b", single[index])
+confirm("Check indexed access", "b", test[0][index])
