@@ -55,6 +55,9 @@ public class ScriptMethods {
 		List<Object> results = new ArrayList<Object>();
 		boolean componentTypeAccurate = true;
 		for (int i = 0; i < objects.length; i++) {
+			if (objects[i] == null) {
+				continue;
+			}
 			if (componentType == null || componentType.equals(Object.class)) {
 				componentType = objects[i] == null ? Object.class : objects[i].getClass();
 				while (componentType.isArray()) {
@@ -85,6 +88,22 @@ public class ScriptMethods {
 			}
 		}
 		return componentTypeAccurate ? results.toArray((Object[]) Array.newInstance(componentType, results.size())) : results.toArray();
+	}
+	
+	public static int size(Object object) {
+		if (object == null) {
+			return 0;
+		}
+		else if (object instanceof Object[]) {
+			return ((Object[]) object).length;
+		}
+		else if (object instanceof String) {
+			return ((String) object).length();
+		}
+		else if (object instanceof Collection) {
+			return ((Collection<?>) object).size();
+		}
+		throw new IllegalArgumentException("Can not get the size of " + object);
 	}
 	
 	public static Collection<?> tuple(Object...objects) {

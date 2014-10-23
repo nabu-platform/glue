@@ -291,6 +291,119 @@ for (employee : myCompany/employees[age > 60])
 	congratulate(employee)
 ``` 
 
+## Arrays, tuples & maps
+
+### Arrays
+
+A lot of the glue methods are built on arrays, personally I like lists more but arrays have the distinct advantage that they integrate well with varargs.
+
+An array is simple a number of elements clumped together, when adding to the array, the code will attempt to always correctly type the array unless it can't.
+Glue will always merge arrays whenever you combine them, for example:
+
+```
+example = array("string1")
+example = array(example, "strings2")
+```
+
+In the end, `example` will be an array of strings (`String[]`) with two elements in it.
+Glue will also ignore null values when merging, so you can do this:
+
+```
+anotherExample = array(anotherExample, "strings2")
+```
+
+The variable `anotherExample` did not exist before this line of code so it will be null which means, after this line anotherExample is an array with **1** element. This allows you to easily build arrays in loops.
+
+To access elements in arrays and tuples, you can use the default array syntax:
+
+```
+example = array("string1", "string2")
+echo(example[0])							# Will print out "string1"
+```
+
+There is also a pseudo access mode that is especially interesting when combining tuples with arrays:
+
+```
+example = array(
+					tuple("a", "b", "c"),
+					tuple("d", "e", "f")
+	)
+
+echo(example[0])					# Regular access to print out [a, b, c]
+echo(example/$0) 					# Pseudo access to print out [a, b, c], the array syntax is preferred over this
+result = example[$0 == "d"]/$1		# The true reason for pseudo access: to search for things. In this case, "result" will be an array that contains one item: "e".
+```
+
+Why is result an array? The engine executing the query in the background sees that you are selecting zero or more elements that match your specific requirement `$0 == "d"`. Because multiple matches are possible, it will always return an array of them instead of just one.
+
+### Tuples
+
+Tuples are **immutable** lists of values. In the background, an unmodifiable List object is used. They are not automerged like arrays nor can they be expanded.
+Tuples are mostly useful when combined with arrays or maps because you can never build an array of arrays (due to automerging) but you _can_ build an array of tuples.
+In essence tuples are nameless objects with nameless fields that can only be accessed using array or pseudo access.
+Combine them with maps however and the story changes.
+
+### Maps
+
+Maps basically allow you to take the concept of unnamed tuples and give them a name. Take for example this example:
+
+```
+map = map(			"field1", 			"field2", 			"field3",
+		tuple(		"a",				"b",				"c"		),
+		tuple(		"b",				"c",				"d"		),
+		tuple(		"c",				"d",				"e"		),
+		tuple(		"d",				"e",				"f"		)
+	)
+```
+
+In the background this will build an array of maps (`Map[]`), one for each tuple, where the keys match the keys you defined at the top. In theory you can add a field at any time, doing something like:
+
+```
+map = map(			"field1", 			"field2", 			"field3",
+		tuple(		"a",				"b",				"c"		),
+		tuple(		"b",				"c",				"d"		),
+																			"field4",
+		tuple(		"c",				"d",				"e",			"f"		),
+		tuple(		"d",				"e",				"f",			"g"		)
+	)
+```
+  
+Though it might be harder to manage such a map.
+The true power of this map structure is however the way you can access the data, you can for example do:
+
+```
+for (record : map)
+	echo(record/field1 + " - " + record/field4)
+```
+
+This will print out:
+
+```
+a - null
+b - null
+c - f
+d - g
+```
+
+It basically allows for a primitive type of object creation. This is especially useful for building a map that contains inputs & expected outputs.
+Part of the fun is that the syntax is also compatible with the way you would access actual objects, suppose you have these java objects:
+
+```
+class TestCase {
+	String field1, field2, field3, field4;
+}
+```
+
+You can do this in glue:
+
+```
+testcases = getTestCases()			# suppose this is a List or array of TestCase instances
+for (record : testcases)
+	echo(record/field1 + " - " + record/field4)
+```
+
+If you fill in the same value for the different fields, this exact same code will also work for the java-managed testcases.
+
 # Tracing
 
 The code comes with the necessary tools to enable you to trace through your code step by step. The CLI implementation has an example of how this can be done.
