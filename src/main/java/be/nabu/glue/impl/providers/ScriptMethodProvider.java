@@ -89,8 +89,11 @@ public class ScriptMethodProvider implements MethodProvider {
 					input.put(keys.get(i - 1).getName(), argumentOperation.evaluate(context));
 				}
 				ScriptRuntime runtime = new ScriptRuntime(script, context.getExecutionEnvironment(), context.isDebug(), input);
+				// copy in the currently set breakpoint (it may be for a child script)
 				runtime.setInitialBreakpoint(context.getBreakpoint());
 				runtime.run();
+				// copy back the last breakpoint set
+				context.setBreakpoint(runtime.getExecutionContext().getBreakpoint());
 				return runtime.getExecutionContext();
 			}
 			catch (IOException e) {
