@@ -29,6 +29,7 @@ import be.nabu.glue.repositories.ScannableScriptRepository;
 import be.nabu.glue.repositories.TargetedScriptRepository;
 import be.nabu.glue.spi.SPIMethodProvider;
 import be.nabu.libs.resources.ResourceFactory;
+import be.nabu.libs.resources.URIUtils;
 import be.nabu.libs.resources.api.ResourceContainer;
 
 public class Main {
@@ -43,7 +44,7 @@ public class Main {
 		debug |= trace;
 		MultipleRepository repository = new MultipleRepository(null);
 		for (String path : getArgument("path", System.getenv("PATH"), arguments).split(System.getProperty("path.separator", ":"))) {
-			URI uri = new URI("file:/" + path.replace("\\ ", " ").trim().replace('\\', '/'));
+			URI uri = new URI(URIUtils.encodeURI("file:/" + path.replace("\\ ", " ").trim().replace('\\', '/')));
 			ResourceContainer<?> container = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(uri, null);
 			if (container == null) {
 				System.err.println("The directory " + uri + " does not exist");
@@ -137,6 +138,7 @@ public class Main {
 			environment.getParameters().put("runtime.debug", getArgument("debug", null, arguments));
 			environment.getParameters().put("runtime.trace", getArgument("trace", null, arguments));
 			environment.getParameters().put("runtime.duration", getArgument("duration", null, arguments));
+			environment.getParameters().put("runtime.path", getArgument("path", null, arguments));
 			ScriptRuntime runtime = new ScriptRuntime(
 				script,
 				environment, 

@@ -1,10 +1,12 @@
 targetFileName ?= "glue.zip"
+includePath ?= true
 
 # Get all the dependencies that we are currently using to run this glue instance
 dependencies = unique(split("(:|;)", environment("java.class.path")))
 
 # The headers for bash & bat file
 bash = array("\#!/bin/bash")
+cygwin = array("\#!/bin/bash")
 bat = array("@echo off")
 
 # Create an array of all the files that should be added
@@ -17,9 +19,11 @@ for (dependency : dependencies)
 	switch($index)
 		case (0)
 			bash = array(bash, "export CLASSPATH=lib/" + fileName)
+			cygwin = array(cygwin, "export CLASSPATH=\"lib/" + fileName + '\"')
 			bat = array(bat, "set CLASSPATH=lib/" + fileName)
 		default
 			bash = array(bash, "export CLASSPATH=$CLASSPATH:lib/" + fileName)
+			cygwin = array(cygwin, "export CLASSPATH=\"$CLASSPATH;lib/" + fileName + '\"')
 			bat = array(bat, "set CLASSPATH=%CLASSPATH%;lib/" + fileName)
 
 # Include the current runtime parameters (if any)
@@ -29,9 +33,12 @@ if (environment("runtime.environment") != null)
 	commands = array(commands, "environment=" + environment("runtime.environment"))
 if (environment("runtime.charset") != null)
 	commands = array(commands, "charset=" + environment("runtime.charset"))
+if (environment("runtime.path") != null && includePath == true)
+	commands = array(commands, "charset=" + environment("runtime.path"))
 
 # Add the actual java command to the bash/bat files
 bash = array(bash, "java -cp $CLASSPATH be.nabu.glue.Main " + join(" ", commands) + " \"$@\"")
+cygwin = array(cygwin, "java -cp $CLASSPATH be.nabu.glue.Main " + join(" ", commands) + " \"$@\"")
 bat = array(bat, "java -cp %CLASSPATH% be.nabu.glue.Main " + join(" ", commands) + " %*")
 
 # Check if there is a configuration file for glue
@@ -42,7 +49,7 @@ switch
 		configuration = environment("user.home") + "/.glue"
 
 # Create the zip
-zip = zip(array(files, configuration, "glue.sh=" + join("\n", bash), "glue.bat=" + join("\r\n", bat)))
+zip = zip(array(files, configuration, "glue.sh=" + join("\n", bash), "glue.bat=" + join("\r\n", bat), "glue.cyg=" + join("\r\n", cygwin)))
 
 # Write it to the given filename
 write(targetFileName, zip)
