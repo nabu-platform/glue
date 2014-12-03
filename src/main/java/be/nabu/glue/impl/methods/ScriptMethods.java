@@ -273,4 +273,18 @@ public class ScriptMethods {
 			input.close();
 		}
 	}
+	
+	@SuppressWarnings("unchecked")
+	public static Object valueOf(String enumName, String value) throws ClassNotFoundException {
+		Class<? extends Enum<?>> enumeration = (Class<? extends Enum<?>>) Thread.currentThread().getContextClassLoader().loadClass(enumName);
+		if (!enumeration.isEnum()) {
+			throw new IllegalArgumentException("The class " + enumName + " does not point to an enum");
+		}
+		for (Enum<?> enumValue : enumeration.getEnumConstants()) {
+			if (enumValue.name().equalsIgnoreCase(value)) {
+				return enumValue;
+			}
+		}
+		throw new IllegalArgumentException("The enumeration " + enumName + " does not have the value: " + value);
+	}
 }
