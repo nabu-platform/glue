@@ -19,11 +19,11 @@ for (dependency : dependencies)
 	switch($index)
 		case (0)
 			bash = array(bash, "export CLASSPATH=lib/" + fileName)
-			cygwin = array(cygwin, "export CLASSPATH=\"lib/" + fileName + '\"')
+			cygwin = array(cygwin, "export CLASSPATH=lib/" + fileName)
 			bat = array(bat, "set CLASSPATH=lib/" + fileName)
 		default
 			bash = array(bash, "export CLASSPATH=$CLASSPATH:lib/" + fileName)
-			cygwin = array(cygwin, "export CLASSPATH=\"$CLASSPATH;lib/" + fileName + '\"')
+			cygwin = array(cygwin, "export CLASSPATH=$CLASSPATH\";\"lib/" + fileName)
 			bat = array(bat, "set CLASSPATH=%CLASSPATH%;lib/" + fileName)
 
 # Include the current runtime parameters (if any)
