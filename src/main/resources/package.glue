@@ -53,7 +53,7 @@ switch
 		configuration = environment("user.home") + "/.glue"
 
 # Create the zip
-zip = zip(array(files, configuration, "glue.sh=" + join("\n", bash), "glue.bat=" + join("\r\n", bat), "glue.cyg=" + join("\r\n", cygwin)))
+zip = zip(array(files, configuration, "glue.sh=" + join("\n", bash), "glue.bat=" + join("\r\n", bat), "glue.cyg=" + join("\n", cygwin)))
 
 # Write it to the given filename
 write(targetFileName, zip)
