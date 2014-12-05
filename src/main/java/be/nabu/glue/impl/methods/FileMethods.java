@@ -2,28 +2,42 @@ package be.nabu.glue.impl.methods;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import be.nabu.glue.ScriptRuntime;
+import be.nabu.libs.resources.ResourceFactory;
+import be.nabu.libs.resources.ResourceUtils;
+import be.nabu.libs.resources.URIUtils;
+import be.nabu.libs.resources.api.ManageableContainer;
+import be.nabu.libs.resources.api.ReadableResource;
+import be.nabu.libs.resources.api.Resource;
+import be.nabu.libs.resources.api.ResourceContainer;
+import be.nabu.libs.resources.api.WritableResource;
 import be.nabu.utils.io.IOUtils;
 import be.nabu.utils.io.api.ByteBuffer;
-import be.nabu.utils.io.api.Container;
+import be.nabu.utils.io.api.ReadableContainer;
+import be.nabu.utils.io.api.WritableContainer;
 
 public class FileMethods {
 	
 	/**
 	 * Reads a file from the file system
+	 * @throws IOException 
 	 */
-	public static InputStream read(String fileName) throws FileNotFoundException {
-		return new FileInputStream(resolve(fileName));
+	public static InputStream read(String fileName) throws IOException {
+		Resource resource = resolve(fileName);
+		if (!(resource instanceof ReadableResource)) {
+			throw new IOException("Can not read from: " + fileName);
+		}
+		return IOUtils.toInputStream(((ReadableResource) resource).getReadable());
 	}
 
 	/**
@@ -33,26 +47,28 @@ public class FileMethods {
 	 * @param directoryRegex
 	 * @param recursive
 	 * @return
+	 * @throws IOException 
 	 */
-	public static String [] list(String path, String fileRegex, String directoryRegex, boolean recursive) {
-		return list(new File(path), fileRegex, directoryRegex, recursive, null).toArray(new String[0]);
+	public static String [] list(String path, String fileRegex, String directoryRegex, boolean recursive) throws IOException {
+		Resource resource = resolve(path);
+		if (resource == null) {
+			return new String[0];
+		}
+		return list((ResourceContainer<?>) resource, fileRegex, directoryRegex, recursive, null).toArray(new String[0]);
 	}
 	
-	private static List<String> list(File file, String fileRegex, String directoryRegex, boolean recursive, String path) {
+	private static List<String> list(ResourceContainer<?> file, String fileRegex, String directoryRegex, boolean recursive, String path) {
 		List<String> results = new ArrayList<String>();
-		File[] children = file.listFiles();
-		if (children != null) {
-			for (File child : children) {
-				String childPath = path == null ? child.getName() : path + "/" + child.getName();
-				if (fileRegex != null && child.isFile() && child.getName().matches(fileRegex)) {
-					results.add(childPath);
-				}
-				else if (directoryRegex != null && child.isDirectory() && child.getName().matches(directoryRegex)) {
-					results.add(childPath);
-				}
-				if (recursive && child.isDirectory()) {
-					results.addAll(list(child, fileRegex, directoryRegex, recursive, childPath));
-				}
+		for (Resource child : file) {
+			String childPath = path == null ? child.getName() : path + "/" + child.getName();
+			if (fileRegex != null && child instanceof ReadableResource && child.getName().matches(fileRegex)) {
+				results.add(childPath);
+			}
+			if (directoryRegex != null && child instanceof ResourceContainer && child.getName().matches(directoryRegex)) {
+				results.add(childPath);
+			}
+			if (recursive && child instanceof ResourceContainer) {
+				results.addAll(list((ResourceContainer<?>) child, fileRegex, directoryRegex, recursive, childPath));
 			}
 		}
 		return results;
@@ -67,27 +83,38 @@ public class FileMethods {
 	 * @throws IOException
 	 */
 	public static void merge(String fromDirectory, String toDirectory, boolean recursive, boolean overwriteIfExists) throws IOException {
-		File from = new File(fromDirectory);
-		File to = new File(toDirectory);
-		if (!from.exists()) {
-			throw new FileNotFoundException("Could not find directory " + fromDirectory);
+		Resource from = resolve(fromDirectory);
+		Resource to = resolve(toDirectory);
+		if (from == null) {
+			throw new FileNotFoundException("Could not find directory: " + fromDirectory);
 		}
-		if (!to.exists()) {
-			to.mkdirs();
+		if (to == null) {
+			to = ResourceUtils.mkdir(uri(toDirectory), null);
 		}
-		merge(from, to, recursive, overwriteIfExists);
+		merge((ResourceContainer<?>) from, (ManageableContainer<?>) to, recursive, overwriteIfExists);
 	}
 	
-	private static void merge(File fromDirectory, File toDirectory, boolean recursive, boolean overwriteIfExists) throws IOException {
-		for (File child : fromDirectory.listFiles()) {
-			File target = new File(toDirectory, child.getName());
-			if (child.isFile()) {
-				if (target.exists() && !overwriteIfExists) {
-					throw new IOException("Could not overwrite existing file " + target);
+	private static void merge(ResourceContainer<?> fromDirectory, ManageableContainer<?> toDirectory, boolean recursive, boolean overwriteIfExists) throws IOException {
+		for (Resource child : fromDirectory) {
+			Resource target = toDirectory.getChild(child.getName());
+			if (child instanceof ReadableResource) {
+				if (target != null && !overwriteIfExists) {
+					continue;
 				}
-				Container<ByteBuffer> output = IOUtils.wrap(target);
+				if (target == null) {
+					URI childURI = URIUtils.getChild(ResourceUtils.getURI(toDirectory), child.getName());
+					target = ResourceUtils.touch(childURI, null);
+					if (target == null) {
+						throw new IOException("Could not find or create target file: " + childURI);
+					}
+				}
+				if (!(target instanceof WritableResource)) {
+					throw new IOException("Can not write to target: " + ResourceUtils.getURI(target));
+				}
+				ScriptMethods.echo("Merging file " + ResourceUtils.getPath(child));
+				WritableContainer<ByteBuffer> output = ((WritableResource) target).getWritable();
 				try {
-					Container<ByteBuffer> input = IOUtils.wrap(child);
+					ReadableContainer<ByteBuffer> input = ((ReadableResource) child).getReadable();
 					try {
 						IOUtils.copyBytes(input, output);
 					}
@@ -99,11 +126,16 @@ public class FileMethods {
 					output.close();
 				}
 			}
-			else if (child.isDirectory() && recursive) {
-				if (!target.exists()) {
-					target.mkdir();
+			
+			if (child instanceof ResourceContainer && recursive) {
+				if (target == null) {
+					URI childURI = URIUtils.getChild(ResourceUtils.getURI(toDirectory), child.getName());
+					target = ResourceUtils.mkdir(childURI, null);
+					if (target == null) {
+						throw new IOException("Could not find or create target directory: " + childURI);
+					}
 				}
-				merge(child, target, recursive, overwriteIfExists);
+				merge((ResourceContainer<?>) child, (ManageableContainer<?>) target, recursive, overwriteIfExists);
 			}
 		}
 	}
@@ -118,13 +150,16 @@ public class FileMethods {
 		if (content != null) {
 			InputStream input = ScriptMethods.toStream(content);
 			try {
-				FileOutputStream output = new FileOutputStream(resolve(fileName));
+				Resource target = resolve(fileName);
+				if (target == null) {
+					target = ResourceUtils.touch(uri(fileName), null);
+				}
+				if (!(target instanceof WritableResource)) {
+					throw new IOException("Can not write to: " + fileName);
+				}
+				WritableContainer<ByteBuffer> output = ((WritableResource) target).getWritable();
 				try {
-					int read = 0;
-					byte [] buffer = new byte[4096];
-					while ((read = input.read(buffer)) != -1) {
-						output.write(buffer, 0, read);
-					}
+					IOUtils.copyBytes(IOUtils.wrap(input), output);
 				}
 				finally {
 					output.close();
@@ -136,34 +171,60 @@ public class FileMethods {
 		}
 	}
 	
-	public static boolean exists(String target) {
-		return new File(target).exists();
+	public static boolean exists(String target) throws IOException {
+		return resolve(target) != null;
 	}
 	
 	/**
 	 * Delete a file, this will delete recursively if its a directory
+	 * @throws IOException 
 	 */
-	public static void delete(String fileName) {
-		File file = resolve(fileName);
-		if (file.exists()) {
-			delete(file);
-		}
-	}
-	
-	private static void delete(File file) {
-		if (file.isDirectory()) {
-			for (File child : file.listFiles()) {
-				delete(child);
+	public static void delete(String fileName) throws IOException {
+		Resource resource = resolve(fileName);
+		if (resource != null) {
+			if (!(resource.getParent() instanceof ManageableContainer)) {
+				throw new IOException("Can not delete: " + fileName);
 			}
+			((ManageableContainer<?>) resource.getParent()).delete(resource.getName());
 		}
-		file.delete();
 	}
-	
-	/**
-	 * Allow for some kind of traversal system (start in user.home)
-	 */
-	private static File resolve(String fileName) {
-		return new File(fileName.replace('\\', '/'));
+
+	private static Resource resolve(String fileName) throws IOException {
+		return ResourceFactory.getInstance().resolve(uri(fileName), null);
+	}
+
+	public static URI uri(String fileName) throws IOException {
+		fileName = fileName.replace('\\', '/');
+		// we need a scheme, this should ignore c: etc...
+		if (!fileName.matches("^[\\w+]{2,}:.*")) {
+			// if it does start with c: or some other drive letter, prefix it with "/"
+			if (fileName.matches("^[\\w]{1}:.*")) {
+				fileName = "/" + fileName;
+			}
+			// if it's not absolute, make it so
+			else if (!fileName.startsWith("/")) {
+				File file = new File(".");
+				String path = file.getCanonicalPath();
+				if (fileName.matches("^[\\w]{1}:.*")) {
+					path = "/" + path;
+				}
+				if (!path.startsWith("/")) {
+					throw new RuntimeException("Could not resolve the absolute path of " + fileName);
+				}
+				if (!path.endsWith("/")) {
+					path += "/";
+				}
+				fileName = path + fileName;
+			}
+			fileName = "file:" + fileName;
+			
+		}
+		try {
+			return new URI(URIUtils.encodeURI(fileName));
+		}
+		catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**

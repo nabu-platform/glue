@@ -1,6 +1,8 @@
 package be.nabu.glue;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.Thread.State;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -173,7 +175,7 @@ public class Main {
 			while (thread.isAlive()) {
 				if (thread.getState() == State.TIMED_WAITING && runtime.getExecutionContext().getBreakpoint() != null) {
 					System.out.print("\tCommand: ");
-					String response = System.console().readLine().trim();
+					String response = readLine().trim();
 					if (response.length() == 1 && !response.matches("[0-9]")) {
 						if (response.charAt(0) == 'q') {
 							break;
@@ -239,6 +241,16 @@ public class Main {
 			if (duration) {
 				System.out.println("Executed in " + (runtime.getDuration() / 1000d) + "s");
 			}
+		}
+	}
+	
+	private static String readLine() throws IOException {
+		// cygwin does not expose a console()
+		if (System.console() != null) {
+			return System.console().readLine();
+		}
+		else {
+			return new BufferedReader(new InputStreamReader(System.in)).readLine();
 		}
 	}
 	

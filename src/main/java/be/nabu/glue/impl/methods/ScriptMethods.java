@@ -4,7 +4,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.lang.reflect.Array;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,7 +18,12 @@ import java.util.Set;
 
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.ScriptRuntimeException;
+import be.nabu.glue.api.ExecutionContext;
+import be.nabu.glue.api.ExecutionException;
+import be.nabu.glue.api.ExecutorGroup;
+import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.libs.converter.ConverterFactory;
+import be.nabu.libs.evaluator.EvaluationException;
 
 public class ScriptMethods {
 	
@@ -30,7 +37,43 @@ public class ScriptMethods {
 			ScriptRuntime.getRuntime().log(message == null ? "null" : message.toString());
 		}
 	}
+
+	public static Object eval(String evaluation, ExecutionContext context) throws IOException, ParseException, ExecutionException, EvaluationException {
+		ExecutorGroup parsed = ScriptRuntime.getRuntime().getScript().getParser().parse(new StringReader(evaluation));
+		if (parsed.getChildren().size() > 1) {
+			throw new ParseException("Only single lines of code are allowed for eval", 0);
+		}
+		if (!(parsed.getChildren().get(0) instanceof EvaluateExecutor)) {
+			throw new ParseException("Invalid evaluation string: " + evaluation, 0);
+		}
+		return ((EvaluateExecutor) parsed.getChildren().get(0)).getOperation().evaluate(context);
+	}
 	
+	public static Object eval(String evaluation) throws IOException, ParseException, ExecutionException, EvaluationException {
+		return eval(evaluation, ScriptRuntime.getRuntime().getExecutionContext());
+	}
+	
+	public static void inject(int offset) {
+		Map<String, Object> current = ScriptRuntime.getRuntime().getExecutionContext().getPipeline();
+		Map<String, Object> pipeline = scope(offset);
+		for (String key : pipeline.keySet()) {
+			if (!current.containsKey(key)) {
+				current.put(key, pipeline.get(key));
+			}
+		}
+	}
+	
+	public static Map<String, Object> scope(int offset) {
+		ScriptRuntime runtime = ScriptRuntime.getRuntime();
+		for (int i = 0; i < offset; i++) {
+			if (runtime.getParent() == null) {
+				break;
+			}
+			runtime = runtime.getParent();
+		}
+		return runtime.getExecutionContext().getPipeline();
+	}
+
 	/**
 	 * Returns the value of an environment variable
 	 */

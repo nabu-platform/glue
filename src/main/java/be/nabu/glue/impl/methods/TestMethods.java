@@ -27,7 +27,7 @@ public class TestMethods {
 			actual = Arrays.asList((Object[]) actual);
 		}
 		boolean result = (expected == null && actual == null) || (expected != null && expected.equals(actual));
-		check(message, result, result ? expected.toString() : expected + " != " + actual, true);
+		check(message, result, result ? (expected == null ? "null" : expected.toString()) : expected + " != " + actual, true);
 	}
 		
 	public static void validate(String message, Boolean result) {
@@ -42,7 +42,7 @@ public class TestMethods {
 			actual = Arrays.asList((Object[]) actual);
 		}
 		boolean result = (expected == null && actual == null) || (expected != null && expected.equals(actual));
-		check(message, result, result ? expected.toString() : expected + " != " + actual, false);
+		check(message, result, result ? (expected == null ? "null" : expected.toString()) : expected + " != " + actual, false);
 	}
 	
 	public static boolean not(Boolean value) {
