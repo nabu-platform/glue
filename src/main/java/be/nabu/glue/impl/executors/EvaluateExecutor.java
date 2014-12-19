@@ -43,6 +43,9 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 				throw new ExecutionException(e);
 			}
 		}
+		else if (context.isDebug() && variableName != null && context.getPipeline().get(variableName) != null && !overwriteIfExists) {
+			ScriptRuntime.getRuntime().log("Inherited parameter: " + variableName + " = " + context.getPipeline().get(variableName));
+		}
 	}
 
 	@Override

@@ -245,7 +245,12 @@ public class GlueParser implements Parser {
 				String query = matcher.group().replaceAll(pattern.pattern(), "$1");
 				Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(query));
 				String result = runtime.getConverter().convert(operation.evaluate(context), String.class);
-				value = value.replaceAll(Pattern.quote(matcher.group()), result == null ? "" : Matcher.quoteReplacement(result));
+				// don't allow empty results, they are likely due to an oversight
+				// if you really need an empty string, you can still force it
+				if (result == null) {
+					throw new IllegalArgumentException("Can not replace the query " + query);
+				}
+				value = value.replaceAll(Pattern.quote(matcher.group()), Matcher.quoteReplacement(result));
 			}
 			return value;
 		}

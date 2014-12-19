@@ -1,5 +1,6 @@
 package be.nabu.glue.impl.methods;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,11 +16,24 @@ public class TestMethods {
 	
 	public static final String VALIDATION = "$validation";
 	
-	public static void confirm(String message, Boolean result) {
-		check(message, result, getCheck(), true);
+	public static void must(String message, Object result) throws IOException {
+		confirm(message, result);
 	}
 	
-	public static void confirm(String message, Object expected, Object actual) {
+	public static void confirm(String message, Object result) throws IOException {
+		if (result instanceof Boolean) {
+			check(message, (Boolean) result, getCheck(), true);
+		}
+		else {
+			check(message, result != null, result == null ? "null" : result.toString(), true);
+		}
+	}
+	
+	public static void must(String message, Object expected, Object actual) throws IOException {
+		confirm(message, expected, actual);
+	}
+	
+	public static void confirm(String message, Object expected, Object actual) throws IOException {
 		if (expected instanceof Object[]) {
 			expected = Arrays.asList((Object[]) expected);
 		}
@@ -29,12 +43,20 @@ public class TestMethods {
 		boolean result = (expected == null && actual == null) || (expected != null && expected.equals(actual));
 		check(message, result, result ? (expected == null ? "null" : expected.toString()) : expected + " != " + actual, true);
 	}
+	
+	public static void should(String message, Boolean result) throws IOException {
 		
-	public static void validate(String message, Boolean result) {
+	}
+		
+	public static void validate(String message, Boolean result) throws IOException {
 		check(message, result, getCheck(), false);
 	}
 	
-	public static void validate(String message, Object expected, Object actual) {
+	public static void should(String message, Object expected, Object actual) throws IOException {
+		validate(message, expected, actual);
+	}
+	
+	public static void validate(String message, Object expected, Object actual) throws IOException {
 		if (expected instanceof Object[]) {
 			expected = Arrays.asList((Object[]) expected);
 		}
@@ -66,7 +88,7 @@ public class TestMethods {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static void check(String message, Boolean result, String check, boolean fail) {
+	public static void check(String message, Boolean result, String check, boolean fail) throws IOException {
 		ScriptRuntime runtime = ScriptRuntime.getRuntime();
 		
 		// build callstack
@@ -90,6 +112,9 @@ public class TestMethods {
 		// stop if necessary
 		if (level == Level.ERROR && fail) {
 			throw new AssertionError(validation.toString());
+		}
+		else {
+			ScriptMethods.echo(validation);
 		}
 	}
 }
