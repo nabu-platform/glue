@@ -44,6 +44,10 @@ public class GlueFormatter implements Formatter {
 	
 	private void format(ExecutorGroup group, PrintWriter writer, int depth) throws IOException {
 		for (Executor executor : group.getChildren()) {
+			// before each group, add a line feed
+			if (executor instanceof ExecutorGroup) {
+				writer.println();
+			}
 			printAnnotations(executor, writer, depth);
 			pad(writer, depth);
 			if (executor.getContext().getLabel() != null) {
@@ -90,8 +94,15 @@ public class GlueFormatter implements Formatter {
 					SequenceExecutor sequenceExecutor = (SequenceExecutor) caseExecutor;
 					pad(writer, depth + 1);
 					// we have injected a "$value == (...)" in the case condition, remove it again
-					List<QueryPart> parts = sequenceExecutor.getCondition().getParts();
-					writer.println("case (" + parts.subList(3, parts.size() - 2) + ")");
+					// the default case
+					if (sequenceExecutor.getCondition() == null) {
+						writer.println("default");
+					}
+					else {
+						List<QueryPart> parts = sequenceExecutor.getCondition().getParts();
+	//					writer.println("case (" + parts.subList(3, parts.size() - 2) + ")");
+						writer.println("case (" + parts.get(2).getContent() + ")");
+					}
 					format(sequenceExecutor, writer, depth + 2);
 				}
 			}
@@ -102,7 +113,14 @@ public class GlueFormatter implements Formatter {
 					format(sequenceExecutor, writer, depth + 1);
 				}
 				else {
-					format(sequenceExecutor, writer, depth);
+					writer.print("sequence");
+					if (executor.getContext().getComment() != null) {
+						writer.println(" # " + executor.getContext().getComment());
+					}
+					else {
+						writer.println();
+					}
+					format(sequenceExecutor, writer, depth + 1);
 				}
 			}
 			else {

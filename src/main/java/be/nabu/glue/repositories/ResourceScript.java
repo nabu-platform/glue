@@ -82,4 +82,8 @@ public class ResourceScript implements Script {
 		ReadableResource resource = (ReadableResource) repository.resolve(getPath(false) + "/" + name);
 		return resource == null ? null : IOUtils.toInputStream(resource.getReadable());
 	}
+
+	public void setRoot(ExecutorGroup root) {
+		this.root = root;
+	}
 }

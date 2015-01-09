@@ -1,7 +1,5 @@
 package be.nabu.glue.impl.executors;
 
-import java.text.ParseException;
-
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.AssignmentExecutor;
 import be.nabu.glue.api.ExecutionContext;
@@ -17,7 +15,7 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 	private Operation<ExecutionContext> operation;
 	private boolean overwriteIfExists;
 	
-	public EvaluateExecutor(ExecutorGroup parent, ExecutorContext context, Operation<ExecutionContext> condition, String variableName, Operation<ExecutionContext> operation, boolean overwriteIfExists) throws ParseException {
+	public EvaluateExecutor(ExecutorGroup parent, ExecutorContext context, Operation<ExecutionContext> condition, String variableName, Operation<ExecutionContext> operation, boolean overwriteIfExists) {
 		super(parent, context, condition);
 		this.variableName = variableName;
 		this.operation = operation;
@@ -66,4 +64,13 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 	public String toString() {
 		return operation.toString();
 	}
+
+	public void setVariableName(String variableName) {
+		this.variableName = variableName;
+	}
+
+	public void setOperation(Operation<ExecutionContext> operation) {
+		this.operation = operation;
+	}
+	
 }

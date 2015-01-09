@@ -126,6 +126,11 @@ public class GlueParser implements Parser {
 					executorGroups.peek().getChildren().add(sequenceExecutor);
 					executorGroups.push(sequenceExecutor);
 				}
+				else if (line.equals("sequence")) {
+					SequenceExecutor sequenceExecutor = new SequenceExecutor(executorGroups.peek(), context, null);
+					executorGroups.peek().getChildren().add(sequenceExecutor);
+					executorGroups.push(sequenceExecutor);
+				}
 				else if (line.matches("^for[\\s]*\\(.*\\)$")) {
 					line = line.replaceAll("^for[\\s]*\\((.*)\\)$", "$1");
 					index = line.indexOf(':');
@@ -222,6 +227,10 @@ public class GlueParser implements Parser {
 		return root;
 	}
 
+	public Operation<ExecutionContext> analyze(String line) throws ParseException {
+		return analyzer.analyze(GlueQueryParser.getInstance().parse(line));
+	}
+	
 	private int getDepth(String line) {
 		int depth = 1;
 		for (int i = 0; i < line.length(); i++) {

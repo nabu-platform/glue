@@ -62,4 +62,12 @@ abstract public class BaseExecutor implements Executor {
 	public Operation<ExecutionContext> getCondition() {
 		return condition;
 	}
+
+	public void setParent(ExecutorGroup parent) {
+		this.parent = parent;
+	}
+
+	public void setCondition(Operation<ExecutionContext> condition) {
+		this.condition = condition;
+	}
 }

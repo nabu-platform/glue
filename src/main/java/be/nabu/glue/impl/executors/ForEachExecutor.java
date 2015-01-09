@@ -81,4 +81,16 @@ public class ForEachExecutor extends SequenceExecutor {
 	public String getTemporaryIndex() {
 		return temporaryIndex;
 	}
+
+	public void setTemporaryVariable(String temporaryVariable) {
+		this.temporaryVariable = temporaryVariable;
+	}
+
+	public void setTemporaryIndex(String temporaryIndex) {
+		this.temporaryIndex = temporaryIndex;
+	}
+
+	public void setForEach(Operation<ExecutionContext> forEach) {
+		this.forEach = forEach;
+	}
 }

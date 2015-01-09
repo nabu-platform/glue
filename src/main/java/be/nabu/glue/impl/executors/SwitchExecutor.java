@@ -52,4 +52,9 @@ public class SwitchExecutor extends BaseExecutor implements ExecutorGroup {
 	public String getVariableName() {
 		return variableName;
 	}
+
+	public void setToMatch(Operation<ExecutionContext> toMatch) {
+		this.toMatch = toMatch;
+	}
+	
 }
