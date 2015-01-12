@@ -32,9 +32,15 @@ public class ScriptMethods {
 	/**
 	 * All the objects passed into this method are logged one after another to the runtime's output
 	 */
-	public static void echo(Object...messages) throws IOException {
+	public static void echo(Object...messages) {
 		for (Object message : messages) {
 			ScriptRuntime.getRuntime().log(message == null ? "null" : message.toString());
+		}
+	}
+	
+	public static void debug(Object...messages) {
+		if (ScriptRuntime.getRuntime().getExecutionContext().isDebug()) {
+			echo(messages);
 		}
 	}
 

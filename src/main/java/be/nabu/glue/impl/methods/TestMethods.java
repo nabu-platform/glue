@@ -114,7 +114,7 @@ public class TestMethods {
 			throw new AssertionError(validation.toString());
 		}
 		else {
-			ScriptMethods.echo(validation);
+			ScriptMethods.debug(validation);
 		}
 	}
 }
