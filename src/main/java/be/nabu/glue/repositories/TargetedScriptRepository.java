@@ -77,4 +77,9 @@ public class TargetedScriptRepository implements ResourceScriptRepository {
 	public ScriptRepository getParent() {
 		return parent;
 	}
+
+	@Override
+	public void refresh() throws IOException {
+		scripts.clear();
+	}
 }

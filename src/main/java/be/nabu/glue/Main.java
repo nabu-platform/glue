@@ -23,6 +23,8 @@ import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.impl.EnvironmentLabelEvaluator;
 import be.nabu.glue.impl.SimpleExecutionEnvironment;
+import be.nabu.glue.impl.methods.TestMethods;
+import be.nabu.glue.impl.methods.Validation;
 import be.nabu.glue.impl.operations.GlueOperationProvider;
 import be.nabu.glue.impl.parsers.GlueParserProvider;
 import be.nabu.glue.impl.providers.ScriptMethodProvider;
@@ -36,6 +38,7 @@ import be.nabu.libs.resources.api.ResourceContainer;
 
 public class Main {
 	
+	@SuppressWarnings("unchecked")
 	public static void main(String...arguments) throws IOException, ParseException, URISyntaxException {
 		Charset charset = Charset.forName(getArgument("charset", "UTF-8", arguments));
 		String environmentName = getArgument("environment", "local", arguments);
@@ -43,6 +46,7 @@ public class Main {
 		boolean debug = new Boolean(getArgument("debug", "false", arguments));
 		boolean trace = new Boolean(getArgument("trace", "false", arguments));
 		boolean duration = new Boolean(getArgument("duration", "false", arguments));
+		boolean printReport = new Boolean(getArgument("report", "false", arguments));
 		debug |= trace;
 		MultipleRepository repository = new MultipleRepository(null);
 		for (String path : getArgument("path", System.getenv("PATH"), arguments).split(System.getProperty("path.separator", ":"))) {
@@ -240,6 +244,14 @@ public class Main {
 			}
 			if (duration) {
 				System.out.println("Executed in " + (runtime.getDuration() / 1000d) + "s");
+			}
+			if (printReport) {
+				List<Validation> messages = (List<Validation>) runtime.getContext().get(TestMethods.VALIDATION);
+				if (messages != null && !messages.isEmpty()) {
+					for (Validation message : messages) {
+						 System.out.println(message);
+					}
+				}
 			}
 		}
 	}
