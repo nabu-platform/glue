@@ -243,12 +243,19 @@ public class ScriptMethods {
 		return getInputStream(name);
 	}
 	
+	public static String string(Object object) throws IOException {
+		return string(object, true);
+	}
+	
 	/**
 	 * Will stringify the object
 	 */
-	public static String string(Object object) throws IOException {
+	public static String string(Object object, boolean substitute) throws IOException {
 		byte [] bytes = bytes(object);
-		return bytes == null ? null : new String(bytes, ScriptRuntime.getRuntime().getScript().getCharset());
+		String result = bytes == null ? null : new String(bytes, ScriptRuntime.getRuntime().getScript().getCharset());
+		return substitute 
+			? ScriptRuntime.getRuntime().getScript().getParser().substitute(result, ScriptRuntime.getRuntime().getExecutionContext()) 
+			: result;
 	}
 	
 	public static byte [] bytes(Object object) throws IOException {

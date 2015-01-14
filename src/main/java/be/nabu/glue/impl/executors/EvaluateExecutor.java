@@ -39,9 +39,6 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 						}
 						ScriptMethods.debug("Result: " + variableName + " = " + stringValue);
 					}
-					if (value instanceof String) {
-						value = ScriptRuntime.getRuntime().getScript().getParser().substitute((String) value, context);
-					}
 					context.getPipeline().put(variableName, value);
 				}
 			}

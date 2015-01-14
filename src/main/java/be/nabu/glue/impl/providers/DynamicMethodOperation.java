@@ -2,7 +2,6 @@ package be.nabu.glue.impl.providers;
 
 import java.text.ParseException;
 
-import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.MethodProvider;
 import be.nabu.libs.evaluator.EvaluationException;
@@ -25,12 +24,7 @@ public class DynamicMethodOperation extends BaseOperation<ExecutionContext> {
 	@Override
 	public Object evaluate(ExecutionContext context) throws EvaluationException {
 		if (operation != null) {
-			Object value = operation.evaluate(context);
-			// if the returning value is a string, replace all the current variables in it
-			if (value instanceof String) {
-				value = ScriptRuntime.getRuntime().getScript().getParser().substitute((String) value, context);
-			}
-			return value;
+			return operation.evaluate(context);
 		}
 		else {
 			throw new EvaluationException("Could not resolve a method with the name: " + getParts().get(0).getContent());

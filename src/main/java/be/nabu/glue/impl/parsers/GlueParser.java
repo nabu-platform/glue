@@ -246,12 +246,13 @@ public class GlueParser implements Parser {
 
 	@Override
 	public String substitute(String value, ExecutionContext context) {
-		Pattern pattern = Pattern.compile("\\$\\{([^}]+)\\}");
+		Pattern pattern = Pattern.compile("(?<!\\\\)\\$\\{([^}]+)\\}");
 		Matcher matcher = pattern.matcher(value);
 		try {
 			ScriptRuntime runtime = ScriptRuntime.getRuntime();
 			while (matcher.find()) {
 				String query = matcher.group().replaceAll(pattern.pattern(), "$1");
+				System.out.println("\tFOUND: " + query);
 				Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(query));
 				String result = runtime.getConverter().convert(operation.evaluate(context), String.class);
 				// don't allow empty results, they are likely due to an oversight
@@ -261,7 +262,7 @@ public class GlueParser implements Parser {
 				}
 				value = value.replaceAll(Pattern.quote(matcher.group()), Matcher.quoteReplacement(result));
 			}
-			return value;
+			return value.replaceAll("\\\\(\\$\\{[^}]+\\})", "$1");
 		}
 		catch (ParseException e) {
 			throw new IllegalArgumentException(e);

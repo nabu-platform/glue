@@ -39,6 +39,14 @@ public class StringMethods {
 		return result.length == 1 ? result[0] : result; 
 	}
 	
+	public static String substring(String original, int start) {
+		return original.substring(start);
+	}
+	
+	public static String substring(String original, int start, int stop) {
+		return original.substring(start, stop);
+	}
+	
 	public static Object replace(String regex, String replacement, String...original) {
 		String [] result = new String[original.length];
 		for (int i = 0; i < original.length; i++) {

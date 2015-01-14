@@ -88,7 +88,7 @@ public class TestMethods {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static void check(String message, Boolean result, String check, boolean fail) throws IOException {
+	public static void check(String message, Boolean result, String check, boolean fail) {
 		ScriptRuntime runtime = ScriptRuntime.getRuntime();
 		
 		// build callstack
@@ -114,7 +114,12 @@ public class TestMethods {
 			throw new AssertionError(validation.toString());
 		}
 		else {
-			ScriptMethods.debug(validation);
+			if ("true".equals(ScriptMethods.environment("hideValidation"))) {
+				ScriptMethods.debug(validation);
+			}
+			else {
+				ScriptMethods.echo(validation);
+			}
 		}
 	}
 }
