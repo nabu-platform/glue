@@ -60,10 +60,14 @@ public class ScriptMethods {
 	}
 	
 	public static void inject(int offset) {
+		inject(offset, false);
+	}
+	
+	public static void inject(int offset, boolean overwriteExisting) {
 		Map<String, Object> current = ScriptRuntime.getRuntime().getExecutionContext().getPipeline();
 		Map<String, Object> pipeline = scope(offset);
 		for (String key : pipeline.keySet()) {
-			if (!current.containsKey(key)) {
+			if (overwriteExisting || !current.containsKey(key)) {
 				current.put(key, pipeline.get(key));
 			}
 		}
