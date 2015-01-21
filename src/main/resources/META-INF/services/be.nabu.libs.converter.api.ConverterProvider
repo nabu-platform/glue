@@ -1,2 +1,4 @@
 be.nabu.glue.converters.DateToString
 be.nabu.glue.converters.StringToDate
+be.nabu.glue.converters.CustomDateToDate
+be.nabu.glue.converters.DateToCustomDate

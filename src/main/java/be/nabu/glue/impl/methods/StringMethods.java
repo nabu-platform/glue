@@ -25,10 +25,10 @@ public class StringMethods {
 			String value = original[i];
 			while (value.length() < length) {
 				if (leftAlign) {
-					value = pad + value;
+					value += pad;
 				}
 				else {
-					value += pad;
+					value = pad + value;
 				}
 			}
 			if (value.length() > length) {
