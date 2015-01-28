@@ -89,11 +89,18 @@ public class ScriptMethodProvider implements MethodProvider {
 					input.put(keys.get(i - 1).getName(), argumentOperation.evaluate(context));
 				}
 				ScriptRuntime runtime = new ScriptRuntime(script, context.getExecutionEnvironment(), context.isDebug(), input);
-				// copy in the currently set breakpoint (it may be for a child script)
-				runtime.setInitialBreakpoint(context.getBreakpoint());
+				runtime.setTrace(context.isTrace());
+				if (context.isTrace()) {
+					runtime.addBreakpoint(context.getBreakpoints().toArray(new String[0]));
+				}
 				runtime.run();
-				// copy back the last breakpoint set
-				context.setBreakpoint(runtime.getExecutionContext().getBreakpoint());
+				// could have turned off trace mode in runtime
+				context.setTrace(runtime.isTrace());
+				if (context.isTrace()) {
+					// copy back the last breakpoint set, you could have toggled breakpoints
+					context.removeBreakpoints();
+					context.addBreakpoint(runtime.getExecutionContext().getBreakpoints().toArray(new String[0]));
+				}
 				return runtime.getExecutionContext();
 			}
 			catch (IOException e) {

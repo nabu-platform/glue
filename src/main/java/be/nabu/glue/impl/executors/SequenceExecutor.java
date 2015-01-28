@@ -26,7 +26,7 @@ public class SequenceExecutor extends BaseExecutor implements ExecutorGroup {
 		String timeout = context.getExecutionEnvironment().getParameters().get("timeout");
 		for (Executor child : children) {
 			context.setCurrent(child);
-			if (context.getBreakpoint() != null && context.getBreakpoint().equals(child.getId())) {
+			if (context.isTrace() && context.getBreakpoints() != null && context.getBreakpoints().contains(child.getId())) {
 				synchronized(Thread.currentThread()) {
 					try {
 						Thread.sleep(timeout == null ? Long.MAX_VALUE : new Long(timeout));

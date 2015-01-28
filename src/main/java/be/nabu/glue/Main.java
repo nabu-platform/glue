@@ -151,12 +151,13 @@ public class Main {
 				debug,
 				parameters
 			);
+			runtime.setTrace(trace);
 			
 			// this is the field the label is checked against in your environment list
 			runtime.setLabelEvaluator(new EnvironmentLabelEvaluator(label));
 			
 			if (trace) {
-				runtime.setInitialBreakpoint(script.getRoot().getChildren().get(0).getId());
+				runtime.addBreakpoint(script.getRoot().getChildren().get(0).getId());
 			}
 	
 			if (trace) {
@@ -164,8 +165,10 @@ public class Main {
 				System.out.println("Trace commands:");
 				System.out.println("\t* c: check label");
 				System.out.println("\t* o: step over");
+				System.out.println("\t* b: remove current breakpoint");
 				System.out.println("\t* i: step into");
-				System.out.println("\t* r: resume");
+				System.out.println("\t* r: resume until next breakpoint");
+				System.out.println("\t* s: remove all breakpoints and resume");
 				System.out.println("\t* v: view variables");
 				System.out.println("\t* q: quit");
 				System.out.println("\t* [number]: skip to this line");
@@ -177,7 +180,7 @@ public class Main {
 			thread.setDaemon(true);
 			thread.start();
 			while (thread.isAlive()) {
-				if (thread.getState() == State.TIMED_WAITING && runtime.getExecutionContext().getBreakpoint() != null) {
+				if (thread.getState() == State.TIMED_WAITING && !runtime.getExecutionContext().getBreakpoints().isEmpty()) {
 					System.out.print("\tCommand: ");
 					String response = readLine().trim();
 					if (response.length() == 1 && !response.matches("[0-9]")) {
@@ -192,12 +195,18 @@ public class Main {
 						else if (response.charAt(0) == 'v') {
 							System.out.println(getCurrent(runtime).getExecutionContext());
 						}
+						else if (response.charAt(0) == 'b') {
+							getCurrent(runtime).removeBreakpoint(getCurrent(runtime).getExecutionContext().getCurrent().getId());
+						}
 						else {
+							if (trace && response.charAt(0) == 's') {
+								getCurrent(runtime).setTrace(false);
+							}
 							// when tracing, set the next breakpoint
-							if (trace && response.charAt(0) != 'r') {
+							else if (trace && response.charAt(0) != 'r') {
 //								Executor next = getNextStep(runtime.getExecutionContext().getCurrent(), response.charAt(0) == 'i');
 								Executor next = getNextStep(runtime, response.charAt(0) == 'i');
-								getCurrent(runtime).getExecutionContext().setBreakpoint(next != null ? next.getId() : null);
+								getCurrent(runtime).getExecutionContext().addBreakpoint(next != null ? next.getId() : null);
 							}
 							thread.interrupt();
 							while (thread.getState() == State.TIMED_WAITING);
@@ -215,7 +224,7 @@ public class Main {
 							System.err.println("Can not find line number " + response + " in target script: " + scriptName);
 						}
 						else {
-							getCurrent(runtime).getExecutionContext().setBreakpoint(next.getId());
+							getCurrent(runtime).getExecutionContext().addBreakpoint(next.getId());
 							thread.interrupt();
 							while (thread.getState() == State.TIMED_WAITING);
 						}
@@ -227,7 +236,7 @@ public class Main {
 							System.err.println("Can not find line number " + response);
 						}
 						else {
-							getCurrent(runtime).getExecutionContext().setBreakpoint(next.getId());
+							getCurrent(runtime).getExecutionContext().addBreakpoint(next.getId());
 							thread.interrupt();
 							while (thread.getState() == State.TIMED_WAITING);
 						}
