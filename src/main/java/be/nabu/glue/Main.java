@@ -200,7 +200,7 @@ public class Main {
 						}
 						else {
 							if (trace && response.charAt(0) == 's') {
-								getCurrent(runtime).setTrace(false);
+								getCurrent(runtime).getExecutionContext().setTrace(false);
 							}
 							// when tracing, set the next breakpoint
 							else if (trace && response.charAt(0) != 'r') {
