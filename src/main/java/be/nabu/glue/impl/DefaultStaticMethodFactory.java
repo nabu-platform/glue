@@ -9,6 +9,7 @@ import be.nabu.glue.impl.methods.ScriptMethods;
 import be.nabu.glue.impl.methods.StringMethods;
 import be.nabu.glue.impl.methods.SystemMethods;
 import be.nabu.glue.impl.methods.TestMethods;
+import be.nabu.libs.evaluator.date.DateMethods;
 
 public class DefaultStaticMethodFactory implements StaticMethodFactory {
 
@@ -20,6 +21,7 @@ public class DefaultStaticMethodFactory implements StaticMethodFactory {
 		classes.add(TestMethods.class);
 		classes.add(StringMethods.class);
 		classes.add(SystemMethods.class);
+		classes.add(DateMethods.class);
 		return classes;
 	}
 }
