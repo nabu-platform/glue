@@ -66,7 +66,11 @@ public class StaticJavaMethodProvider implements MethodProvider {
 							parameters.add(new SimpleParameterDescription("arg" + i++, null, parameter.isArray() ? parameter.getComponentType().getSimpleName() + "[]" : parameter.getSimpleName()));
 						}
 					}
-					descriptions.add(new SimpleMethodDescription(method.getName(), null, parameters.toArray(new ParameterDescription[0])));
+					List<ParameterDescription> returnValues = new ArrayList<ParameterDescription>();
+					if (!Void.class.isAssignableFrom(method.getReturnType())) {
+						returnValues.add(new SimpleParameterDescription(null, null, method.getReturnType().getName()));
+					}
+					descriptions.add(new SimpleMethodDescription(method.getName(), null, parameters, returnValues));
 				}
 			}
 		}
