@@ -7,7 +7,6 @@ import be.nabu.glue.api.ExecutionException;
 import be.nabu.glue.api.ExecutorContext;
 import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.impl.methods.ScriptMethods;
-import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.api.Operation;
 
 public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor {
@@ -42,12 +41,12 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 					context.getPipeline().put(variableName, value);
 				}
 			}
-			catch (EvaluationException e) {
+			catch (Exception e) {
 				throw new ExecutionException(e);
 			}
 		}
 		else if (context.isDebug() && variableName != null && context.getPipeline().get(variableName) != null && !overwriteIfExists) {
-			ScriptRuntime.getRuntime().log("Inherited parameter: " + variableName + " = " + context.getPipeline().get(variableName));
+			ScriptRuntime.getRuntime().getFormatter().print("Inherited parameter: " + variableName + " = " + context.getPipeline().get(variableName));
 		}
 	}
 

@@ -33,9 +33,7 @@ public class ScriptMethods {
 	 * All the objects passed into this method are logged one after another to the runtime's output
 	 */
 	public static void echo(Object...messages) {
-		for (Object message : messages) {
-			ScriptRuntime.getRuntime().log(message == null ? "null" : message.toString());
-		}
+		ScriptRuntime.getRuntime().getFormatter().print(messages);
 	}
 	
 	public static void debug(Object...messages) {
@@ -101,7 +99,10 @@ public class ScriptMethods {
 	 * Creates an array of objects. If the objects themselves contain arrays, they are merged
 	 */
 	public static Object[] array(Object...objects) {
-		if (objects.length == 0) {
+		if (objects == null) {
+			return new Object[0];
+		}
+		else if (objects.length == 0) {
 			return objects;
 		}
 		Class<?> componentType = null;
@@ -139,6 +140,9 @@ public class ScriptMethods {
 				}
 				results.add(value);
 			}
+		}
+		if (results.isEmpty()) {
+			return new Object[0];
 		}
 		return componentTypeAccurate ? results.toArray((Object[]) Array.newInstance(componentType, results.size())) : results.toArray();
 	}
@@ -332,6 +336,10 @@ public class ScriptMethods {
 		finally {
 			input.close();
 		}
+	}
+	
+	public static Object value(Object existing, Object defaultValue) {
+		return existing == null ? defaultValue : existing;
 	}
 	
 	@SuppressWarnings("unchecked")

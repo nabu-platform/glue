@@ -51,7 +51,8 @@ public class GlueParser implements Parser {
 		String line = null;
 		int lineNumber = -1;
 		Stack<ExecutorGroup> executorGroups = new Stack<ExecutorGroup>();
-		StringBuilder rootComment = new StringBuilder();
+		StringBuilder lineComment = new StringBuilder();
+		StringBuilder lineDescription = new StringBuilder();
 		boolean codeHasBegun = false;
 		PushbackContainer<CharBuffer> pushback = IOUtils.pushback(container);
 		// note that how the parsing is done now, you can NOT set annotations on the first line!
@@ -65,12 +66,20 @@ public class GlueParser implements Parser {
 					continue;
 				}
 				else if (line.trim().startsWith("#")) {
-					// if there is no code yet, this is assumed to the a comment block for the root, this allows you to add a description of the script
-					if (!codeHasBegun) {
-						if (!rootComment.toString().isEmpty()) {
-							rootComment.append(System.getProperty("line.separator"));
+					String comment = line.trim().substring(1);
+					// double hashtags indicate a description
+					if (comment.startsWith("#")) {
+						if (!lineDescription.toString().isEmpty()) {
+							lineDescription.append(System.getProperty("line.separator"));
 						}
-						rootComment.append(line.trim().substring(1).trim());
+						lineDescription.append(comment.substring(1).trim());
+					}
+					// if there is no code yet, this is assumed to the a comment block for the root, this allows you to add a description of the script
+					else {
+						if (!lineComment.toString().isEmpty()) {
+							lineComment.append(System.getProperty("line.separator"));
+						}
+						lineComment.append(comment.trim());
 					}
 					continue;
 				}
@@ -88,8 +97,11 @@ public class GlueParser implements Parser {
 					executorGroups.pop();
 				}
 				if (!codeHasBegun) {
-					executorGroups.push(new SequenceExecutor(null, new SimpleExecutorContext(lineNumber, null, rootComment.toString().isEmpty() ? null : rootComment.toString(), null, annotations), null));
+					executorGroups.push(new SequenceExecutor(null, new SimpleExecutorContext(lineNumber, null, lineComment.toString().isEmpty() ? null : lineComment.toString(), lineDescription.toString().isEmpty() ? null : lineDescription.toString(), null, annotations), null));
 					annotations.clear();
+					// clear the initial comment/description so it doesn't end up on the first line
+					lineComment = new StringBuilder();
+					lineDescription = new StringBuilder();
 				}
 				codeHasBegun = true;
 				line = line.trim();
@@ -106,7 +118,21 @@ public class GlueParser implements Parser {
 						line = line.substring(0, index - 1) + line.substring(index);
 					}
 					else {
-						comment = line.substring(index + 1).trim();
+						comment = line.substring(index + 1);
+						// double hashtags indicate a description
+						if (comment.startsWith("#")) {
+							if (!lineDescription.toString().isEmpty()) {
+								lineDescription.append(System.getProperty("line.separator"));
+							}
+							lineDescription.append(comment.substring(1).trim());
+						}
+						// if there is no code yet, this is assumed to the a comment block for the root, this allows you to add a description of the script
+						else {
+							if (!lineComment.toString().isEmpty()) {
+								lineComment.append(System.getProperty("line.separator"));
+							}
+							lineComment.append(comment.trim());
+						}
 						line = line.substring(0, index).trim();
 					}
 				}
@@ -118,7 +144,10 @@ public class GlueParser implements Parser {
 						line = line.substring(index + 1).trim();
 					}
 				}
-				SimpleExecutorContext context = new SimpleExecutorContext(lineNumber, label, comment, line, annotations);
+				SimpleExecutorContext context = new SimpleExecutorContext(lineNumber, label, lineComment.toString().isEmpty() ? null : lineComment.toString(), lineDescription.toString().isEmpty() ? null : lineDescription.toString(), line, annotations);
+				// clear it for the next comment/description
+				lineComment = new StringBuilder();
+				lineDescription = new StringBuilder();
 				annotations.clear();
 				if (line.matches("^if[\\s]*\\(.*\\)$")) {
 					line = line.replaceAll("^if[\\s]*\\((.*)\\)$", "$1");
@@ -189,10 +218,29 @@ public class GlueParser implements Parser {
 							index = nextLine.indexOf('#');
 							if (index >= 0) {
 								comment = nextLine.substring(index + 1).trim();
+								if (comment.startsWith("#")) {
+									comment = comment.substring(1).trim();
+									if (context.getDescription() == null) {
+										context.setDescription(comment);
+									}
+									else {
+										context.setDescription(context.getDescription() + System.getProperty("line.separator") + comment);
+									}
+								}
+								else {
+									if (context.getComment() == null) {
+										context.setComment(comment.trim());
+									}
+									else {
+										context.setComment(context.getComment() + System.getProperty("line.separator") + comment.trim());
+									}
+								}
 								nextLine = nextLine.substring(0, index).trim();
 							}
 							// append with one space, removing other whitespace
 							line += " " + nextLine.trim();
+							// up the line number so it matches
+							lineNumber++;
 						}
 						else {
 							pushback.pushback(IOUtils.wrap(nextLine + "\n"));

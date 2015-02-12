@@ -34,7 +34,10 @@ public class FileMethods {
 	 */
 	public static InputStream read(String fileName) throws IOException {
 		Resource resource = resolve(fileName);
-		if (!(resource instanceof ReadableResource)) {
+		if (resource == null) {
+			return null;
+		}
+		else if (!(resource instanceof ReadableResource)) {
 			throw new IOException("Can not read from: " + fileName);
 		}
 		return IOUtils.toInputStream(((ReadableResource) resource).getReadable());

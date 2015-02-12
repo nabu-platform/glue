@@ -5,9 +5,9 @@ map = map(			"field1", 			"field2", 			"field3",
 		tuple(		"d",				"e",				"f"		)
 	)
 test = map[0]
-confirm("Non array access to first record, second field", "b", test/field2)
-confirm("Array access to first record, second field", "b", map[0]/field2)
-confirm("Access to last record, third field", "f", map[3]/field3)
+confirmEquals("Non array access to first record, second field", "b", test/field2)
+confirmEquals("Array access to first record, second field", "b", map[0]/field2)
+confirmEquals("Access to last record, third field", "f", map[3]/field3)
 
 for (record : map)
 	switch($index)
@@ -19,5 +19,5 @@ for (record : map)
 			expected = "d"
 		case (3)
 			expected = "e"
-	confirm("Checking field 1 of " + $index, expected, record/field2)
-	confirm("Checking field 1 of " + $index, expected, map[$index]/field2)  
+	confirmEquals("Checking field 1 of " + $index, expected, record/field2)
+	confirmEquals("Checking field 1 of " + $index, expected, map[$index]/field2)  

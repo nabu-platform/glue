@@ -1,17 +1,13 @@
 package be.nabu.glue.impl.methods;
 
+import java.util.Date;
 import java.util.List;
 
-import be.nabu.glue.api.ExecutorContext;
+import be.nabu.glue.api.Executor;
 import be.nabu.glue.api.Script;
+import be.nabu.glue.api.runs.Validation;
 
-public class Validation {
-	
-	public enum Level {
-		INFO,
-		WARN,
-		ERROR
-	}
+public class ValidationImpl implements Validation {
 	
 	/**
 	 * The level of this validation
@@ -30,40 +26,54 @@ public class Validation {
 	 */
 	private List<Script> callStack;
 	/**
-	 * The context of the executor (which line etc)
+	 * When the validation occurred
 	 */
-	private ExecutorContext context;
+	private Date timestamp = new Date();
+	/**
+	 * The executor
+	 */
+	private Executor executor;
 	
-	public Validation(Level level, String validation, String message, List<Script> callStack, ExecutorContext context) {
+	public ValidationImpl(Level level, String validation, String message, List<Script> callStack, Executor executor) {
 		this.level = level;
 		this.validation = validation;
 		this.message = message;
 		this.callStack = callStack;
-		this.context = context;
+		this.executor = executor;
 	}
 
+	@Override
 	public Level getLevel() {
 		return level;
 	}
 
+	@Override
 	public String getValidation() {
 		return validation;
 	}
 
+	@Override
 	public String getMessage() {
 		return message;
 	}
 
+	@Override
 	public List<Script> getCallStack() {
 		return callStack;
 	}
 
-	public ExecutorContext getContext() {
-		return context;
-	}
-	
 	@Override
 	public String toString() {
 		return "[" + getLevel() + "] " + getMessage() + ": " + getValidation();
+	}
+
+	@Override
+	public Executor getExecutor() {
+		return executor;
+	}
+
+	@Override
+	public Date getTimestamp() {
+		return timestamp;
 	}
 }

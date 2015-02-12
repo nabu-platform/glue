@@ -3,6 +3,7 @@ package be.nabu.glue;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.lang.Thread.State;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -23,8 +24,9 @@ import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.impl.EnvironmentLabelEvaluator;
 import be.nabu.glue.impl.SimpleExecutionEnvironment;
+import be.nabu.glue.impl.formatters.MarkdownOutputFormatter;
 import be.nabu.glue.impl.methods.TestMethods;
-import be.nabu.glue.impl.methods.Validation;
+import be.nabu.glue.impl.methods.ValidationImpl;
 import be.nabu.glue.impl.operations.GlueOperationProvider;
 import be.nabu.glue.impl.parsers.GlueParserProvider;
 import be.nabu.glue.impl.providers.ScriptMethodProvider;
@@ -47,6 +49,7 @@ public class Main {
 		boolean trace = new Boolean(getArgument("trace", "false", arguments));
 		boolean duration = new Boolean(getArgument("duration", "false", arguments));
 		boolean printReport = new Boolean(getArgument("report", "false", arguments));
+		boolean useMarkdown = new Boolean(getArgument("markdown", "false", arguments));
 		debug |= trace;
 		MultipleRepository repository = new MultipleRepository(null);
 		for (String path : getArgument("path", System.getenv("PATH"), arguments).split(System.getProperty("path.separator", ":"))) {
@@ -152,6 +155,9 @@ public class Main {
 				parameters
 			);
 			runtime.setTrace(trace);
+			if (useMarkdown) {
+				runtime.setFormatter(new MarkdownOutputFormatter(new OutputStreamWriter(System.out)));
+			}
 			
 			// this is the field the label is checked against in your environment list
 			runtime.setLabelEvaluator(new EnvironmentLabelEvaluator(label));
@@ -255,9 +261,9 @@ public class Main {
 				System.out.println("Executed in " + (runtime.getDuration() / 1000d) + "s");
 			}
 			if (printReport) {
-				List<Validation> messages = (List<Validation>) runtime.getContext().get(TestMethods.VALIDATION);
+				List<ValidationImpl> messages = (List<ValidationImpl>) runtime.getContext().get(TestMethods.VALIDATION);
 				if (messages != null && !messages.isEmpty()) {
-					for (Validation message : messages) {
+					for (ValidationImpl message : messages) {
 						 System.out.println(message);
 					}
 				}

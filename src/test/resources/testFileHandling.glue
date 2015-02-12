@@ -1,1 +1,1 @@
-confirm("Must find content", string(read("classpath:/package.glue")) != null)
+confirmNotNull("Must find content", string(read("classpath:/package.glue")))

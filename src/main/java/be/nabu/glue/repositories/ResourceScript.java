@@ -13,6 +13,7 @@ import be.nabu.libs.resources.api.ReadableResource;
 import be.nabu.utils.io.IOUtils;
 
 public class ResourceScript implements Script {
+	
 	private ResourceScriptRepository repository;
 	private ExecutorGroup root;
 	private String name;
@@ -85,5 +86,9 @@ public class ResourceScript implements Script {
 
 	public void setRoot(ExecutorGroup root) {
 		this.root = root;
+	}
+	
+	public ReadableResource getResource() {
+		return resource;
 	}
 }

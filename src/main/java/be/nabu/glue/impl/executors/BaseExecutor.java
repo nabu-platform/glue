@@ -37,6 +37,9 @@ abstract public class BaseExecutor implements Executor {
 
 	@Override
 	public boolean shouldExecute(ExecutionContext context) throws ExecutionException {
+		if (getContext().getAnnotations().containsKey("disabled")) {
+			return false;
+		}
 		boolean shouldExecute = true;
 		if (getContext().getLabel() != null) {
 			shouldExecute = context.getLabelEvaluator() != null

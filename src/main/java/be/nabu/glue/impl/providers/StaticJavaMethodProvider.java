@@ -70,7 +70,7 @@ public class StaticJavaMethodProvider implements MethodProvider {
 					if (!Void.class.isAssignableFrom(method.getReturnType())) {
 						returnValues.add(new SimpleParameterDescription(null, null, method.getReturnType().getName()));
 					}
-					descriptions.add(new SimpleMethodDescription(method.getName(), null, parameters, returnValues));
+					descriptions.add(new SimpleMethodDescription(method.getDeclaringClass().getSimpleName(), method.getName(), null, parameters, returnValues));
 				}
 			}
 		}

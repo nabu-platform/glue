@@ -123,6 +123,29 @@ It is possible to set annotations on lines. Currently the annotations do not hav
 myVar = "test"
 ```
 
+### Used annotations
+
+#### Disabled
+
+Some annotations are already in use by the application, for example you can set:
+
+```
+@disabled
+doSomething()
+```
+
+Which actually disables that line so it is not executed if you run the script
+
+#### Breakpoint
+
+You can set a breakpoint on any line and the execution will halt before that line **if** you are in trace mode.
+In trace mode there is also the option of (temporarily) turning this breakpoint off or ignoring all breakpoints.
+
+```
+@breakpoint
+doSomething()
+```
+
 ### Script annotations
 
 All annotations before the **first line of code** are interpreted as script level annotations. These can be things like "@deprecated" or "@tag" which can later be used to group scripts by descriptive tags.

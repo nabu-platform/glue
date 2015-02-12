@@ -1,12 +1,12 @@
 test = array(tuple("a", "b"), tuple("b", "c"), tuple("c", "d"))
 result = first(test[$0 == "b"]/$1)
-confirm("Selected the second tuple", "c", result)
+confirmEquals("Selected the second tuple", "c", result)
 
 single = first(array(tuple("a", "b")))
-confirm("Check indexed access", "a", single[0])
-confirm("Identifiable tuple", tuple("a", "b"), single)
-confirm("Check pseudo access", "a", single/$0)
+confirmEquals("Check indexed access", "a", single[0])
+confirmEquals("Identifiable tuple", tuple("a", "b"), single)
+confirmEquals("Check pseudo access", "a", single/$0)
 
 index = 1
-confirm("Check indexed access", "b", single[index])
-confirm("Check indexed access", "b", test[0][index])
+confirmEquals("Check indexed access", "b", single[index])
+confirmEquals("Check indexed access", "b", test[0][index])

@@ -52,7 +52,7 @@ public class ScriptMethodProvider implements MethodProvider {
 		List<MethodDescription> descriptions = new ArrayList<MethodDescription>();
 		for (Script script : repository) {
 			try {
-				descriptions.add(new SimpleMethodDescription(script.getName(), script.getRoot().getContext().getComment(), ScriptUtils.getInputs(script), ScriptUtils.getOutputs(script)));
+				descriptions.add(new SimpleMethodDescription(null, script.getName(), script.getRoot().getContext().getComment(), ScriptUtils.getInputs(script), ScriptUtils.getOutputs(script)));
 			}
 			catch (IOException e) {
 				// ignore

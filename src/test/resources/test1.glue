@@ -5,8 +5,8 @@
 testAlex = test2()
 testJohn = test2("john")
 
-validate("Should be alex", testAlex/isAlexForSure)
-validate("Should not be john", not(testAlex/isJohnForSure))
+validateTrue("Should be alex", testAlex/isAlexForSure)
+validateTrue("Should not be john", not(testAlex/isJohnForSure))
 
-validate("Should be john", testJohn/isJohnForSure)
-validate("Should not be alex", not(testJohn/isAlexForSure))
+validateTrue("Should be john", testJohn/isJohnForSure)
+validateTrue("Should not be alex", not(testJohn/isAlexForSure))
