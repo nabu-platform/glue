@@ -20,11 +20,7 @@ public class GlueFormatter implements Formatter {
 	@Override
 	public void format(ExecutorGroup group, Writer writer) throws IOException {
 		PrintWriter printer = new PrintWriter(writer);
-		if (group.getContext().getComment() != null) {
-			for (String comment : group.getContext().getComment().split("[\n]+")) {
-				printer.println("# " + comment.trim());
-			}
-		}
+		printComments(group, printer, 0);
 		printAnnotations(group, printer, 0);
 		format(group, printer, 0);
 		printer.flush();
@@ -42,12 +38,28 @@ public class GlueFormatter implements Formatter {
 		}
 	}
 	
+	private void printComments(Executor executor, PrintWriter printer, int depth) throws IOException {
+		if (executor.getContext().getComment() != null) {
+			for (String comment : executor.getContext().getComment().split("[\n]+")) {
+				pad(printer, depth);
+				printer.println("# " + comment.trim());
+			}
+		}
+		if (executor.getContext().getDescription() != null) {
+			for (String description : executor.getContext().getDescription().split("[\n]+")) {
+				pad(printer, depth);
+				printer.println("## " + description.trim());
+			}
+		}
+	}
+	
 	private void format(ExecutorGroup group, PrintWriter writer, int depth) throws IOException {
 		for (Executor executor : group.getChildren()) {
 			// before each group, add a line feed
 			if (executor instanceof ExecutorGroup) {
 				writer.println();
 			}
+			printComments(executor, writer, depth);
 			printAnnotations(executor, writer, depth);
 			pad(writer, depth);
 			if (executor.getContext().getLabel() != null) {
@@ -64,13 +76,7 @@ public class GlueFormatter implements Formatter {
 						writer.print(" ?= ");
 					}
 				}
-				writer.print(evaluateExecutor.getOperation());
-				if (executor.getContext().getComment() != null) {
-					writer.println(" # " + executor.getContext().getComment());
-				}
-				else {
-					writer.println();
-				}
+				writer.println(evaluateExecutor.getOperation());
 			}
 			else if (executor instanceof ForEachExecutor) {
 				ForEachExecutor forEachExecutor = (ForEachExecutor) executor;
@@ -113,13 +119,7 @@ public class GlueFormatter implements Formatter {
 					format(sequenceExecutor, writer, depth + 1);
 				}
 				else {
-					writer.print("sequence");
-					if (executor.getContext().getComment() != null) {
-						writer.println(" # " + executor.getContext().getComment());
-					}
-					else {
-						writer.println();
-					}
+					writer.println("sequence");
 					format(sequenceExecutor, writer, depth + 1);
 				}
 			}

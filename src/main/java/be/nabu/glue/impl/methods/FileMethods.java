@@ -207,8 +207,8 @@ public class FileMethods {
 			// if it's not absolute, make it so
 			else if (!fileName.startsWith("/")) {
 				File file = new File(".");
-				String path = file.getCanonicalPath();
-				if (fileName.matches("^[\\w]{1}:.*")) {
+				String path = file.getCanonicalPath().replace('\\', '/');
+				if (path.matches("^[\\w]{1}:.*")) {
 					path = "/" + path;
 				}
 				if (!path.startsWith("/")) {
