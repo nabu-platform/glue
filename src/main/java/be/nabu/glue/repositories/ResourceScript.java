@@ -4,13 +4,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.text.ParseException;
+import java.util.Date;
 
 import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ResourceScriptRepository;
 import be.nabu.glue.api.Script;
 import be.nabu.libs.resources.api.ReadableResource;
+import be.nabu.libs.resources.api.TimestampedResource;
 import be.nabu.utils.io.IOUtils;
+import be.nabu.utils.io.api.ByteBuffer;
+import be.nabu.utils.io.api.ReadableContainer;
 
 public class ResourceScript implements Script {
 	
@@ -21,6 +25,7 @@ public class ResourceScript implements Script {
 	private Parser parser;
 	private Charset charset;
 	private ReadableResource resource;
+	private Date lastModified;
 
 	ResourceScript(ResourceScriptRepository repository, Charset charset, String namespace, String name, ReadableResource resource, Parser parser) {
 		this.repository = repository;
@@ -29,6 +34,9 @@ public class ResourceScript implements Script {
 		this.name = name;
 		this.resource = resource;
 		this.parser = parser;
+		if (resource instanceof TimestampedResource) {
+			lastModified = ((TimestampedResource) resource).getLastModified();
+		}
 	}
 
 	@Override
@@ -50,7 +58,13 @@ public class ResourceScript implements Script {
 	@Override
 	public ExecutorGroup getRoot() throws IOException, ParseException {
 		if (root == null) {
-			root = getParser().parse(IOUtils.toReader(IOUtils.wrapReadable(resource.getReadable(), charset)));
+			ReadableContainer<ByteBuffer> readable = resource.getReadable();
+			try {
+				root = getParser().parse(IOUtils.toReader(IOUtils.wrapReadable(readable, charset)));
+			}
+			finally {
+				readable.close();
+			}
 		}
 		return root;
 	}
@@ -90,5 +104,17 @@ public class ResourceScript implements Script {
 	
 	public ReadableResource getResource() {
 		return resource;
+	}
+	
+	public boolean refresh() {
+		if (resource instanceof TimestampedResource) {
+			Date newLastModified = ((TimestampedResource) resource).getLastModified();
+			if (newLastModified.after(lastModified)) {
+				root = null;
+				lastModified = newLastModified;
+				return true;
+			}
+		}
+		return false;
 	}
 }

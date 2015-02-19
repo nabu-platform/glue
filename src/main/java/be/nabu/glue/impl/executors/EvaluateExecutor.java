@@ -54,6 +54,10 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 	public boolean isOverwriteIfExists() {
 		return overwriteIfExists;
 	}
+	
+	public void setOverwriteIfExists(boolean overwriteIfExists) {
+		this.overwriteIfExists = overwriteIfExists;
+	}
 
 	@Override
 	public String getVariableName() {

@@ -27,25 +27,27 @@ public class GlueFormatter implements Formatter {
 	}
 
 	private void printAnnotations(Executor executor, PrintWriter writer, int depth) throws IOException {
-		for (String key : executor.getContext().getAnnotations().keySet()) {
-			pad(writer, depth);
-			writer.print("@" + key);
-			String value = executor.getContext().getAnnotations().get(key);
-			if (value != null && !value.equalsIgnoreCase("true")) {
-				writer.print(" = " + value);
+		if (executor.getContext() != null) {
+			for (String key : executor.getContext().getAnnotations().keySet()) {
+				pad(writer, depth);
+				writer.print("@" + key);
+				String value = executor.getContext().getAnnotations().get(key);
+				if (value != null && !value.equalsIgnoreCase("true")) {
+					writer.print(" = " + value);
+				}
+				writer.println();
 			}
-			writer.println();
 		}
 	}
 	
 	private void printComments(Executor executor, PrintWriter printer, int depth) throws IOException {
-		if (executor.getContext().getComment() != null) {
+		if (executor.getContext() != null && executor.getContext().getComment() != null) {
 			for (String comment : executor.getContext().getComment().split("[\n]+")) {
 				pad(printer, depth);
 				printer.println("# " + comment.trim());
 			}
 		}
-		if (executor.getContext().getDescription() != null) {
+		if (executor.getContext() != null && executor.getContext().getDescription() != null) {
 			for (String description : executor.getContext().getDescription().split("[\n]+")) {
 				pad(printer, depth);
 				printer.println("## " + description.trim());
@@ -62,7 +64,7 @@ public class GlueFormatter implements Formatter {
 			printComments(executor, writer, depth);
 			printAnnotations(executor, writer, depth);
 			pad(writer, depth);
-			if (executor.getContext().getLabel() != null) {
+			if (executor.getContext() != null && executor.getContext().getLabel() != null) {
 				writer.print(executor.getContext().getLabel() + ": ");
 			}
 			if (executor instanceof EvaluateExecutor) {

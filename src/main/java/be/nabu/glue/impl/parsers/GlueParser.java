@@ -276,7 +276,7 @@ public class GlueParser implements Parser {
 	}
 
 	public Operation<ExecutionContext> analyze(String line) throws ParseException {
-		return analyzer.analyze(GlueQueryParser.getInstance().parse(line));
+		return line == null || line.isEmpty() ? null : analyzer.analyze(GlueQueryParser.getInstance().parse(line));
 	}
 	
 	private int getDepth(String line) {
