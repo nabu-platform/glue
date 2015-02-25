@@ -41,9 +41,13 @@ if (environment("runtime.path") != null && includePath == true)
 	commands = array(commands, "charset=" + environment("runtime.path"))
 
 # Add the actual java command to the bash/bat files
-bash = array(bash, "java -cp $CLASSPATH be.nabu.glue.Main " + join(" ", commands) + " \"$@\"")
-cygwin = array(cygwin, "java -cp $CLASSPATH be.nabu.glue.Main " + join(" ", commands) + " \"$@\"")
-bat = array(bat, "java -cp %CLASSPATH% be.nabu.glue.Main " + join(" ", commands) + " %*")
+gbash = array(bash, "java -cp $CLASSPATH be.nabu.glue.Main " + join(" ", commands) + " \"$@\"")
+gcygwin = array(cygwin, "java -cp $CLASSPATH be.nabu.glue.Main " + join(" ", commands) + " \"$@\"")
+gbat = array(bat, "java -cp %CLASSPATH% be.nabu.glue.Main " + join(" ", commands) + " %*")
+
+tbash = array(bash, "java -cp $CLASSPATH be.nabu.glue.Runner " + join(" ", commands) + " \"$@\"")
+tcygwin = array(cygwin, "java -cp $CLASSPATH be.nabu.glue.Runner " + join(" ", commands) + " \"$@\"")
+tbat = array(bat, "java -cp %CLASSPATH% be.nabu.glue.Runner " + join(" ", commands) + " %*")
 
 # Check if there is a configuration file for glue
 switch
@@ -53,7 +57,7 @@ switch
 		configuration = environment("user.home") + "/.glue"
 
 # Create the zip
-zip = zip(array(files, configuration, "glue.sh=" + join("\n", bash), "glue.bat=" + join("\r\n", bat), "glue.cyg=" + join("\n", cygwin)))
+zip = zip(array(files, configuration, "glue.sh=" + join("\n", gbash), "glue.bat=" + join("\r\n", gbat), "glue.cyg=" + join("\n", gcygwin), "gluet.sh=" + join("\n", tbash), "gluet.bat=" + join("\r\n", tbat), "gluet.cyg=" + join("\n", tcygwin)))
 
 # Write it to the given filename
 write(targetFileName, zip)
