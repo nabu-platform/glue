@@ -265,7 +265,7 @@ public class GlueParser implements Parser {
 			}
 		}
 		catch (ParseException e) {
-			throw new ParseException("Could not parse line " + (lineNumber + 1) + " [" + e.getMessage() + "]: " + line, lineNumber);
+			throw new ParseException("Could not parse line " + (lineNumber + 1) + " [" + line + "]: " + e.getMessage(), lineNumber);
 		}
 		// there can be multiple elements on the stack at the end if you stopped the script in for example an "if" element
 		ExecutorGroup root = null;

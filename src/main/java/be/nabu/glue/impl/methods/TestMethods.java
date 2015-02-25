@@ -17,46 +17,61 @@ public class TestMethods {
 	
 	public static final String VALIDATION = "$validation";
 	
-	public static void confirmNotNull(String message, Object result) throws IOException {
-		check(message, result != null, stringify(result), true);
+	public static boolean confirmNotNull(String message, Object result) throws IOException {
+		return check(message, result != null, stringify(result), true);
 	}
 	
-	public static void confirmNull(String message, Object result) throws IOException {
-		check(message, result == null, stringify(result), true);
+	public static boolean confirmNull(String message, Object result) throws IOException {
+		return check(message, result == null, stringify(result), true);
 	}
 	
-	public static void confirmTrue(String message, Boolean result) throws IOException {
-		check(message, result, getCheck(), true);
+	public static boolean confirmTrue(String message, Boolean result) throws IOException {
+		return check(message, result, getCheck(), true);
 	}
 	
-	public static void confirmFalse(String message, Boolean result) throws IOException {
-		check(message, !result, getCheck(), true);
+	public static boolean confirmFalse(String message, Boolean result) throws IOException {
+		return check(message, !result, getCheck(), true);
 	}
 	
-	public static void confirmMatches(String message, String regex, Object actual) throws IOException {
-		checkMatches(message, regex, actual, true);
+	public static boolean confirmMatches(String message, String regex, Object actual) throws IOException {
+		return checkMatches(message, regex, actual, true);
 	}
 
-	private static void checkMatches(String message, String regex, Object actual, boolean fail) {
+	private static boolean checkNotMatches(String message, String regex, Object actual, boolean fail) {
 		if (actual == null) {
-			check(message, false, "null !~ " + regex, true);
+			return check(message, false, "null ~ " + regex, true);
 		}
 		else {
 			String converted = ConverterFactory.getInstance().getConverter().convert(actual, String.class);
 			if (converted == null) {
-				check(message, false, stringify(actual) + " !~ " + regex + " (incompatible types)", fail);
+				return check(message, false, stringify(actual) + " ~ " + regex + " (incompatible types)", fail);
 			}
 			else {
-				check(message, converted.matches(regex), converted + " ~ " + regex, fail);
+				return check(message, converted.matches(regex), converted + " !~ " + regex, fail);
 			}
 		}
 	}
 	
-	public static void confirmEquals(String message, Object expected, Object actual) throws IOException {
-		checkEquals(message, expected, actual, true);
+	private static boolean checkMatches(String message, String regex, Object actual, boolean fail) {
+		if (actual == null) {
+			return check(message, false, "null !~ " + regex, true);
+		}
+		else {
+			String converted = ConverterFactory.getInstance().getConverter().convert(actual, String.class);
+			if (converted == null) {
+				return check(message, false, stringify(actual) + " !~ " + regex + " (incompatible types)", fail);
+			}
+			else {
+				return check(message, converted.matches(regex), converted + " ~ " + regex, fail);
+			}
+		}
+	}
+	
+	public static boolean confirmEquals(String message, Object expected, Object actual) throws IOException {
+		return checkEquals(message, expected, actual, true);
 	}
 
-	private static void checkEquals(String message, Object expected, Object actual, boolean fail) {
+	private static boolean checkEquals(String message, Object expected, Object actual, boolean fail) {
 		if (expected instanceof Object[]) {
 			expected = Arrays.asList((Object[]) expected);
 		}
@@ -64,11 +79,12 @@ public class TestMethods {
 			actual = Arrays.asList((Object[]) actual);
 		}
 		boolean checked = false;
+		boolean result = false;
 		// need to make sure they are of the same type
 		if (expected != null && actual != null) {
 			Object converted = ConverterFactory.getInstance().getConverter().convert(actual, expected.getClass());
 			if (converted == null) {
-				check(message, false, stringify(expected) + " != " + stringify(actual) + " (incompatible types)", fail);
+				result = check(message, false, stringify(expected) + " != " + stringify(actual) + " (incompatible types)", fail);
 				checked = true;
 			}
 			else {
@@ -76,9 +92,10 @@ public class TestMethods {
 			}
 		}
 		if (!checked) {
-			boolean result = (expected == null && actual == null) || (expected != null && expected.equals(actual));
+			result = (expected == null && actual == null) || (expected != null && expected.equals(actual));
 			check(message, result, result ? stringify(expected) : stringify(expected) + " != " + stringify(actual), fail);
 		}
+		return result;
 	}
 	
 	private static String stringify(Object object) {
@@ -97,28 +114,36 @@ public class TestMethods {
 		}
 	}
 	
-	public static void validateNotNull(String message, Object result) throws IOException {
-		check(message, result != null, stringify(result), false);
+	public static boolean validateNotNull(String message, Object result) throws IOException {
+		return check(message, result != null, stringify(result), false);
 	}
 	
-	public static void validateNull(String message, Object result) throws IOException {
-		check(message, result == null, stringify(result), false);
+	public static boolean validateNull(String message, Object result) throws IOException {
+		return check(message, result == null, stringify(result), false);
 	}
 	
-	public static void validateTrue(String message, Boolean result) throws IOException {
-		check(message, result, getCheck(), false);
+	public static boolean validateTrue(String message, Boolean result) throws IOException {
+		return check(message, result, getCheck(), false);
 	}
 	
-	public static void validateFalse(String message, Boolean result) throws IOException {
-		check(message, !result, getCheck(), false);
+	public static boolean validateFalse(String message, Boolean result) throws IOException {
+		return check(message, !result, getCheck(), false);
 	}
 	
-	public static void validateEquals(String message, Object expected, Object actual) throws IOException {
-		checkEquals(message, expected, actual, false);
+	public static boolean validateEquals(String message, Object expected, Object actual) throws IOException {
+		return checkEquals(message, expected, actual, false);
 	}
 	
-	public static void validateMatches(String message, String regex, Object actual) throws IOException {
-		checkMatches(message, regex, actual, false);
+	public static boolean validateMatches(String message, String regex, Object actual) throws IOException {
+		return checkMatches(message, regex, actual, false);
+	}
+	
+	public static boolean validateNotMatches(String message, String regex, Object actual) throws IOException {
+		return checkNotMatches(message, regex, actual, false);
+	}
+	
+	public static boolean confirmNotMatches(String message, String regex, Object actual) throws IOException {
+		return checkNotMatches(message, regex, actual, true);
 	}
 	
 	public static boolean not(Boolean value) {
@@ -142,7 +167,7 @@ public class TestMethods {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static void check(String message, Boolean result, String check, boolean fail) {
+	public static boolean check(String message, Boolean result, String check, boolean fail) {
 		ScriptRuntime runtime = ScriptRuntime.getRuntime();
 		
 		// build callstack
@@ -170,5 +195,6 @@ public class TestMethods {
 		else {
 			runtime.getFormatter().validated(validation);
 		}
+		return result != null && result;
 	}
 }
