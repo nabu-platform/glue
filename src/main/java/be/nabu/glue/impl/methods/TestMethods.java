@@ -47,7 +47,7 @@ public class TestMethods {
 				return check(message, false, stringify(actual) + " ~ " + regex + " (incompatible types)", fail);
 			}
 			else {
-				return check(message, converted.matches(regex), converted + " !~ " + regex, fail);
+				return check(message, !converted.matches(regex), converted + " !~ " + regex, fail);
 			}
 		}
 	}
