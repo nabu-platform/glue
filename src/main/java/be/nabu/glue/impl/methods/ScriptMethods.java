@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -151,6 +152,9 @@ public class ScriptMethods {
 		if (object == null) {
 			return 0;
 		}
+		else if (object instanceof byte[]) {
+			return ((byte[]) object).length;
+		}
 		else if (object instanceof Object[]) {
 			return ((Object[]) object).length;
 		}
@@ -165,6 +169,45 @@ public class ScriptMethods {
 	
 	public static Collection<?> tuple(Object...objects) {
 		return Arrays.asList(objects);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> kv(Object...objects) {
+		Map<String, Object> map = new LinkedHashMap<String, Object>();
+		if (objects != null) {
+			String lastKey = null;
+			for (Object object : objects) {
+				if (lastKey != null) {
+					map.put(lastKey, object);
+					lastKey = null;
+				}
+				else if (object instanceof String) {
+					lastKey = (String) object;
+				}
+				else if (object instanceof Map) {
+					map.putAll((Map<String, ?>) object);
+				}
+				// if it's an object and there is no key available, it has to be an array or list
+				else if (object instanceof Object[] || object instanceof Collection) {
+					List<Object> elements = object instanceof Object[] ? Arrays.asList((Object[]) object) : new ArrayList<Object>((Collection<Object>) object);
+					if (elements.isEmpty()) {
+						continue;
+					}
+					String key = elements.get(0) == null ? "null" : elements.get(0).toString();
+					if (elements.size() == 2) {
+						map.put(key, elements.get(1));
+					}
+					else {
+						elements.remove(0);
+						map.put(key, elements);
+					}
+				}
+				else {
+					throw new IllegalArgumentException("Incorrect object at this location: " + object);
+				}
+			}
+		}
+		return map;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -266,11 +309,20 @@ public class ScriptMethods {
 			: result;
 	}
 	
+	public static String bytesToString(byte [] bytes, String encoding) throws UnsupportedEncodingException {
+		return new String(bytes, encoding);
+	}
+	
 	public static byte [] bytes(Object object) throws IOException {
-		if (object instanceof String) {
-			InputStream data = getInputStream((String) object);
-			if (data != null) {
-				object = data;
+		if (object instanceof String && !((String) object).contains("\n")) {
+			try {
+				InputStream data = getInputStream((String) object);
+				if (data != null) {
+					object = data;
+				}
+			}
+			catch (IOException e) {
+				// ignore it
 			}
 		}
 		return toBytesAndClose(toStream(object));

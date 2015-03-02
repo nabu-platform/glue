@@ -12,8 +12,10 @@ import java.util.List;
 import javax.xml.bind.JAXBException;
 
 import be.nabu.glue.api.runs.ScriptResult;
+import be.nabu.glue.api.runs.ScriptResultInterpreter;
 import be.nabu.glue.api.runs.ScriptRunner;
 import be.nabu.glue.impl.EnvironmentLabelEvaluator;
+import be.nabu.glue.impl.GlueScriptResultInterpreter;
 import be.nabu.glue.impl.MultithreadedScriptRunner;
 import be.nabu.glue.impl.SimpleExecutionEnvironment;
 import be.nabu.glue.impl.TestCaseFilter;
@@ -39,6 +41,8 @@ public class Runner {
 		String label = getArgument("label", null, arguments);
 		int poolSize = new Integer(getArgument("poolSize", "1", arguments));
 		String resultPath = getArgument("results", new File("results").toURI().toString(), arguments);
+		boolean useNamespaces = Boolean.parseBoolean(getArgument("useNamespaces", "false", arguments));
+		double allowedVariance = Double.parseDouble(getArgument("allowedVariance", "0.4", arguments));
 		
 		SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd/HHmmss");
 		ManageableContainer<?> resultContainer = (ManageableContainer<?>) ResourceUtils.mkdir(new URI(URIUtils.encodeURI(resultPath + "/" + environmentName + "/" + formatter.format(new Date()))), null);
@@ -66,10 +70,11 @@ public class Runner {
 		
 		ScriptRunner runner = new MultithreadedScriptRunner(poolSize);
 		
+		ScriptResultInterpreter interpreter = new GlueScriptResultInterpreter(repository, useNamespaces, allowedVariance);
 		List<ScriptResult> results = runner.run(environment, repository, new TestCaseFilter(), new EnvironmentLabelEvaluator(label));
 		for (ScriptResult result : results) {
 			try {
-				FormattedScriptResult formatted = FormattedScriptResult.format(result);
+				FormattedScriptResult formatted = FormattedScriptResult.format(result, interpreter.interpret(result));
 				WritableResource writable = (WritableResource) resultContainer.create(formatted.getName() + ".xml", "application/xml");
 				WritableContainer<ByteBuffer> output = writable.getWritable();
 				try {
@@ -84,7 +89,7 @@ public class Runner {
 			}
 		}
 		// write dashboard file
-		FormattedDashboard dashboard = FormattedDashboard.format(results.toArray(new ScriptResult[results.size()]));
+		FormattedDashboard dashboard = FormattedDashboard.format(interpreter, results.toArray(new ScriptResult[results.size()]));
 		WritableResource writable = (WritableResource) resultContainer.create("dashboard.xml", "application/xml");
 		WritableContainer<ByteBuffer> output = writable.getWritable();
 		try {

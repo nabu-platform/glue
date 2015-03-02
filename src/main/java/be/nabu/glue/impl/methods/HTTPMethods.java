@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +36,21 @@ public class HTTPMethods {
 		}
 		byte [] response = ScriptMethods.bytes(connection.getInputStream());
 		return new HTTPResult(connection.getResponseCode(), connection.getHeaderFields(), response);
+	}
+	
+	public static String getHTTPResultEncoding(HTTPResult result) {
+		for (String key : result.getHeaders().keySet()) {
+			if (key != null && key.equalsIgnoreCase("Content-Type")) {
+				for (String value : result.getHeaders().get(key)) {
+					for (String part : value.split("[\\s]*;[\\\\s]*")) {
+						if (part.trim().matches("(?i)^charset[\\s]*=(.*)")) {
+							return part.trim().replaceAll("(?i)^charset[\\s]*=(.*)", "$1").trim();
+						}
+					}
+				}
+			}
+		}
+		return Charset.defaultCharset().name();
 	}
 	
 	public static class HTTPResult {

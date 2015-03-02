@@ -268,7 +268,7 @@ public class GlueParser implements Parser {
 			throw new ParseException("Could not parse line " + (lineNumber + 1) + " [" + line + "]: " + e.getMessage(), lineNumber);
 		}
 		// there can be multiple elements on the stack at the end if you stopped the script in for example an "if" element
-		ExecutorGroup root = null;
+		ExecutorGroup root = executorGroups.isEmpty() ? new SequenceExecutor(null, null, null) : null;
 		while (executorGroups.size() > 0) {
 			root = executorGroups.pop();
 		}
