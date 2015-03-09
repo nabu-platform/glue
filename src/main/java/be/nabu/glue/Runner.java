@@ -43,6 +43,8 @@ public class Runner {
 		String resultPath = getArgument("results", new File("results").toURI().toString(), arguments);
 		boolean useNamespaces = Boolean.parseBoolean(getArgument("useNamespaces", "false", arguments));
 		double allowedVariance = Double.parseDouble(getArgument("allowedVariance", "0.4", arguments));
+		// defaults to 5 minutes
+		long maxScriptRuntime = Long.parseLong(getArgument("maxScriptRuntime", "300000", arguments));
 		
 		SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd/HHmmss");
 		ManageableContainer<?> resultContainer = (ManageableContainer<?>) ResourceUtils.mkdir(new URI(URIUtils.encodeURI(resultPath + "/" + environmentName + "/" + formatter.format(new Date()))), null);
@@ -58,19 +60,21 @@ public class Runner {
 				repository.add(new ScannableScriptRepository(repository, container, new GlueParserProvider(), charset));
 			}
 		}
+		Boolean debug = new Boolean(getArgument("debug", "false", arguments));
 		
 		SimpleExecutionEnvironment environment = new SimpleExecutionEnvironment(environmentName);
 		environment.getParameters().put("runtime.label", getArgument("label", null, arguments));
 		environment.getParameters().put("runtime.environment", getArgument("environment", null, arguments));
 		environment.getParameters().put("runtime.charset", getArgument("charset", null, arguments));
-		environment.getParameters().put("runtime.debug", getArgument("debug", null, arguments));
+		environment.getParameters().put("runtime.debug", debug.toString());
 		environment.getParameters().put("runtime.trace", getArgument("trace", null, arguments));
 		environment.getParameters().put("runtime.duration", getArgument("duration", null, arguments));
 		environment.getParameters().put("runtime.path", getArgument("path", null, arguments));
 		
-		ScriptRunner runner = new MultithreadedScriptRunner(poolSize);
+		ScriptRunner runner = new MultithreadedScriptRunner(poolSize, maxScriptRuntime, debug);
 		
 		ScriptResultInterpreter interpreter = new GlueScriptResultInterpreter(repository, useNamespaces, allowedVariance);
+		System.out.println("Starting test suite for environment '" + environment.getName() + "' with " + poolSize + " thread(s)" + (debug ? " in debug mode" : ""));
 		List<ScriptResult> results = runner.run(environment, repository, new TestCaseFilter(), new EnvironmentLabelEvaluator(label));
 		for (ScriptResult result : results) {
 			try {
@@ -88,6 +92,7 @@ public class Runner {
 				e.printStackTrace();
 			}
 		}
+		System.out.println("Creating results for environment '" + environment.getName() + "'");
 		// write dashboard file
 		FormattedDashboard dashboard = FormattedDashboard.format(interpreter, results.toArray(new ScriptResult[results.size()]));
 		WritableResource writable = (WritableResource) resultContainer.create("dashboard.xml", "application/xml");

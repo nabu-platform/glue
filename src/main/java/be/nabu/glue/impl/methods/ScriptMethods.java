@@ -239,7 +239,7 @@ public class ScriptMethods {
 				}
 				int i = 0;
 				for (String key : keys) {
-					result.put(key, elements.get(i++));
+					result.put(key, elements.size() > i ? elements.get(i++) : null);
 				}
 				maps.add(result);
 			}
@@ -314,7 +314,7 @@ public class ScriptMethods {
 	}
 	
 	public static byte [] bytes(Object object) throws IOException {
-		if (object instanceof String && !((String) object).contains("\n")) {
+		if (object instanceof String && ((String) object).matches("^[^\n<>]+$")) {
 			try {
 				InputStream data = getInputStream((String) object);
 				if (data != null) {

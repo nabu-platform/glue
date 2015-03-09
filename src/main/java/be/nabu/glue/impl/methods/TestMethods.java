@@ -8,6 +8,7 @@ import java.util.List;
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.Script;
+import be.nabu.glue.api.runs.AssertionException;
 import be.nabu.glue.api.runs.Validation.Level;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.libs.converter.ConverterFactory;
@@ -190,7 +191,7 @@ public class TestMethods {
 		
 		// stop if necessary
 		if (level == Level.ERROR && fail) {
-			throw new AssertionError(validation.toString());
+			throw new AssertionException(validation.toString());
 		}
 		else {
 			runtime.getFormatter().validated(validation);
