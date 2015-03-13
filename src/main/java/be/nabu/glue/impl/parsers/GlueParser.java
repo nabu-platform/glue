@@ -9,16 +9,18 @@ import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.api.Parser;
 import be.nabu.glue.impl.GlueQueryParser;
 import be.nabu.glue.impl.SimpleExecutorContext;
+import be.nabu.glue.impl.executors.BreakExecutor;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.glue.impl.executors.ForEachExecutor;
 import be.nabu.glue.impl.executors.SequenceExecutor;
 import be.nabu.glue.impl.executors.SwitchExecutor;
+import be.nabu.libs.converter.ConverterFactory;
+import be.nabu.libs.converter.api.Converter;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.PathAnalyzer;
 import be.nabu.libs.evaluator.api.Analyzer;
@@ -174,6 +176,11 @@ public class GlueParser implements Parser {
 					executorGroups.peek().getChildren().add(forEachExecutor);
 					executorGroups.push(forEachExecutor);
 				}
+				else if (line.matches("^break[\\s]*[0-9]+$") || line.equals("break")) {
+					int breakCount =  line.matches("^break[\\s]*[0-9]+$") ? Integer.parseInt(line.replaceAll("^break[\\s]*([0-9]+)$", "$1")) : 1; 
+					BreakExecutor breakExecutor = new BreakExecutor(executorGroups.peek(), context, null, breakCount);
+					executorGroups.peek().getChildren().add(breakExecutor);
+				}
 				else if (line.matches("^switch[\\s]*\\(.*\\)$") || line.equals("switch")) {
 					variableName = "$value";
 					Operation<ExecutionContext> operation = null;
@@ -293,21 +300,27 @@ public class GlueParser implements Parser {
 	}
 
 	@Override
-	public String substitute(String value, ExecutionContext context) {
+	public String substitute(String value, ExecutionContext context, boolean allowNull) {
 		Pattern pattern = Pattern.compile("(?<!\\\\)\\$\\{([^}]+)\\}");
 		Matcher matcher = pattern.matcher(value);
 		try {
-			ScriptRuntime runtime = ScriptRuntime.getRuntime();
+			Converter converter = ConverterFactory.getInstance().getConverter();
 			while (matcher.find()) {
 				String query = matcher.group().replaceAll(pattern.pattern(), "$1");
 				Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(query));
-				String result = runtime.getConverter().convert(operation.evaluate(context), String.class);
-				// don't allow empty results, they are likely due to an oversight
-				// if you really need an empty string, you can still force it
-				if (result == null) {
+				Object evaluatedResult = operation.evaluate(context);
+				if (!allowNull && evaluatedResult == null) {
 					throw new IllegalArgumentException("Can not replace the query " + query);
 				}
-				value = value.replaceAll(Pattern.quote(matcher.group()), Matcher.quoteReplacement(result));
+				String result = converter.convert(evaluatedResult, String.class);
+				if (result == null && evaluatedResult != null) {
+					throw new RuntimeException("Can not convert the result of the query to string: " + query);
+				}
+				// don't allow empty results, they are likely due to an oversight
+				// if you really need an empty string, you can still force it
+				if (result != null) {
+					value = value.replaceAll(Pattern.quote(matcher.group()), Matcher.quoteReplacement(result));
+				}
 			}
 			return value.replaceAll("\\\\(\\$\\{[^}]+\\})", "$1");
 		}

@@ -9,6 +9,7 @@ import java.util.UnknownFormatConversionException;
 import be.nabu.glue.api.Executor;
 import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.api.Formatter;
+import be.nabu.glue.impl.executors.BreakExecutor;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.glue.impl.executors.ForEachExecutor;
 import be.nabu.glue.impl.executors.SequenceExecutor;
@@ -88,6 +89,15 @@ public class GlueFormatter implements Formatter {
 				}
 				writer.println(forEachExecutor.getForEach() + ")");
 				format(forEachExecutor, writer, depth + 1);
+			}
+			else if (executor instanceof BreakExecutor) {
+				BreakExecutor breakExecutor = (BreakExecutor) executor;
+				if (breakExecutor.getBreakCount() > 1) {
+					writer.println("break " + breakExecutor.getBreakCount());
+				}
+				else {
+					writer.println("break");
+				}
 			}
 			else if (executor instanceof SwitchExecutor) {
 				SwitchExecutor switchExecutor = (SwitchExecutor) executor;

@@ -10,9 +10,12 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import be.nabu.glue.ScriptRuntime;
+import be.nabu.glue.annotations.GlueMethod;
+import be.nabu.glue.annotations.GlueParam;
 import be.nabu.libs.resources.ResourceFactory;
 import be.nabu.libs.resources.ResourceUtils;
 import be.nabu.libs.resources.URIUtils;
@@ -237,7 +240,8 @@ public class FileMethods {
 	 * 		<filename>=<content>
 	 * They are differentiated by a best effort
 	 */
-	public static byte [] zip(String...fileNames) throws IOException {
+	@GlueMethod(description = "This method will zip all the given files", returns = "The bytes representing the zip file")
+	public static byte [] zip(@GlueParam(name = "fileNames", description = "You can pass in actual filenames e.g. 'test.txt' or mapped filenames e.g. 'other.txt=test.txt' or mapped string content e.g. 'something.txt=this is the text that goes in here!'") String...fileNames) throws IOException {
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		ZipOutputStream zip = new ZipOutputStream(output);
 		for (String fileName : fileNames) {
@@ -265,7 +269,7 @@ public class FileMethods {
 				throw new FileNotFoundException("Could not find file " + fileName);
 			}
 			if (content instanceof String) {
-				content = ScriptRuntime.getRuntime().getScript().getParser().substitute((String) content, ScriptRuntime.getRuntime().getExecutionContext()).getBytes();
+				content = ScriptRuntime.getRuntime().getScript().getParser().substitute((String) content, ScriptRuntime.getRuntime().getExecutionContext(), false).getBytes();
 			}
 			ZipEntry entry = new ZipEntry(fileName);
 			zip.putNextEntry(entry);
@@ -273,5 +277,22 @@ public class FileMethods {
 		}
 		zip.close();
 		return output.toByteArray();
+	}
+	
+	@GlueMethod(description = "Retrieves a specific file from a zip", returns = "The content of the file in bytes")
+	public static byte [] unzip(@GlueParam(name = "zipContent", description = "The content of the zip file") Object content, @GlueParam(name = "fileName", description = "The filename to find") String fileName) throws IOException {
+		ZipInputStream zip = new ZipInputStream(ScriptMethods.toStream(ScriptMethods.bytes(content)));
+		try {
+			ZipEntry entry = null;
+			while ((entry = zip.getNextEntry()) != null) {
+				if (entry.getName().replaceAll("^[/]+", "").equals(fileName)) {
+					return ScriptMethods.bytes(zip);
+				}
+			}
+			return null;
+		}
+		finally {
+			zip.close();
+		}
 	}
 }

@@ -1,11 +1,14 @@
 package be.nabu.glue.impl.providers;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 
+import be.nabu.glue.annotations.GlueMethod;
+import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.MethodProvider;
@@ -56,21 +59,42 @@ public class StaticJavaMethodProvider implements MethodProvider {
 		for (Class<?> methodClass : methodClasses) {
 			for (Method method : methodClass.getDeclaredMethods()) {
 				if (Modifier.isStatic(method.getModifiers())) {
+					GlueMethod methodAnnotation = method.getAnnotation(GlueMethod.class);
 					List<ParameterDescription> parameters = new ArrayList<ParameterDescription>();
-					int i = 0;
-					for (Class<?> parameter : method.getParameterTypes()) {
+					Annotation[][] parameterAnnotations = method.getParameterAnnotations();
+					Class<?>[] parameterTypes = method.getParameterTypes();
+					for (int i = 0; i < parameterTypes.length; i++) {
+						String parameterName = null;
+						String parameterDescription = null;
+						Class<?> parameter = parameterTypes[i];
+						for (int j = 0; j < parameterAnnotations[i].length; j++) {
+							if (parameterAnnotations[i][j] instanceof GlueParam) {
+								parameterName = ((GlueParam) parameterAnnotations[i][j]).name();
+								parameterDescription = ((GlueParam) parameterAnnotations[i][j]).description();
+								break;
+							}
+						}
+						if (parameterName == null) {
+							parameterName = "arg" + i;
+						}
 						if (Enum.class.isAssignableFrom(parameter)) {
-							parameters.add(new SimpleParameterDescription("arg" + i++, null, parameter.isArray() ? parameter.getComponentType().getSimpleName() + "[]" : parameter.getSimpleName(), parameter.getEnumConstants()));	
+							parameters.add(new SimpleParameterDescription(parameterName, parameterDescription, parameter.isArray() ? parameter.getComponentType().getSimpleName() + "[]" : parameter.getSimpleName(), parameter.getEnumConstants()));	
 						}
 						else {
-							parameters.add(new SimpleParameterDescription("arg" + i++, null, parameter.isArray() ? parameter.getComponentType().getSimpleName() + "[]" : parameter.getSimpleName()));
+							parameters.add(new SimpleParameterDescription(parameterName, parameterDescription, parameter.isArray() ? parameter.getComponentType().getSimpleName() + "[]" : parameter.getSimpleName()));
 						}
 					}
 					List<ParameterDescription> returnValues = new ArrayList<ParameterDescription>();
 					if (!Void.class.isAssignableFrom(method.getReturnType())) {
-						returnValues.add(new SimpleParameterDescription(null, null, method.getReturnType().getName()));
+						returnValues.add(new SimpleParameterDescription(null, methodAnnotation == null ? null : methodAnnotation.returns(), method.getReturnType().getName()));
 					}
-					descriptions.add(new SimpleMethodDescription(method.getDeclaringClass().getSimpleName(), method.getName(), null, parameters, returnValues));
+					descriptions.add(new SimpleMethodDescription(
+						method.getDeclaringClass().getName(), 
+						method.getName(), 
+						methodAnnotation == null ? null : methodAnnotation.description(), 
+						parameters, 
+						returnValues)
+					);
 				}
 			}
 		}

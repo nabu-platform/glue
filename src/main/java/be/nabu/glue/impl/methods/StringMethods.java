@@ -6,35 +6,45 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import be.nabu.glue.annotations.GlueMethod;
+import be.nabu.glue.annotations.GlueParam;
+
 public class StringMethods {
 	
-	public static Object padRight(String pad, int length, String...original) {
+	@GlueMethod(description = "Adds the given pad to the given string(s) on the right until they reach the required length", returns = "The padded string(s)")
+	public static Object padRight(@GlueParam(name = "pad", description = "The string used to pad") String pad, @GlueParam(name = "length", description = "The length of the resulting string") int length, @GlueParam(name = "strings", description = "The string(s) to be padded") String...original) {
 		return pad(pad, length, true, original);
 	}
 	
-	public static Object padLeft(String pad, int length, String...original) {
+	@GlueMethod(description = "Adds the given pad to the given string(s) on the left until they reach the required length", returns = "The padded string(s)")
+	public static Object padLeft(@GlueParam(name = "pad", description = "The string used to pad") String pad, @GlueParam(name = "length", description = "The length of the resulting string") int length, @GlueParam(name = "strings", description = "The string(s) to be padded") String...original) {
 		return pad(pad, length, false, original);
 	}
 	
 	public static Object pad(String pad, int length, boolean leftAlign, String...original) {
+		if (original == null || original.length == 0) {
+			return original;
+		}
 		if (pad == null || pad.isEmpty()) {
 			pad = " ";
 		}
 		String [] result = new String[original.length];
 		for (int i = 0; i < original.length; i++) {
 			String value = original[i];
-			while (value.length() < length) {
-				if (leftAlign) {
-					value += pad;
+			if (value != null) {
+				while (value.length() < length) {
+					if (leftAlign) {
+						value += pad;
+					}
+					else {
+						value = pad + value;
+					}
 				}
-				else {
-					value = pad + value;
+				if (value.length() > length) {
+					value = value.substring(0, length);
 				}
+				result[i] = value;
 			}
-			if (value.length() > length) {
-				value = value.substring(0, length);
-			}
-			result[i] = value;
 		}
 		return result.length == 1 ? result[0] : result; 
 	}

@@ -4,7 +4,7 @@ import java.util.Date;
 import java.util.List;
 
 import be.nabu.glue.api.Executor;
-import be.nabu.glue.api.Script;
+import be.nabu.glue.api.runs.CallLocation;
 import be.nabu.glue.api.runs.Validation;
 
 public class ValidationImpl implements Validation {
@@ -24,7 +24,7 @@ public class ValidationImpl implements Validation {
 	/**
 	 * The callstack at the time of the validation
 	 */
-	private List<Script> callStack;
+	private List<CallLocation> callStack;
 	/**
 	 * When the validation occurred
 	 */
@@ -34,7 +34,7 @@ public class ValidationImpl implements Validation {
 	 */
 	private Executor executor;
 	
-	public ValidationImpl(Level level, String validation, String message, List<Script> callStack, Executor executor) {
+	public ValidationImpl(Level level, String validation, String message, List<CallLocation> callStack, Executor executor) {
 		this.level = level;
 		this.validation = validation;
 		this.message = message;
@@ -58,7 +58,7 @@ public class ValidationImpl implements Validation {
 	}
 
 	@Override
-	public List<Script> getCallStack() {
+	public List<CallLocation> getCallStack() {
 		return callStack;
 	}
 

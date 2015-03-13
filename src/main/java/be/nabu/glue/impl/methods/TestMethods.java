@@ -7,9 +7,10 @@ import java.util.List;
 
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
-import be.nabu.glue.api.Script;
 import be.nabu.glue.api.runs.AssertionException;
+import be.nabu.glue.api.runs.CallLocation;
 import be.nabu.glue.api.runs.Validation.Level;
+import be.nabu.glue.impl.SimpleCallLocation;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.evaluator.api.Operation;
@@ -172,10 +173,10 @@ public class TestMethods {
 		ScriptRuntime runtime = ScriptRuntime.getRuntime();
 		
 		// build callstack
-		List<Script> callStack = new ArrayList<Script>();
+		List<CallLocation> callStack = new ArrayList<CallLocation>();
 		ScriptRuntime current = runtime;
 		while (current != null) {
-			callStack.add(current.getScript());
+			callStack.add(new SimpleCallLocation(current.getScript(), current.getExecutionContext().getCurrent()));
 			current = current.getParent();
 		}
 		if (!runtime.getContext().containsKey(VALIDATION)) {

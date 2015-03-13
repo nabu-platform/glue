@@ -1,6 +1,7 @@
 package be.nabu.glue;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -52,6 +53,11 @@ public class Main {
 		boolean useMarkdown = new Boolean(getArgument("markdown", "false", arguments));
 		debug |= trace;
 		MultipleRepository repository = new MultipleRepository(null);
+		// add the current directory so you can go to a directory and execute it there
+		ResourceContainer<?> localContainer = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(new File("").toURI(), null);
+		if (localContainer != null) {
+			repository.add(new ScannableScriptRepository(repository, localContainer, new GlueParserProvider(), charset));
+		}
 		for (String path : getArgument("path", System.getenv("PATH"), arguments).split(System.getProperty("path.separator", ":"))) {
 			URI uri = new URI(URIUtils.encodeURI("file:/" + path.replace("\\ ", " ").trim().replace('\\', '/')));
 			ResourceContainer<?> container = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(uri, null);
@@ -191,6 +197,7 @@ public class Main {
 					String response = readLine().trim();
 					if (response.length() == 1 && !response.matches("[0-9]")) {
 						if (response.charAt(0) == 'q') {
+							runtime.abort();
 							break;
 						}
 						else if (response.charAt(0) == 'c') {

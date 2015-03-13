@@ -60,6 +60,10 @@ public class ForEachExecutor extends SequenceExecutor {
 					context.getPipeline().put(temporaryVariable, element);
 					context.getPipeline().put(temporaryIndex, index++);
 					super.execute(context);
+					if (context.getBreakCount() > 0) {
+						context.incrementBreakCount(-1);
+						break;
+					}
 				}
 				context.getPipeline().put(temporaryVariable, null);
 				context.getPipeline().put(temporaryIndex, null);

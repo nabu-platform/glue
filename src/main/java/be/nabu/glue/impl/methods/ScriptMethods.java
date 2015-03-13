@@ -305,7 +305,7 @@ public class ScriptMethods {
 		byte [] bytes = bytes(object);
 		String result = bytes == null ? null : new String(bytes, ScriptRuntime.getRuntime().getScript().getCharset());
 		return substitute 
-			? ScriptRuntime.getRuntime().getScript().getParser().substitute(result, ScriptRuntime.getRuntime().getExecutionContext()) 
+			? ScriptRuntime.getRuntime().getScript().getParser().substitute(result, ScriptRuntime.getRuntime().getExecutionContext(), false) 
 			: result;
 	}
 	

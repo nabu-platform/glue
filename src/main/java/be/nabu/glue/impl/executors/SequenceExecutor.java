@@ -36,7 +36,13 @@ public class SequenceExecutor extends BaseExecutor implements ExecutorGroup {
 					}
 				}
 			}
-			if (child.shouldExecute(context)) {
+			if (ScriptRuntime.getRuntime().isAborted()) {
+				break;
+			}
+			else if (context.getBreakCount() > 0) {
+				break;
+			}
+			else if (child.shouldExecute(context)) {
 				ScriptRuntime.getRuntime().getFormatter().before(child);
 				child.execute(context);
 				ScriptRuntime.getRuntime().getFormatter().after(child);
