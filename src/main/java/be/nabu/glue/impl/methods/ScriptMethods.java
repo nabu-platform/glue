@@ -294,6 +294,14 @@ public class ScriptMethods {
 		return getInputStream(name);
 	}
 	
+	public static String [] resources() {
+		List<String> resources = new ArrayList<String>();
+		for (String resource : ScriptRuntime.getRuntime().getScript()) {
+			resources.add(resource);
+		}
+		return resources.toArray(new String[resources.size()]);
+	}
+	
 	public static String string(Object object) throws IOException {
 		return string(object, true);
 	}

@@ -64,7 +64,7 @@ public class GlueParser implements Parser {
 			while ((line = readLine(pushback)) != null) {
 				lineNumber++;
 				// don't reduce depth if it is empty or a comment 
-				if (line.trim().isEmpty()) {
+				if (line.trim().isEmpty() && codeHasBegun) {
 					continue;
 				}
 				else if (line.trim().startsWith("#")) {
@@ -107,6 +107,9 @@ public class GlueParser implements Parser {
 				}
 				codeHasBegun = true;
 				line = line.trim();
+				if (line.isEmpty()) {
+					continue;
+				}
 				String label = null;
 				String variableName = null;
 				String comment = null;

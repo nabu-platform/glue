@@ -101,18 +101,30 @@ On the to do list is to (optionally) support named parameters that bypass the or
 
 ## Comments
 
-There are two types of comments:
+You can put a comment before a line of code or after it:
 
 ```
 # This is an entire comment line
 myVar = "test"				# This is a line-specific comment
 ```
 
-Both comments are almost identical with the difference that the second comment is actually added to the execution unit in the background which allows you to add contextual information to an execution line.
+Both comments are identical in nature and will actually be concatenated for the comment field
+A comment is aimed at whoever is **reading the code**
+
+## Descriptions
+
+Descriptions are very much like comments but with a **different target audience**: people who **read the result of a run**
+
+```
+## This is an entire description line
+myVar = "test"				## This is a line-specific description
+```
+
+The only difference with a comment is the use of a double hashtag instead of a single.
 
 ### Script Description
 
-Note that **all full line comments** before the **first line of code** are regarded as a description of the script. This means they will be merged and shown as the general description of what the script does if needed. 
+Note that **all full line comments** before the **first line of code** (or an empty line) are regarded as a description of the script. This means they will be merged and shown as the general description of what the script does if needed. 
 
 ## Annotations
 
@@ -146,9 +158,14 @@ In trace mode there is also the option of (temporarily) turning this breakpoint 
 doSomething()
 ```
 
+#### Testcase
+
+The `@testcase` annotation can be at the script level to indicate that a script should be picked up by gluet (the test runner).
+Gluet can be run by jenkins and will simply execute all the scripts on its path with this annotation.
+
 ### Script annotations
 
-All annotations before the **first line of code** are interpreted as script level annotations. These can be things like "@deprecated" or "@tag" which can later be used to group scripts by descriptive tags.
+All annotations before the **first line of code** (or an empty line) are interpreted as script level annotations. These can be things like "@deprecated" or "@tag" which can later be used to group scripts by descriptive tags.
 Keep in mind that this also means you can't actually set annotations on the first line of code.
 
 ## Method Calls

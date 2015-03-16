@@ -63,6 +63,32 @@ public class FileMethods {
 		return list((ResourceContainer<?>) resource, fileRegex, directoryRegex, recursive, null).toArray(new String[0]);
 	}
 	
+	public static String [] list(Object object) throws IOException {
+		return list(object, ".*");
+	}
+	
+	public static String [] list(Object object, String fileRegex) throws IOException {
+		if (object instanceof String) {
+			return list((String) object, fileRegex, null, true);
+		}
+		else {
+			List<String> files = new ArrayList<String>();
+			ZipInputStream zip = new ZipInputStream(ScriptMethods.toStream(ScriptMethods.bytes(object)));
+			try {
+				ZipEntry entry = null;
+				while ((entry = zip.getNextEntry()) != null) {
+					if (entry.getName().replaceAll(".*/([^/]+)$", "$1").matches(fileRegex)) {
+						files.add(entry.getName().replaceAll("^[/]+", ""));
+					}
+				}
+			}
+			finally {
+				zip.close();
+			}
+			return files.toArray(new String[files.size()]);
+		}
+	}
+	
 	private static List<String> list(ResourceContainer<?> file, String fileRegex, String directoryRegex, boolean recursive, String path) {
 		List<String> results = new ArrayList<String>();
 		for (Resource child : file) {
@@ -278,9 +304,10 @@ public class FileMethods {
 		zip.close();
 		return output.toByteArray();
 	}
-	
+
 	@GlueMethod(description = "Retrieves a specific file from a zip", returns = "The content of the file in bytes")
 	public static byte [] unzip(@GlueParam(name = "zipContent", description = "The content of the zip file") Object content, @GlueParam(name = "fileName", description = "The filename to find") String fileName) throws IOException {
+		fileName = fileName.replaceAll("^[/]+", "");
 		ZipInputStream zip = new ZipInputStream(ScriptMethods.toStream(ScriptMethods.bytes(content)));
 		try {
 			ZipEntry entry = null;
