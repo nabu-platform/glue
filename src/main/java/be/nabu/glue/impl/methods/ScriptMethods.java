@@ -255,7 +255,13 @@ public class ScriptMethods {
 	}
 	
 	public static Object last(Object...array) {
-		return array.length == 0 ? null : array[array.length - 1];
+		if (array.length == 1 && array[0] instanceof ExecutionContext) {
+			List<Object> arrayList = new ArrayList<Object>(((ExecutionContext) array[0]).getPipeline().values());
+			return arrayList.isEmpty() ? null : arrayList.get(arrayList.size() - 1);
+		}
+		else {
+			return array.length == 0 ? null : array[array.length - 1];
+		}
 	}
 	
 	/**

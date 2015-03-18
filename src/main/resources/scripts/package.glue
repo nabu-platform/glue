@@ -31,14 +31,14 @@ for (dependency : dependencies)
 			bat = array(bat, "set CLASSPATH=%CLASSPATH%;" + batGluePath + "/lib/" + fileName)
 
 # Include the current runtime parameters (if any)
-if (environment("runtime.label") != null)
-	commands = array(commands, "label=" + environment("runtime.label"))
-if (environment("runtime.environment") != null)
-	commands = array(commands, "environment=" + environment("runtime.environment"))
-if (environment("runtime.charset") != null)
-	commands = array(commands, "charset=" + environment("runtime.charset"))
-if (environment("runtime.path") != null && includePath == true)
-	commands = array(commands, "charset=" + environment("runtime.path"))
+if (environment("label") != null)
+	commands = array(commands, "label=" + environment("label"))
+if (environment("environment") != null)
+	commands = array(commands, "environment=" + environment("environment"))
+if (environment("charset") != null)
+	commands = array(commands, "charset=" + environment("charset"))
+if (environment("path") != null && includePath == true)
+	commands = array(commands, "charset=" + environment("path"))
 
 # Add the actual java command to the bash/bat files
 gbash = array(bash, "java -cp $CLASSPATH be.nabu.glue.Main " + join(" ", commands) + " \"$@\"")
@@ -49,6 +49,10 @@ tbash = array(bash, "java -cp $CLASSPATH be.nabu.glue.Runner " + join(" ", comma
 tcygwin = array(cygwin, "java -cp $CLASSPATH be.nabu.glue.Runner " + join(" ", commands) + " \"$@\"")
 tbat = array(bat, "java -cp %CLASSPATH% be.nabu.glue.Runner " + join(" ", commands) + " %*")
 
+sbash = array(bash, "java -cp $CLASSPATH be.nabu.glue.Shell " + join(" ", commands) + " \"$@\"")
+scygwin = array(cygwin, "java -cp $CLASSPATH be.nabu.glue.Shell " + join(" ", commands) + " \"$@\"")
+sbat = array(bat, "java -cp %CLASSPATH% be.nabu.glue.Shell " + join(" ", commands) + " %*")
+
 # Check if there is a configuration file for glue
 switch
 	case (exists(environment("user.dir") + "/.glue"))
@@ -57,7 +61,7 @@ switch
 		configuration = environment("user.home") + "/.glue"
 
 # Create the zip
-zip = zip(array(files, configuration, "glue.sh=" + join("\n", gbash), "glue.bat=" + join("\r\n", gbat), "glue.cyg=" + join("\n", gcygwin), "gluet.sh=" + join("\n", tbash), "gluet.bat=" + join("\r\n", tbat), "gluet.cyg=" + join("\n", tcygwin)))
+zip = zip(array(files, configuration, "glue.sh=" + join("\n", gbash), "glue.bat=" + join("\r\n", gbat), "glue.cyg=" + join("\n", gcygwin), "gluet.sh=" + join("\n", tbash), "gluet.bat=" + join("\r\n", tbat), "gluet.cyg=" + join("\n", tcygwin), "glues.sh=" + join("\n", sbash), "glues.bat=" + join("\r\n", sbat), "glues.cyg=" + join("\n", scygwin)))
 
 # Write it to the given filename
 write(targetFileName, zip)

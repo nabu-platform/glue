@@ -1,0 +1,11 @@
+dependencies ?= last(maven.dependencies())
+
+for (dependency : dependencies)
+	parts = split(":", dependency)
+	groupId = parts[0]
+	artifactId = parts[1]
+	packaging = parts[2]
+	versionId = parts[3]
+	fileName = artifactId + "-" + versionId + ".jar"
+	filePath = replace("\.", "/", groupId) + "/" + artifactId + "/" + versionId + "/" + fileName
+	filePaths = array(filePaths, filePath)

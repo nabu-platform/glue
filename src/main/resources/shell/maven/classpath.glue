@@ -1,0 +1,11 @@
+# Allows you to easily build a classpath
+
+repository ?= "$M2_REPO"
+dependencies ?= last(maven.dependencies())
+
+batRepository = replace("\\$([\\w]+)", "%$1%", repository)
+
+for (path : last(maven.paths(dependencies)))
+	cygwin = array(cygwin, "export CLASSPATH=$CLASSPATH\";\"" + repository + "/" + fileName)
+	bat = array(bat, "set CLASSPATH=%CLASSPATH%;" + batRepository + "/" + fileName)
+	bash = array(bash, "export CLASSPATH=$CLASSPATH:" + repository + "/" + path)

@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import be.nabu.glue.api.DynamicMethodOperationProvider;
+import be.nabu.glue.api.ExecutionEnvironment;
 import be.nabu.glue.api.Executor;
 import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.api.MethodDescription;
@@ -43,32 +44,16 @@ public class Main {
 	
 	@SuppressWarnings("unchecked")
 	public static void main(String...arguments) throws IOException, ParseException, URISyntaxException {
-		Charset charset = Charset.forName(getArgument("charset", "UTF-8", arguments));
-		String environmentName = getArgument("environment", "local", arguments);
-		String label = getArgument("label", null, arguments);
+		Charset charset = getCharset(arguments);
+		String environmentName = getEnvironmentName(arguments);
+		String label = getLabel(arguments);
 		boolean debug = new Boolean(getArgument("debug", "false", arguments));
 		boolean trace = new Boolean(getArgument("trace", "false", arguments));
 		boolean duration = new Boolean(getArgument("duration", "false", arguments));
 		boolean printReport = new Boolean(getArgument("report", "false", arguments));
 		boolean useMarkdown = new Boolean(getArgument("markdown", "false", arguments));
 		debug |= trace;
-		MultipleRepository repository = new MultipleRepository(null);
-		// add the current directory so you can go to a directory and execute it there
-		ResourceContainer<?> localContainer = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(new File("").toURI(), null);
-		if (localContainer != null) {
-			repository.add(new ScannableScriptRepository(repository, localContainer, new GlueParserProvider(), charset));
-		}
-		for (String path : getArgument("path", System.getenv("PATH"), arguments).split(System.getProperty("path.separator", ":"))) {
-			URI uri = new URI(URIUtils.encodeURI("file:/" + path.replace("\\ ", " ").trim().replace('\\', '/')));
-			ResourceContainer<?> container = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(uri, null);
-			if (container == null) {
-				System.err.println("The directory " + uri + " does not exist");
-			}
-			else {
-				repository.add(new ScannableScriptRepository(repository, container, new GlueParserProvider(), charset));
-			}
-		}
-		repository.add(new TargetedScriptRepository(repository, new URI("classpath:/"), null, new GlueParserProvider(), charset, "glue"));
+		MultipleRepository repository = buildRepository(charset, arguments);
 		
 		List<String> commands = new ArrayList<String>();
 		for (String argument : arguments) {
@@ -147,13 +132,7 @@ public class Main {
 			}
 			
 			SimpleExecutionEnvironment environment = new SimpleExecutionEnvironment(environmentName);
-			environment.getParameters().put("runtime.label", getArgument("label", null, arguments));
-			environment.getParameters().put("runtime.environment", getArgument("environment", null, arguments));
-			environment.getParameters().put("runtime.charset", getArgument("charset", null, arguments));
-			environment.getParameters().put("runtime.debug", getArgument("debug", null, arguments));
-			environment.getParameters().put("runtime.trace", getArgument("trace", null, arguments));
-			environment.getParameters().put("runtime.duration", getArgument("duration", null, arguments));
-			environment.getParameters().put("runtime.path", getArgument("path", null, arguments));
+			setArguments(environment, arguments);
 			ScriptRuntime runtime = new ScriptRuntime(
 				script,
 				environment, 
@@ -277,8 +256,57 @@ public class Main {
 			}
 		}
 	}
+
+	public static String getLabel(String... arguments) {
+		return getArgument("label", null, arguments);
+	}
+
+	public static String getEnvironmentName(String... arguments) {
+		return getArgument("environment", "local", arguments);
+	}
+
+	public static Charset getCharset(String... arguments) {
+		return Charset.forName(getArgument("charset", "UTF-8", arguments));
+	}
+
+	public static MultipleRepository buildRepository(Charset charset, String...arguments) throws IOException, URISyntaxException {
+		MultipleRepository repository = new MultipleRepository(null);
+		// add the current directory so you can go to a directory and execute it there
+		ResourceContainer<?> localContainer = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(new File("").toURI(), null);
+		if (localContainer != null) {
+			repository.add(new ScannableScriptRepository(repository, localContainer, new GlueParserProvider(), charset));
+		}
+		// try a dedicated "GLUEPATH" variable first because the general "PATH" variable tends to be very big (at least when searching recursively) and slows down the startup of glue
+		String systemPath = System.getenv("GLUEPATH");
+		if (systemPath == null) {
+			systemPath = System.getenv("PATH");
+		}
+		for (String path : getArgument("path", systemPath, arguments).split(System.getProperty("path.separator", ":"))) {
+			URI uri = new URI(URIUtils.encodeURI("file:/" + path.replace("\\ ", " ").trim().replace('\\', '/')));
+			ResourceContainer<?> container = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(uri, null);
+			if (container == null) {
+				System.err.println("The directory " + uri + " does not exist");
+			}
+			else {
+				repository.add(new ScannableScriptRepository(repository, container, new GlueParserProvider(), charset));
+			}
+		}
+		repository.add(new TargetedScriptRepository(repository, new URI("classpath:/scripts"), null, new GlueParserProvider(), charset, "glue"));
+		return repository;
+	}
 	
-	private static String readLine() throws IOException {
+	public static void setArguments(ExecutionEnvironment environment, String...arguments) {
+		for (String argument : arguments) {
+			int index = argument.indexOf('=');
+			if (index >= 0) {
+				String key = argument.substring(0, index);
+				String value = argument.substring(index + 1);
+				environment.getParameters().put(key, value);
+			}
+		}
+	}
+	
+	public static String readLine() throws IOException {
 		// cygwin does not expose a console()
 		if (System.console() != null) {
 			return System.console().readLine();

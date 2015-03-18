@@ -57,6 +57,16 @@ public class StringMethods {
 		return original.substring(start, stop);
 	}
 	
+	public static Object remove(String regex, String...original) {
+		List<String> result = new ArrayList<String>();
+		for (String string : original) {
+			if (!string.matches(regex)) {
+				result.add(string);
+			}
+		}
+		return original.length == 1 ? result.get(0) : result.toArray(new String[result.size()]);
+	}
+	
 	public static Object replace(String regex, String replacement, String...original) {
 		String [] result = new String[original.length];
 		for (int i = 0; i < original.length; i++) {

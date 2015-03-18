@@ -45,7 +45,7 @@ public class FileMethods {
 		}
 		return IOUtils.toInputStream(((ReadableResource) resource).getReadable());
 	}
-
+	
 	/**
 	 * Lists all files that match the given regex in the given directory
 	 * @param path

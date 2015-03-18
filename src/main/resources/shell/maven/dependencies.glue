@@ -1,0 +1,8 @@
+directory ?= "."
+
+dependencies = find(".*(?:\\\\|\\+)-[\s]*(.*)", split("\n", exec(directory, "mvn dependency:tree")))
+# in some cases it apparently says "(scope not updated to compile)" or some such at the end
+dependencies = replace("[\\s]*\\([^)]+\\)[\\s]*$", "", dependencies)
+dependencies = remove(".*:test$", dependencies)
+dependencies = replace(":[^:]+$", "", dependencies)
+dependencies = unique(replace(":bundle:", ":jar:", dependencies))
