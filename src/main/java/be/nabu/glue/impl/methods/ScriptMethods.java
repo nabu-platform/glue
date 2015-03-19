@@ -89,7 +89,7 @@ public class ScriptMethods {
 	public static String environment(String name) {
 		return ScriptRuntime.getRuntime().getExecutionContext().getExecutionEnvironment().getParameters().containsKey(name) 
 			? ScriptRuntime.getRuntime().getExecutionContext().getExecutionEnvironment().getParameters().get(name)
-			: System.getProperty(name);
+			: System.getProperty(name, System.getenv(name));
 	}
 	
 	public static void fail(String message) {
