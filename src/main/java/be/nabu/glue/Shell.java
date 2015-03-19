@@ -15,7 +15,7 @@ import be.nabu.glue.impl.methods.ShellMethods;
 import be.nabu.glue.impl.operations.GlueOperationProvider;
 import be.nabu.glue.impl.parsers.GlueParser;
 import be.nabu.glue.impl.parsers.GlueParserProvider;
-import be.nabu.glue.impl.providers.CLIMethodProvider;
+import be.nabu.glue.impl.providers.SystemMethodProvider;
 import be.nabu.glue.impl.providers.ScriptMethodProvider;
 import be.nabu.glue.impl.providers.StaticJavaMethodProvider;
 import be.nabu.glue.repositories.TargetedScriptRepository;
@@ -35,7 +35,7 @@ public class Shell {
 			new ScriptMethodProvider(repository),
 			new SPIMethodProvider(),
 			new StaticJavaMethodProvider(),
-			new CLIMethodProvider()
+			new SystemMethodProvider()
 		));
 		
 		String line = null;

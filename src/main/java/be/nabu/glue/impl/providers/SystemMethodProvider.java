@@ -11,7 +11,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import be.nabu.glue.ScriptRuntime;
@@ -20,6 +19,7 @@ import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.impl.methods.ScriptMethods;
 import be.nabu.glue.impl.methods.ShellMethods;
+import be.nabu.glue.impl.methods.StringMethods;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.converter.api.Converter;
 import be.nabu.libs.evaluator.EvaluationException;
@@ -30,7 +30,7 @@ import be.nabu.libs.evaluator.base.BaseOperation;
 import be.nabu.libs.resources.URIUtils;
 import be.nabu.utils.io.IOUtils;
 
-public class CLIMethodProvider implements MethodProvider {
+public class SystemMethodProvider implements MethodProvider {
 
 	private static final String CLI_DIRECTORY = "cli.directory";
 
@@ -78,6 +78,9 @@ public class CLIMethodProvider implements MethodProvider {
 				if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.GREATER) {
 					Object evaluated = ((Operation<ExecutionContext>) argumentOperation.getParts().get(2).getContent()).evaluate(context);
 					if (evaluated != null) {
+						if (evaluated instanceof String[]) {
+							evaluated = StringMethods.join(System.getProperty("line.separator", "\n"), (String[]) evaluated);
+						}
 						try {
 							inputBytes.add(ScriptMethods.bytes(evaluated));
 						}
@@ -88,7 +91,9 @@ public class CLIMethodProvider implements MethodProvider {
 				}
 				else {
 					Object evaluated = argumentOperation.evaluate(context);
-					String value = converter.convert(evaluated, String.class);
+					String value = evaluated instanceof String[] 
+						? StringMethods.join(System.getProperty("line.separator", "\n"), (String[]) evaluated)
+						: converter.convert(evaluated, String.class);
 					if (evaluated != null && value == null) {
 						throw new EvaluationException("Can not convert " + evaluated + " to string");
 					}
@@ -139,19 +144,18 @@ public class CLIMethodProvider implements MethodProvider {
 	}
 
 	public static String getDirectory() {
-		if (!ScriptRuntime.getRuntime().getContext().containsKey(CLI_DIRECTORY)) {
-			ScriptRuntime.getRuntime().getContext().put(CLI_DIRECTORY, ShellMethods.pwd());
+		if (ScriptRuntime.getRuntime() == null) {
+			return ShellMethods.pwd();
 		}
-		return (String) ScriptRuntime.getRuntime().getContext().get(CLI_DIRECTORY);
+		else {
+			if (!ScriptRuntime.getRuntime().getContext().containsKey(CLI_DIRECTORY)) {
+				ScriptRuntime.getRuntime().getContext().put(CLI_DIRECTORY, ShellMethods.pwd());
+			}
+			return (String) ScriptRuntime.getRuntime().getContext().get(CLI_DIRECTORY);
+		}
 	}
 	
 	private static String exec(String directory, String [] commands, List<byte[]> inputContents) throws IOException, InterruptedException {
-		// apparently if you do something like "mvn dependency:tree" in one string, it will fail but if you do "mvn" and "dependency:tree" it fails
-		// this is however annoying to enforce on the user, so do a preliminary split
-		List<String> splittedCommands = new ArrayList<String>();
-		for (String command : commands) {
-			splittedCommands.addAll(Arrays.asList(command.split("(?<!\\\\)[\\s]+")));
-		}
 		if (!directory.endsWith("/")) {
 			directory += "/";
 		}
@@ -162,7 +166,7 @@ public class CLIMethodProvider implements MethodProvider {
 		else if (!dir.isDirectory()) {
 			throw new IOException("The file is not a directory: " + directory);
 		}
-		Process process = Runtime.getRuntime().exec(splittedCommands.toArray(new String[0]), null, dir);
+		Process process = Runtime.getRuntime().exec(commands, null, dir);
 		if (inputContents != null && !inputContents.isEmpty()) {
 			OutputStream output = new BufferedOutputStream(process.getOutputStream());
 			try {

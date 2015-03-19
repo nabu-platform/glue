@@ -4,7 +4,7 @@ import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ParserProvider;
 import be.nabu.glue.api.ScriptRepository;
 import be.nabu.glue.impl.operations.GlueOperationProvider;
-import be.nabu.glue.impl.providers.CLIMethodProvider;
+import be.nabu.glue.impl.providers.SystemMethodProvider;
 import be.nabu.glue.impl.providers.ScriptMethodProvider;
 import be.nabu.glue.impl.providers.StaticJavaMethodProvider;
 import be.nabu.glue.spi.SPIMethodProvider;
@@ -21,7 +21,7 @@ public class GlueParserProvider implements ParserProvider {
 			new ScriptMethodProvider(repository),
 			new SPIMethodProvider(),
 			new StaticJavaMethodProvider(),
-			new CLIMethodProvider()
+			new SystemMethodProvider()
 		)) : null;
 	}
 

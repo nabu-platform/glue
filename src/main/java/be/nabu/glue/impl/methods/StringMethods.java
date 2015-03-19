@@ -81,6 +81,16 @@ public class StringMethods {
 		return original.substring(start, stop);
 	}
 	
+	public static Object retain(String regex, String...original) {
+		List<String> result = new ArrayList<String>();
+		for (String string : original) {
+			if (string.matches(regex)) {
+				result.add(string);
+			}
+		}
+		return original.length == 1 ? result.get(0) : result.toArray(new String[result.size()]);
+	}
+	
 	public static Object remove(String regex, String...original) {
 		List<String> result = new ArrayList<String>();
 		for (String string : original) {
@@ -117,6 +127,10 @@ public class StringMethods {
 			}
 		}
 		return matches.toArray(new String[0]);
+	}
+	
+	public static String [] lines(String...original) {
+		return split("[\\r\\n]+", original);
 	}
 	
 	public static String join(String separator, String...strings) {

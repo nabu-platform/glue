@@ -14,6 +14,7 @@ public class SystemMethods {
 	public static String exec(String directory, String...commands) throws IOException, InterruptedException {
 		// apparently if you do something like "mvn dependency:tree" in one string, it will fail but if you do "mvn" and "dependency:tree" it fails
 		// this is however annoying to enforce on the user, so do a preliminary split
+		// note that this apparently does auto-quoting, no need to quote spaces etc, this could also explain the above stuff
 		List<String> splittedCommands = new ArrayList<String>();
 		for (String command : commands) {
 			splittedCommands.addAll(Arrays.asList(command.split("(?<!\\\\)[\\s]+")));
