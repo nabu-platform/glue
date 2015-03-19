@@ -271,25 +271,34 @@ public class Main {
 
 	public static MultipleRepository buildRepository(Charset charset, String...arguments) throws IOException, URISyntaxException {
 		MultipleRepository repository = new MultipleRepository(null);
-		// add the current directory so you can go to a directory and execute it there
-		ResourceContainer<?> localContainer = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(new File("").toURI(), null);
-		if (localContainer != null) {
-			repository.add(new ScannableScriptRepository(repository, localContainer, new GlueParserProvider(), charset));
-		}
-		// try a dedicated "GLUEPATH" variable first because the general "PATH" variable tends to be very big (at least when searching recursively) and slows down the startup of glue
-		String systemPath = System.getenv("GLUEPATH");
-		if (systemPath == null) {
-			systemPath = System.getenv("PATH");
-		}
-		for (String path : getArgument("path", systemPath, arguments).split(System.getProperty("path.separator", ":"))) {
-			URI uri = new URI(URIUtils.encodeURI("file:/" + path.replace("\\ ", " ").trim().replace('\\', '/')));
-			ResourceContainer<?> container = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(uri, null);
-			if (container == null) {
-				System.err.println("The directory " + uri + " does not exist");
+		if (ResourceFactory.getInstance().getResolver("file") != null) {
+			// add the current directory so you can go to a directory and execute it there
+			ResourceContainer<?> localContainer = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(new File("").toURI(), null);
+			if (localContainer != null) {
+				repository.add(new ScannableScriptRepository(repository, localContainer, new GlueParserProvider(), charset));
 			}
-			else {
-				repository.add(new ScannableScriptRepository(repository, container, new GlueParserProvider(), charset));
+			// try a dedicated "GLUEPATH" variable first because the general "PATH" variable tends to be very big (at least when searching recursively) and slows down the startup of glue
+			String systemPath = System.getenv("GLUEPATH");
+			if (systemPath == null) {
+				if (getArgument("path", null, arguments) == null) {
+					System.out.println("You can set a 'GLUEPATH' system variable which points to the directories that contain scripts");
+					System.out.println("If not set, glue will use the 'PATH' variable but this might slow down glue startup times");
+				}
+				systemPath = System.getenv("PATH");
 			}
+			for (String path : getArgument("path", systemPath, arguments).split(System.getProperty("path.separator", ":"))) {
+				URI uri = new URI(URIUtils.encodeURI("file:/" + path.replace("\\ ", " ").trim().replace('\\', '/')));
+				ResourceContainer<?> container = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(uri, null);
+				if (container == null) {
+					System.err.println("The directory " + uri + " does not exist");
+				}
+				else {
+					repository.add(new ScannableScriptRepository(repository, container, new GlueParserProvider(), charset));
+				}
+			}
+		}
+		else {
+			System.out.println("WARNING: To pick up scripts on the file system you need to include the project 'resources-file'");
 		}
 		repository.add(new TargetedScriptRepository(repository, new URI("classpath:/scripts"), null, new GlueParserProvider(), charset, "glue"));
 		return repository;

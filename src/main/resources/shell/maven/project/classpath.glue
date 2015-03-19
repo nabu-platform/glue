@@ -1,0 +1,12 @@
+projects ?= null
+repository ?= "$M2_REPO"
+
+for (project : array(projects))
+	dependencies = array(dependencies, last(maven.dependencies(project)))
+
+dependencies = unique(dependencies)
+result = maven.classpath(repository, dependencies)
+
+cygwin = result/cygwin
+bat = result/bat
+bash = result/bash

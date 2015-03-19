@@ -6,6 +6,6 @@ dependencies ?= last(maven.dependencies())
 batRepository = replace("\\$([\\w]+)", "%$1%", repository)
 
 for (path : last(maven.paths(dependencies)))
-	cygwin = array(cygwin, "export CLASSPATH=$CLASSPATH\";\"" + repository + "/" + fileName)
-	bat = array(bat, "set CLASSPATH=%CLASSPATH%;" + batRepository + "/" + fileName)
+	cygwin = array(cygwin, "export CLASSPATH=$CLASSPATH\";\"" + repository + "/" + path)
+	bat = array(bat, "set CLASSPATH=%CLASSPATH%;" + batRepository + "/" + path)
 	bash = array(bash, "export CLASSPATH=$CLASSPATH:" + repository + "/" + path)

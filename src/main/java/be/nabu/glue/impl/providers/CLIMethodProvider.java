@@ -3,14 +3,18 @@ package be.nabu.glue.impl.providers;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.MethodProvider;
@@ -23,14 +27,17 @@ import be.nabu.libs.evaluator.QueryPart.Type;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 import be.nabu.libs.evaluator.base.BaseOperation;
+import be.nabu.libs.resources.URIUtils;
 import be.nabu.utils.io.IOUtils;
 
 public class CLIMethodProvider implements MethodProvider {
 
+	private static final String CLI_DIRECTORY = "cli.directory";
+
 	@Override
 	public Operation<ExecutionContext> resolve(String name) {
-		if (name.matches("^cli\\.[\\w]+$")) {
-			return new CLIOperation(name.substring("cli.".length()));
+		if (name.matches("^system\\.[\\w]+$")) {
+			return new CLIOperation(name.substring("system.".length()));
 		}
 		return null;
 	}
@@ -58,6 +65,11 @@ public class CLIMethodProvider implements MethodProvider {
 		@SuppressWarnings({ "unchecked" })
 		@Override
 		public Object evaluate(ExecutionContext context) throws EvaluationException {
+			String directory = ShellMethods.pwd();
+			// if there is a runtime, we can hold some state with regards to the directory
+			if (ScriptRuntime.getRuntime() != null) {
+				directory = getDirectory();
+			}
 			List<String> arguments = new ArrayList<String>();
 			List<byte []> inputBytes = new ArrayList<byte[]>();
 			for (int i = 1; i < getParts().size(); i++) {
@@ -86,23 +98,51 @@ public class CLIMethodProvider implements MethodProvider {
 					arguments.add(value);
 				}
 			}
-			arguments.add(0, command);
-			try {
-//				return SystemMethods.exec(ShellMethods.pwd(), arguments.toArray(new String[arguments.size()]));
-				return exec(ShellMethods.pwd(), arguments.toArray(new String[arguments.size()]), inputBytes);
+			if (command.equalsIgnoreCase("cd")) {
+				if (arguments.size() != 1) {
+					throw new EvaluationException("Expecting exactly one argument for the 'cd' method");
+				}
+				try {
+					// distinguish between relative & absolute
+					directory = arguments.get(0).startsWith("/") ? URIUtils.normalize(arguments.get(0)) : URIUtils.normalize(URIUtils.getChild(new URI(URIUtils.encodeURI(directory)), arguments.get(0)).getPath());
+					if (ScriptRuntime.getRuntime() != null) {
+						ScriptRuntime.getRuntime().getContext().put(CLI_DIRECTORY, directory);	
+					}
+					return directory;
+				}
+				catch (URISyntaxException e) {
+					throw new EvaluationException(e);
+				}
 			}
-			catch (IOException e) {
-				throw new EvaluationException(e);
+			else if (command.equalsIgnoreCase("pwd")) {
+				return directory;
 			}
-			catch (InterruptedException e) {
-				throw new EvaluationException(e);
+			else {
+				arguments.add(0, command);
+				try {
+					return exec(directory, arguments.toArray(new String[arguments.size()]), inputBytes).trim();
+				}
+				catch (IOException e) {
+					throw new EvaluationException(e);
+				}
+				catch (InterruptedException e) {
+					throw new EvaluationException(e);
+				}
 			}
 		}
+
 
 		@Override
 		public OperationType getType() {
 			return OperationType.METHOD;
 		}
+	}
+
+	public static String getDirectory() {
+		if (!ScriptRuntime.getRuntime().getContext().containsKey(CLI_DIRECTORY)) {
+			ScriptRuntime.getRuntime().getContext().put(CLI_DIRECTORY, ShellMethods.pwd());
+		}
+		return (String) ScriptRuntime.getRuntime().getContext().get(CLI_DIRECTORY);
 	}
 	
 	private static String exec(String directory, String [] commands, List<byte[]> inputContents) throws IOException, InterruptedException {
@@ -112,7 +152,17 @@ public class CLIMethodProvider implements MethodProvider {
 		for (String command : commands) {
 			splittedCommands.addAll(Arrays.asList(command.split("(?<!\\\\)[\\s]+")));
 		}
-		Process process = Runtime.getRuntime().exec(splittedCommands.toArray(new String[0]), null, new File(directory));
+		if (!directory.endsWith("/")) {
+			directory += "/";
+		}
+		File dir = new File(directory);
+		if (!dir.exists()) {
+			throw new FileNotFoundException("Can not find directory: " + directory);
+		}
+		else if (!dir.isDirectory()) {
+			throw new IOException("The file is not a directory: " + directory);
+		}
+		Process process = Runtime.getRuntime().exec(splittedCommands.toArray(new String[0]), null, dir);
 		if (inputContents != null && !inputContents.isEmpty()) {
 			OutputStream output = new BufferedOutputStream(process.getOutputStream());
 			try {

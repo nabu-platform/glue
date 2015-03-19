@@ -1,0 +1,9 @@
+mainClass ?= null
+projects ?= null
+repository ?= "$M2_REPO"
+
+classpath = maven.project.classpath(projects, repository)
+
+cygwin = array(classpath/cygwin, "java -cp $CLASSPATH " + mainClass + " \"$@\"")
+bat = array(classpath/bat, "java -cp %CLASSPATH% " + mainClass + " %*")
+bash = array(classpath/bash, "java -cp $CLASSPATH " + mainClass + " \"$@\"")

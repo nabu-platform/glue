@@ -20,7 +20,7 @@ public class StringMethods {
 	public static Object padLeft(@GlueParam(name = "pad", description = "The string used to pad") String pad, @GlueParam(name = "length", description = "The length of the resulting string") int length, @GlueParam(name = "strings", description = "The string(s) to be padded") String...original) {
 		return pad(pad, length, false, original);
 	}
-	
+
 	public static Object pad(String pad, int length, boolean leftAlign, String...original) {
 		if (original == null || original.length == 0) {
 			return original;
@@ -47,6 +47,30 @@ public class StringMethods {
 			}
 		}
 		return result.length == 1 ? result[0] : result; 
+	}
+	
+	public static Object upper(Object...original) {
+		if (original == null || original.length == 0) {
+			return original;
+		}
+		String [] result = new String[original.length];
+		for (int i = 0; i < original.length; i++) {
+			String value = original[i] == null ? null : original[i].toString();
+			result[i] = value.toUpperCase();
+		}
+		return result.length == 1 ? result[0] : result;
+	}
+
+	public static Object lower(Object...original) {
+		if (original == null || original.length == 0) {
+			return original;
+		}
+		String [] result = new String[original.length];
+		for (int i = 0; i < original.length; i++) {
+			String value = original[i] == null ? null : original[i].toString();
+			result[i] = value.toLowerCase();
+		}
+		return result.length == 1 ? result[0] : result;
 	}
 	
 	public static String substring(String original, int start) {

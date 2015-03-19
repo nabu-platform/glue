@@ -16,6 +16,7 @@ import java.util.zip.ZipOutputStream;
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
+import be.nabu.glue.impl.providers.CLIMethodProvider;
 import be.nabu.libs.resources.ResourceFactory;
 import be.nabu.libs.resources.ResourceUtils;
 import be.nabu.libs.resources.URIUtils;
@@ -235,7 +236,7 @@ public class FileMethods {
 			}
 			// if it's not absolute, make it so
 			else if (!fileName.startsWith("/")) {
-				File file = new File(".");
+				File file = new File(CLIMethodProvider.getDirectory());
 				String path = file.getCanonicalPath().replace('\\', '/');
 				if (path.matches("^[\\w]{1}:.*")) {
 					path = "/" + path;

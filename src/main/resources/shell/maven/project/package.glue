@@ -1,0 +1,33 @@
+projectName ?= null
+mainClass ?= null
+projects ?= null
+repository ?= environment("M2_REPO")
+
+# If no repository is set/found, use the default location
+if (repository == null)
+	repository = environment("user.home") + "/.m2/repository"
+
+# This gets all the dependencies for these projects
+for (project : array(projects))
+	dependencies = unique(array(dependencies, last(maven.dependencies(project))))
+	
+# This gets the paths relative to the maven repository
+for (path : last(maven.paths(dependencies)))
+	# The target file name
+	fileName = first(find(".*/([^/]+)$", path))
+	
+	# Build the necessary executable files
+	cygwin = array(cygwin, "export CLASSPATH=$CLASSPATH\";\"lib/" + fileName)
+	bat = array(bat, "set CLASSPATH=%CLASSPATH%;lib/" + fileName)
+	bash = array(bash, "export CLASSPATH=$CLASSPATH:lib/" + fileName)
+	
+	# Build the file array to zip
+	files = array(files, "lib/" + fileName + "=" + repository + "/" + path)
+	
+# Add the actual java command to the bash/bat files
+bash = array(bash, "java -cp $CLASSPATH " + mainClass + " \"$@\"")
+cygwin = array(cygwin, "java -cp $CLASSPATH " + mainClass + " \"$@\"")
+bat = array(bat, "java -cp %CLASSPATH% " + mainClass + " %*")
+
+# Create the zip
+zip = zip(array(files, projectName + ".sh=" + join("\n", bash), projectName + ".bat=" + join("\r\n", bat), projectName + ".cyg=" + join("\n", cygwin)))
