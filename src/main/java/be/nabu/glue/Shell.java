@@ -27,7 +27,7 @@ public class Shell {
 		Charset charset = Main.getCharset(arguments);
 		MultipleRepository repository = Main.buildRepository(charset, arguments);
 		repository.add(new TargetedScriptRepository(repository, new URI("classpath:/shell"), null, new GlueParserProvider(), charset, "glue"));
-		SimpleExecutionEnvironment environment = new SimpleExecutionEnvironment(Main.getEnvironmentName());
+		SimpleExecutionEnvironment environment = new SimpleExecutionEnvironment(Main.getEnvironmentName(arguments));
 		Main.setArguments(environment, arguments);
 		
 		Parser parser =  new GlueParser(new GlueOperationProvider(

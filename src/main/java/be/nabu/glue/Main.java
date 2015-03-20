@@ -257,11 +257,11 @@ public class Main {
 		}
 	}
 
-	public static String getLabel(String... arguments) {
+	public static String getLabel(String...arguments) {
 		return getArgument("label", null, arguments);
 	}
 
-	public static String getEnvironmentName(String... arguments) {
+	public static String getEnvironmentName(String...arguments) {
 		return getArgument("environment", "local", arguments);
 	}
 

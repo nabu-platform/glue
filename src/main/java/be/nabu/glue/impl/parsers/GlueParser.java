@@ -142,7 +142,7 @@ public class GlueParser implements Parser {
 					}
 				}
 				// check if there is a label on the line
-				if (line.matches("^[\\w\\s]+:.*")) {
+				if (line.matches("^[\\w\\s.]+:.*")) {
 					index = line.indexOf(':');
 					if (index >= 0) {
 						label = line.substring(0, index).trim();

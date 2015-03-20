@@ -76,7 +76,9 @@ public class SystemMethodProvider implements MethodProvider {
 				Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
 				// if you have a greater then, you can redirect
 				if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.GREATER) {
-					Object evaluated = ((Operation<ExecutionContext>) argumentOperation.getParts().get(2).getContent()).evaluate(context);
+					Object evaluated = argumentOperation.getParts().get(2).getContent() instanceof Operation
+						? ((Operation<ExecutionContext>) argumentOperation.getParts().get(2).getContent()).evaluate(context)
+						: argumentOperation.getParts().get(2).getContent();
 					if (evaluated != null) {
 						if (evaluated instanceof String[]) {
 							evaluated = StringMethods.join(System.getProperty("line.separator", "\n"), (String[]) evaluated);

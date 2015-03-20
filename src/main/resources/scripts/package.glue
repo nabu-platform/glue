@@ -60,8 +60,23 @@ switch
 	case (exists(environment("user.home") + "/.glue"))
 		configuration = environment("user.home") + "/.glue"
 
+files = array(files, configuration, 
+	"glue.sh=" + join("\n", gbash), "glue.bat=" + join("\r\n", gbat), "glue.cyg=" + join("\n", gcygwin), 
+	"gluet.sh=" + join("\n", tbash), "gluet.bat=" + join("\r\n", tbat), "gluet.cyg=" + join("\n", tcygwin), 
+	"glues.sh=" + join("\n", sbash), "glues.bat=" + join("\r\n", sbat), "glues.cyg=" + join("\n", scygwin))
+
+# Check if you have the editor in the dependencies, if so package a runner for that
+if (size(find("be/nabu/glue/glue-editor", dependencies)) > 0)
+	ebash = array(bash, "java -cp $CLASSPATH -Denvironment=local -DtextOnly=true be.nabu.glue.editor.Main file:$GLUESCRIPTS")
+	ecygwin = array(cygwin, "java -cp $CLASSPATH -Denvironment=local -DtextOnly=true be.nabu.glue.editor.Main file:$GLUESCRIPTS")
+	ebat = array(bat, "java -cp %CLASSPATH% -Denvironment=local -DtextOnly=true be.nabu.glue.editor.Main file:%GLUESCRIPTS%")
+	files = array(files,
+		"gluecide.sh=" + join("\n", ebash),
+		"gluecide.cyg=" + join("\n", ecygwin),
+		"gluecide.bat=" + join("\r\n", ebat))
+
 # Create the zip
-zip = zip(array(files, configuration, "glue.sh=" + join("\n", gbash), "glue.bat=" + join("\r\n", gbat), "glue.cyg=" + join("\n", gcygwin), "gluet.sh=" + join("\n", tbash), "gluet.bat=" + join("\r\n", tbat), "gluet.cyg=" + join("\n", tcygwin), "glues.sh=" + join("\n", sbash), "glues.bat=" + join("\r\n", sbat), "glues.cyg=" + join("\n", scygwin)))
+zip = zip(files)
 
 # Write it to the given filename
 write(targetFileName, zip)
