@@ -15,20 +15,21 @@ batGluePath = replace("\\$([\\w]+)", "%$1%", gluePath)
 
 # Create an array of all the files that should be added
 for (dependency : dependencies)
-	# Get the filename of the dependency
-	fileName = first(find(".*/(.*)", dependency))
-	# Add it to the list of files but prefix with "lib"
-	files = array(files, "lib/" + fileName + "=" + dependency)
-	# Update the bash/bat files to update the classpath
-	switch($index)
-		case (0)
-			bash = array(bash, "export CLASSPATH=" + gluePath + "/lib/" + fileName)
-			cygwin = array(cygwin, "export CLASSPATH=" + gluePath + "/lib/" + fileName)
-			bat = array(bat, "set CLASSPATH=" + batGluePath + "/lib/" + fileName)
-		default
-			bash = array(bash, "export CLASSPATH=$CLASSPATH:" + gluePath + "/lib/" + fileName)
-			cygwin = array(cygwin, "export CLASSPATH=$CLASSPATH\";\"" + gluePath + "/lib/" + fileName)
-			bat = array(bat, "set CLASSPATH=%CLASSPATH%;" + batGluePath + "/lib/" + fileName)
+	if (dependency != null && dependency != "")
+		# Get the filename of the dependency
+		fileName = first(find(".*/(.*)", dependency))
+		# Add it to the list of files but prefix with "lib"
+		files = array(files, "lib/" + fileName + "=" + dependency)
+		# Update the bash/bat files to update the classpath
+		switch($index)
+			case (0)
+				bash = array(bash, "export CLASSPATH=" + gluePath + "/lib/" + fileName)
+				cygwin = array(cygwin, "export CLASSPATH=" + gluePath + "/lib/" + fileName)
+				bat = array(bat, "set CLASSPATH=" + batGluePath + "/lib/" + fileName)
+			default
+				bash = array(bash, "export CLASSPATH=$CLASSPATH:" + gluePath + "/lib/" + fileName)
+				cygwin = array(cygwin, "export CLASSPATH=$CLASSPATH\";\"" + gluePath + "/lib/" + fileName)
+				bat = array(bat, "set CLASSPATH=%CLASSPATH%;" + batGluePath + "/lib/" + fileName)
 
 # Include the current runtime parameters (if any)
 if (environment("label") != null)
@@ -41,17 +42,17 @@ if (environment("path") != null && includePath == true)
 	commands = array(commands, "charset=" + environment("path"))
 
 # Add the actual java command to the bash/bat files
-gbash = array(bash, "java -cp $CLASSPATH be.nabu.glue.Main " + join(" ", commands) + " \"$@\"")
-gcygwin = array(cygwin, "java -cp $CLASSPATH be.nabu.glue.Main " + join(" ", commands) + " \"$@\"")
-gbat = array(bat, "java -cp %CLASSPATH% be.nabu.glue.Main " + join(" ", commands) + " %*")
+gbash = array(bash, join(" ", array("java -cp $CLASSPATH be.nabu.glue.Main", commands, "\"$@\"")))
+gcygwin = array(cygwin, join(" ", array("java -cp $CLASSPATH be.nabu.glue.Main", commands, "\"$@\"")))
+gbat = array(bat, join(" ", array("java -cp %CLASSPATH% be.nabu.glue.Main", commands, "%*")))
 
-tbash = array(bash, "java -cp $CLASSPATH be.nabu.glue.Runner " + join(" ", commands) + " \"$@\"")
-tcygwin = array(cygwin, "java -cp $CLASSPATH be.nabu.glue.Runner " + join(" ", commands) + " \"$@\"")
-tbat = array(bat, "java -cp %CLASSPATH% be.nabu.glue.Runner " + join(" ", commands) + " %*")
+tbash = array(bash, join(" ", array("java -cp $CLASSPATH be.nabu.glue.Runner", commands, "\"$@\"")))
+tcygwin = array(cygwin, join(" ", array("java -cp $CLASSPATH be.nabu.glue.Runner", commands, "\"$@\"")))
+tbat = array(bat, join(" ", array("java -cp %CLASSPATH% be.nabu.glue.Runner", commands, "%*")))
 
-sbash = array(bash, "java -cp $CLASSPATH be.nabu.glue.Shell " + join(" ", commands) + " \"$@\"")
-scygwin = array(cygwin, "java -cp $CLASSPATH be.nabu.glue.Shell " + join(" ", commands) + " \"$@\"")
-sbat = array(bat, "java -cp %CLASSPATH% be.nabu.glue.Shell " + join(" ", commands) + " %*")
+sbash = array(bash, join(" ", array("java -cp $CLASSPATH be.nabu.glue.Shell", commands, "\"$@\"")))
+scygwin = array(cygwin, join(" ", array("java -cp $CLASSPATH be.nabu.glue.Shell", commands, "\"$@\"")))
+sbat = array(bat, join(" ", array("java -cp %CLASSPATH% be.nabu.glue.Shell", commands, "%*")))
 
 # Check if there is a configuration file for glue
 switch

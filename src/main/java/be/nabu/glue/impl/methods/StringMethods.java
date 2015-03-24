@@ -134,6 +134,9 @@ public class StringMethods {
 	}
 	
 	public static String join(String separator, String...strings) {
+		if (strings == null || strings.length == 0) {
+			return null;
+		}
 		StringBuilder builder = new StringBuilder();
 		for (int i = 0; i < strings.length; i++) {
 			if (strings[i] == null) {
