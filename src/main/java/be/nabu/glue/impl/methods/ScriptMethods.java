@@ -254,6 +254,18 @@ public class ScriptMethods {
 		return array.length == 0 ? null : array[0];
 	}
 	
+	public static Object index(int index, Object...array) {
+		if (array == null || array.length == 0) {
+			return null;
+		}
+		else if (array.length == 1 && array[0] instanceof List) {
+			return ((List<?>) array[0]).get(index);
+		}
+		else {
+			return array[index];
+		}
+	}
+	
 	public static Object last(Object...array) {
 		if (array.length == 1 && array[0] instanceof ExecutionContext) {
 			List<Object> arrayList = new ArrayList<Object>(((ExecutionContext) array[0]).getPipeline().values());

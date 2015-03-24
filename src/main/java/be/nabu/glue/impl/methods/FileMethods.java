@@ -17,6 +17,7 @@ import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.impl.providers.SystemMethodProvider;
+import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 import be.nabu.libs.resources.ResourceFactory;
 import be.nabu.libs.resources.ResourceUtils;
 import be.nabu.libs.resources.URIUtils;
@@ -30,6 +31,7 @@ import be.nabu.utils.io.api.ByteBuffer;
 import be.nabu.utils.io.api.ReadableContainer;
 import be.nabu.utils.io.api.WritableContainer;
 
+@MethodProviderClass(namespace = "file")
 public class FileMethods {
 	
 	/**

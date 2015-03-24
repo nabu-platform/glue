@@ -1,0 +1,8 @@
+pid ?= null
+
+for (line : lines(system.ps("-ef")))
+	columns = columns(line)
+	if (columns[1] == pid)
+		user = columns[0]
+		parent = columns[2]
+		command = columns[7]

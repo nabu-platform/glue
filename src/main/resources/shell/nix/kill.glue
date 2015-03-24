@@ -1,0 +1,7 @@
+pids ?= null
+pids = array(pids)
+
+for (pid : pids)
+	echo("Killing " + pid + "...")
+	system.kill(pid)
+	while(eval("user", nix.process(pid)) != null)

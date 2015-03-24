@@ -1,0 +1,10 @@
+class ?= null
+processes = lines(system.ps("-ef"))
+processes = retain(".*\bjava\b.*" + class + ".*", processes)
+
+for (process : processes)
+	pid = index(1, columns(process))
+	pids = array(pids, pid)
+	
+if (size(pids) == 0)
+	echo("No java processes running for " + class)
