@@ -96,6 +96,15 @@ public class ScriptMethods {
 		throw new ScriptRuntimeException(ScriptRuntime.getRuntime(), message);
 	}
 
+	public static Object [] flatten(int column, Object...objects) {
+		List<Object> flattened = new ArrayList<Object>();
+		for (Object object : objects) {
+			Object [] values = object instanceof Object [] ? (Object[]) object : Arrays.asList((Collection<?>) object).toArray();
+			flattened.add(column < values.length ? values[column] : null);
+		}
+		return flattened.toArray();
+	}
+	
 	/**
 	 * Creates an array of objects. If the objects themselves contain arrays, they are merged
 	 */

@@ -88,9 +88,8 @@ public class GlueParser implements Parser {
 				// this allows you to set annotations on the next executor context
 				else if (line.trim().startsWith("@")) {
 					line = line.trim().substring(1).trim();
-					int index = line.indexOf('=');
-					line.indexOf('=');
-					annotations.put(index >= 0 ? line.substring(0, index).trim() : line, index >= 0 ? line.substring(index + 1).trim() : "true");
+					String [] parts = line.split("[\\s=]+", 2);
+					annotations.put(parts[0], parts.length >= 2 ? parts[1] : "true");
 					continue;
 				}
 				int depth = getDepth(line);
