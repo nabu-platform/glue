@@ -19,6 +19,7 @@ import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.glue.impl.executors.ForEachExecutor;
 import be.nabu.glue.impl.executors.SequenceExecutor;
 import be.nabu.glue.impl.executors.SwitchExecutor;
+import be.nabu.glue.impl.executors.WhileExecutor;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.converter.api.Converter;
 import be.nabu.libs.evaluator.EvaluationException;
@@ -163,6 +164,13 @@ public class GlueParser implements Parser {
 					SequenceExecutor sequenceExecutor = new SequenceExecutor(executorGroups.peek(), context, null);
 					executorGroups.peek().getChildren().add(sequenceExecutor);
 					executorGroups.push(sequenceExecutor);
+				}
+				else if (line.matches("^while[\\s]*\\(.*\\)$")) {
+					line = line.replaceAll("^while[\\s]*\\((.*)\\)$", "$1");
+					Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(line));
+					WhileExecutor whileExecutor = new WhileExecutor(executorGroups.peek(), context, null, operation);
+					executorGroups.peek().getChildren().add(whileExecutor);
+					executorGroups.push(whileExecutor);
 				}
 				else if (line.matches("^for[\\s]*\\(.*\\)$")) {
 					line = line.replaceAll("^for[\\s]*\\((.*)\\)$", "$1");

@@ -54,6 +54,7 @@ public class Main {
 		boolean useMarkdown = new Boolean(getArgument("markdown", "false", arguments));
 		debug |= trace;
 		MultipleRepository repository = buildRepository(charset, arguments);
+		repository.add(new TargetedScriptRepository(repository, new URI("classpath:/shell"), null, new GlueParserProvider(), charset, "glue"));
 		
 		List<String> commands = getCommands(arguments);
 		if (new Boolean(getArgument("man", "false", arguments))) {

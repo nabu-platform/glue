@@ -13,8 +13,10 @@ import be.nabu.glue.api.runs.Validation.Level;
 import be.nabu.glue.impl.SimpleCallLocation;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.libs.converter.ConverterFactory;
+import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 import be.nabu.libs.evaluator.api.Operation;
 
+@MethodProviderClass(namespace = "test")
 public class TestMethods {
 	
 	public static final String VALIDATION = "$validation";

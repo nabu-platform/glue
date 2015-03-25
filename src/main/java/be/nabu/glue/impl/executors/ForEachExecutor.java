@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutionException;
 import be.nabu.glue.api.Executor;
@@ -20,7 +21,7 @@ public class ForEachExecutor extends SequenceExecutor {
 	private String temporaryIndex;
 
 	public ForEachExecutor(ExecutorGroup parent, ExecutorContext context, Operation<ExecutionContext> condition, Operation<ExecutionContext> forEach, String temporaryVariable, String temporaryIndex, Executor...steps) {
-		super(parent, context, condition);
+		super(parent, context, condition, steps);
 		this.forEach = forEach;
 		this.temporaryVariable = temporaryVariable;
 		this.temporaryIndex = temporaryIndex;
@@ -62,6 +63,9 @@ public class ForEachExecutor extends SequenceExecutor {
 					super.execute(context);
 					if (context.getBreakCount() > 0) {
 						context.incrementBreakCount(-1);
+						break;
+					}
+					else if (ScriptRuntime.getRuntime().isAborted()) {
 						break;
 					}
 				}

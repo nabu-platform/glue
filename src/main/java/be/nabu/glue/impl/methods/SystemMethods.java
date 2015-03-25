@@ -8,9 +8,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 import be.nabu.utils.io.IOUtils;
 
+@MethodProviderClass(namespace = "system")
 public class SystemMethods {
+	
 	public static String exec(String directory, String...commands) throws IOException, InterruptedException {
 		// apparently if you do something like "mvn dependency:tree" in one string, it will fail but if you do "mvn" and "dependency:tree" it fails
 		// this is however annoying to enforce on the user, so do a preliminary split
@@ -30,4 +33,5 @@ public class SystemMethods {
 			input.close();
 		}
 	}
+	
 }

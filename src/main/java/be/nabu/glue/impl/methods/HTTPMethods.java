@@ -9,7 +9,9 @@ import java.util.List;
 import java.util.Map;
 
 import be.nabu.libs.converter.ConverterFactory;
+import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 
+@MethodProviderClass(namespace = "http")
 public class HTTPMethods {
 	
 	public static HTTPResult http(String method, URI uri, Object request, Object...parameters) throws MalformedURLException, IOException {

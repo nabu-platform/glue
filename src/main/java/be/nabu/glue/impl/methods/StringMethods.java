@@ -8,7 +8,9 @@ import java.util.regex.Pattern;
 
 import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
+import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 
+@MethodProviderClass(namespace = "string")
 public class StringMethods {
 	
 	@GlueMethod(description = "Adds the given pad to the given string(s) on the right until they reach the required length", returns = "The padded string(s)")
@@ -130,7 +132,11 @@ public class StringMethods {
 	}
 	
 	public static String [] lines(String...original) {
-		return split("[\\r\\n]+", original);
+		return original == null || original.length == 0 ? null : split("[\\r\\n]+", original);
+	}
+	
+	public static String [] columns(String original) {
+		return original == null ? null : split("[\\s]+", original.trim());
 	}
 	
 	public static String join(String separator, String...strings) {

@@ -14,6 +14,7 @@ import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.glue.impl.executors.ForEachExecutor;
 import be.nabu.glue.impl.executors.SequenceExecutor;
 import be.nabu.glue.impl.executors.SwitchExecutor;
+import be.nabu.glue.impl.executors.WhileExecutor;
 import be.nabu.libs.evaluator.QueryPart;
 
 public class GlueFormatter implements Formatter {
@@ -89,6 +90,11 @@ public class GlueFormatter implements Formatter {
 				}
 				writer.println(forEachExecutor.getForEach() + ")");
 				format(forEachExecutor, writer, depth + 1);
+			}
+			else if (executor instanceof WhileExecutor) {
+				WhileExecutor whileExecutor = (WhileExecutor) executor;
+				writer.println("while (" + whileExecutor.getWhile() + ")");
+				format(whileExecutor, writer, depth + 1);
 			}
 			else if (executor instanceof BreakExecutor) {
 				BreakExecutor breakExecutor = (BreakExecutor) executor;
