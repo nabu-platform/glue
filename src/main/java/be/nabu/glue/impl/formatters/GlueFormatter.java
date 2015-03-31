@@ -28,104 +28,123 @@ public class GlueFormatter implements Formatter {
 		printer.flush();
 	}
 
-	private void printAnnotations(Executor executor, PrintWriter writer, int depth) throws IOException {
+	private void printAnnotations(Executor executor, Writer writer, int depth) throws IOException {
 		if (executor.getContext() != null) {
 			for (String key : executor.getContext().getAnnotations().keySet()) {
 				pad(writer, depth);
-				writer.print("@" + key);
+				writer.append("@" + key);
 				String value = executor.getContext().getAnnotations().get(key);
 				if (value != null && !value.equalsIgnoreCase("true")) {
-					writer.print(" = " + value);
+					writer.append(" = " + value);
 				}
-				writer.println();
+				println(writer);
 			}
 		}
 	}
 	
-	private void printComments(Executor executor, PrintWriter printer, int depth) throws IOException {
+	private void println(Writer writer) throws IOException {
+		writer.append('\n');
+	}
+	
+	private void printComments(Executor executor, Writer writer, int depth) throws IOException {
 		if (executor.getContext() != null && executor.getContext().getComment() != null) {
 			for (String comment : executor.getContext().getComment().split("[\n]+")) {
-				pad(printer, depth);
-				printer.println("# " + comment.trim());
+				pad(writer, depth);
+				writer.append("# " + comment.trim());
+				println(writer);
 			}
 		}
 		if (executor.getContext() != null && executor.getContext().getDescription() != null) {
 			for (String description : executor.getContext().getDescription().split("[\n]+")) {
-				pad(printer, depth);
-				printer.println("## " + description.trim());
+				pad(writer, depth);
+				writer.append("## " + description.trim());
+				println(writer);
 			}
 		}
 	}
 	
-	private void format(ExecutorGroup group, PrintWriter writer, int depth) throws IOException {
+	private void format(ExecutorGroup group, Writer writer, int depth) throws IOException {
 		for (Executor executor : group.getChildren()) {
 			// before each group, add a line feed
 			if (executor instanceof ExecutorGroup) {
-				writer.println();
+				println(writer);
 			}
 			printComments(executor, writer, depth);
 			printAnnotations(executor, writer, depth);
 			pad(writer, depth);
 			if (executor.getContext() != null && executor.getContext().getLabel() != null) {
-				writer.print(executor.getContext().getLabel() + ": ");
+				writer.append(executor.getContext().getLabel() + ": ");
 			}
 			if (executor instanceof EvaluateExecutor) {
 				EvaluateExecutor evaluateExecutor = (EvaluateExecutor) executor;
+				String stringToPrint = "";
 				if (evaluateExecutor.getVariableName() != null) {
-					writer.print(evaluateExecutor.getVariableName());
+					stringToPrint += evaluateExecutor.getVariableName();
 					if (evaluateExecutor.isOverwriteIfExists()) {
-						writer.print(" = ");
+						stringToPrint += " = ";
 					}
 					else {
-						writer.print(" ?= ");
+						stringToPrint += " ?= ";
 					}
 				}
-				writer.println(evaluateExecutor.getOperation());
+				stringToPrint += evaluateExecutor.getOperation().toString();
+				// if the calculated string equals the metadata string EXCEPT for whitespace, take the metadata one, it will likely have better whitespacing (as dictated by the user)
+				if (executor.getContext() != null && executor.getContext().getLine() != null) {
+					if (stringToPrint.replaceAll("(?s)[\\s]+", "").equals(executor.getContext().getLine().replaceAll("(?s)[\\s]+", ""))) {
+						stringToPrint = executor.getContext().getLine(); 
+					}
+				}
+				writer.append(stringToPrint);
+				println(writer);
 			}
 			else if (executor instanceof ForEachExecutor) {
 				ForEachExecutor forEachExecutor = (ForEachExecutor) executor;
-				writer.print("for (");
+				writer.append("for (");
 				if (forEachExecutor.getTemporaryVariable() != null) {
-					writer.print(forEachExecutor.getTemporaryVariable() + " : ");
+					writer.append(forEachExecutor.getTemporaryVariable() + " : ");
 				}
-				writer.println(forEachExecutor.getForEach() + ")");
+				writer.append(forEachExecutor.getForEach() + ")");
+				println(writer);
 				format(forEachExecutor, writer, depth + 1);
 			}
 			else if (executor instanceof WhileExecutor) {
 				WhileExecutor whileExecutor = (WhileExecutor) executor;
-				writer.println("while (" + whileExecutor.getWhile() + ")");
+				writer.append("while (" + whileExecutor.getWhile() + ")");
+				println(writer);
 				format(whileExecutor, writer, depth + 1);
 			}
 			else if (executor instanceof BreakExecutor) {
 				BreakExecutor breakExecutor = (BreakExecutor) executor;
 				if (breakExecutor.getBreakCount() > 1) {
-					writer.println("break " + breakExecutor.getBreakCount());
+					writer.append("break " + breakExecutor.getBreakCount());
+					println(writer);
 				}
 				else {
-					writer.println("break");
+					writer.append("break");
+					println(writer);
 				}
 			}
 			else if (executor instanceof SwitchExecutor) {
 				SwitchExecutor switchExecutor = (SwitchExecutor) executor;
-				writer.print("switch");
+				writer.append("switch");
 				if (switchExecutor.getToMatch() != null) {
-					writer.println(" (" + switchExecutor.getToMatch() + ")");
+					writer.append(" (" + switchExecutor.getToMatch() + ")");
 				}
-				else {
-					writer.println();
-				}
+				println(writer);
 				for (Executor caseExecutor : switchExecutor.getChildren()) {
 					SequenceExecutor sequenceExecutor = (SequenceExecutor) caseExecutor;
 					pad(writer, depth + 1);
 					// we have injected a "$value == (...)" in the case condition, remove it again
 					// the default case
 					if (sequenceExecutor.getCondition() == null) {
-						writer.println("default");
+						writer.append("default");
+						println(writer);
 					}
 					else {
 						List<QueryPart> parts = sequenceExecutor.getCondition().getParts();
 	//					writer.println("case (" + parts.subList(3, parts.size() - 2) + ")");
-						writer.println("case (" + parts.get(2).getContent() + ")");
+						writer.append("case (" + parts.get(2).getContent() + ")");
+						println(writer);
 					}
 					format(sequenceExecutor, writer, depth + 2);
 				}
@@ -133,11 +152,13 @@ public class GlueFormatter implements Formatter {
 			else if (executor instanceof SequenceExecutor) {
 				SequenceExecutor sequenceExecutor = (SequenceExecutor) executor;
 				if (sequenceExecutor.getCondition() != null) {
-					writer.println("if (" + sequenceExecutor.getCondition() + ")");
+					writer.append("if (" + sequenceExecutor.getCondition() + ")");
+					println(writer);
 					format(sequenceExecutor, writer, depth + 1);
 				}
 				else {
-					writer.println("sequence");
+					writer.append("sequence");
+					println(writer);
 					format(sequenceExecutor, writer, depth + 1);
 				}
 			}
