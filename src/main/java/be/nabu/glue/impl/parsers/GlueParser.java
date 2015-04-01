@@ -61,8 +61,13 @@ public class GlueParser implements Parser {
 		// note that how the parsing is done now, you can NOT set annotations on the first line!
 		// the annotations before the first line will be set on the root instead
 		Map<String, String> annotations = new HashMap<String, String>();
+		int lastPosition = 0;
 		try {
 			while ((line = readLine(pushback)) != null) {
+				// add 1 for the linefeed that separates the last line and this line except if we are at the start
+				// the line feeds are generated deterministically by the glue formatter, they are not system dependent
+				int currentPosition = lastPosition + (lastPosition == 0 ? 0 : 1) + line.length();
+				
 				lineNumber++;
 				// don't reduce depth if it is empty or a comment 
 				if (line.trim().isEmpty() && codeHasBegun) {
@@ -151,6 +156,8 @@ public class GlueParser implements Parser {
 					}
 				}
 				SimpleExecutorContext context = new SimpleExecutorContext(lineNumber, label, lineComment.toString().isEmpty() ? null : lineComment.toString(), lineDescription.toString().isEmpty() ? null : lineDescription.toString(), line, annotations);
+				context.setStartPosition(lastPosition);
+				context.setEndPosition(currentPosition);
 				// clear it for the next comment/description
 				lineComment = new StringBuilder();
 				lineDescription = new StringBuilder();
@@ -231,7 +238,6 @@ public class GlueParser implements Parser {
 								pushback.pushback(IOUtils.wrap(nextLine + "\n"));
 								break;
 							}
-							nextLine = nextLine.trim();
 							// a comment will stop the appending
 							index = nextLine.indexOf('#');
 							if (index >= 0) {
@@ -255,8 +261,11 @@ public class GlueParser implements Parser {
 								}
 								nextLine = nextLine.substring(0, index).trim();
 							}
-							// append with one space, removing other whitespace
-							line += " " + nextLine.trim();
+							// append with spaces intact, this should not bother the query parser but may allow reconstruction of multilines later on
+							line += "\n" + nextLine;
+							// increase the position as well
+							currentPosition += 1 + nextLine.length();
+							context.setEndPosition(currentPosition);
 							// up the line number so it matches
 							lineNumber++;
 						}
@@ -265,9 +274,9 @@ public class GlueParser implements Parser {
 							break;
 						}
 					}
-					
+					context.setLine(line);
 					// check if there is a variable assignment on the line
-					if (line.matches("^[\\w]+[\\s?]*=.*")) {
+					if (line.matches("(?s)^[\\w]+[\\s?]*=.*")) {
 						index = line.indexOf('=');
 						variableName = line.substring(0, index).trim();
 						line = line.substring(index + 1).trim();
@@ -280,6 +289,7 @@ public class GlueParser implements Parser {
 					Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(line));
 					executorGroups.peek().getChildren().add(new EvaluateExecutor(executorGroups.peek(), context, null, variableName, operation, overwriteIfExists));
 				}
+				lastPosition = currentPosition;
 			}
 		}
 		catch (ParseException e) {
