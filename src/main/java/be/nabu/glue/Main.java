@@ -56,12 +56,7 @@ public class Main {
 		MultipleRepository repository = buildRepository(charset, arguments);
 		repository.add(new TargetedScriptRepository(repository, new URI("classpath:/shell"), null, new GlueParserProvider(), charset, "glue"));
 		
-		List<String> commands = new ArrayList<String>();
-		for (String argument : arguments) {
-			if (!argument.contains("=")) {
-				commands.add(argument);
-			}
-		}
+		List<String> commands = getCommands(arguments);
 		if (new Boolean(getArgument("man", "false", arguments))) {
 			String nameToMatch = "(?i)" + commands.get(1).replace("*", ".*");
 			for (Script script : repository) {
@@ -123,14 +118,8 @@ public class Main {
 			if (script == null) {
 				throw new IllegalArgumentException("No script found by the name of " + commands.get(0));
 			}
-			List<ParameterDescription> inputs = ScriptUtils.getInputs(script);
-			Map<String, Object> parameters = new HashMap<String, Object>();
-			for (int i = 1; i < commands.size(); i++) {
-				if (i > inputs.size()) {
-					throw new IllegalArgumentException("Too many arguments, expecting " + inputs.size());
-				}
-				parameters.put(inputs.get(i - 1).getName(), commands.get(i));
-			}
+			
+			Map<String, Object> parameters = getParameters(script, arguments);
 			
 			SimpleExecutionEnvironment environment = new SimpleExecutionEnvironment(environmentName);
 			setArguments(environment, arguments);
@@ -256,6 +245,29 @@ public class Main {
 				}
 			}
 		}
+	}
+
+	public static Map<String, Object> getParameters(Script script, String...arguments) throws ParseException, IOException {
+		List<ParameterDescription> inputs = ScriptUtils.getInputs(script);
+		Map<String, Object> parameters = new HashMap<String, Object>();
+		List<String> commands = getCommands(arguments);
+		for (int i = 1; i < commands.size(); i++) {
+			if (i > inputs.size()) {
+				throw new IllegalArgumentException("Too many arguments, expecting " + inputs.size());
+			}
+			parameters.put(inputs.get(i - 1).getName(), commands.get(i));
+		}
+		return parameters;
+	}
+
+	public static List<String> getCommands(String... arguments) {
+		List<String> commands = new ArrayList<String>();
+		for (String argument : arguments) {
+			if (!argument.contains("=")) {
+				commands.add(argument);
+			}
+		}
+		return commands;
 	}
 
 	public static String getLabel(String...arguments) {

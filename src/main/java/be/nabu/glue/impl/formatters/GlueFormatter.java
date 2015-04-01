@@ -35,7 +35,7 @@ public class GlueFormatter implements Formatter {
 				writer.append("@" + key);
 				String value = executor.getContext().getAnnotations().get(key);
 				if (value != null && !value.equalsIgnoreCase("true")) {
-					writer.append(" = " + value);
+					writer.append(" " + value);
 				}
 				println(writer);
 			}
