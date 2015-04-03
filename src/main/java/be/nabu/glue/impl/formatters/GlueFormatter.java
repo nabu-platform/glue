@@ -87,7 +87,11 @@ public class GlueFormatter implements Formatter {
 						stringToPrint += " ?= ";
 					}
 				}
-				stringToPrint += evaluateExecutor.getOperation().toString();
+				// if you have an evaluate executor with no variable name and no operation, just ignore it
+				else if (evaluateExecutor.getOperation() == null) {
+					continue;
+				}
+				stringToPrint += evaluateExecutor.getOperation() == null ? "null" : evaluateExecutor.getOperation().toString();
 				// if the calculated string equals the metadata string EXCEPT for whitespace, take the metadata one, it will likely have better whitespacing (as dictated by the user)
 				if (executor.getContext() != null && executor.getContext().getLine() != null) {
 					if (stringToPrint.replaceAll("(?s)[\\s]+", "").equals(executor.getContext().getLine().replaceAll("(?s)[\\s]+", ""))) {

@@ -1,11 +1,14 @@
 package be.nabu.glue.impl.executors;
 
+import java.io.Closeable;
+
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.AssignmentExecutor;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutionException;
 import be.nabu.glue.api.ExecutorContext;
 import be.nabu.glue.api.ExecutorGroup;
+import be.nabu.glue.impl.TransactionalCloseable;
 import be.nabu.glue.impl.methods.ScriptMethods;
 import be.nabu.libs.evaluator.api.Operation;
 
@@ -29,6 +32,9 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 		if (variableName == null || context.getPipeline().get(variableName) == null || overwriteIfExists) {
 			try {
 				Object value = operation.evaluate(context);
+				if (value instanceof Closeable) {
+					ScriptRuntime.getRuntime().addTransactionable(new TransactionalCloseable((Closeable) value));
+				}
 				if (variableName != null) {
 					if (context.isDebug()) {
 						// trim values that are too long

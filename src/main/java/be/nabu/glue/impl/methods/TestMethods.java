@@ -192,12 +192,10 @@ public class TestMethods {
 		ValidationImpl validation = new ValidationImpl(level, check, message, callStack, runtime.getExecutionContext().getCurrent());
 		messages.add(validation);
 		
+		runtime.getFormatter().validated(validation);
 		// stop if necessary
 		if (level == Level.ERROR && fail) {
 			throw new AssertionException(validation.toString());
-		}
-		else {
-			runtime.getFormatter().validated(validation);
 		}
 		return result != null && result;
 	}

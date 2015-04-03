@@ -2,6 +2,7 @@ package be.nabu.glue.impl.methods;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -19,13 +20,18 @@ import java.util.Set;
 
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.ScriptRuntimeException;
+import be.nabu.glue.annotations.GlueMethod;
+import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutionException;
 import be.nabu.glue.api.ExecutorGroup;
+import be.nabu.glue.impl.TransactionalCloseable;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.evaluator.EvaluationException;
+import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 
+@MethodProviderClass(namespace = "script")
 public class ScriptMethods {
 	
 	public static List<String> extensions = Arrays.asList(new String [] { "xml", "json", "txt", "ini", "properties", "sql", "csv", "html", "htm", "glue", "py", "c++", "cpp", "c", "php", "js", "java" });
@@ -421,7 +427,7 @@ public class ScriptMethods {
 			return output.toByteArray();
 		}
 		finally {
-			input.close();
+			close(input);
 		}
 	}
 	
@@ -441,5 +447,12 @@ public class ScriptMethods {
 			}
 		}
 		throw new IllegalArgumentException("The enumeration " + enumName + " does not have the value: " + value);
+	}
+	
+	@GlueMethod(description = "Closes any object that implements the java.io.Closeable interface")
+	public static void close(@GlueParam(name = "closeable", description = "The closeable object") Closeable closeable) throws IOException {
+		closeable.close();
+		// don't re-close it
+		ScriptRuntime.getRuntime().removeTransactionable(new TransactionalCloseable(closeable));
 	}
 }
