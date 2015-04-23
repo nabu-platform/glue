@@ -5,8 +5,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -41,7 +44,25 @@ public class FileMethods {
 	public static InputStream read(String fileName) throws IOException {
 		Resource resource = resolve(fileName);
 		if (resource == null) {
-			return null;
+			// first try standard URL technology for a simple file read
+			URI uri = uri(fileName);
+			URL url = uri.toURL();
+			// if we get here, check if we need a proxy
+			Proxy proxy = null;
+			if (ScriptMethods.environment("proxy.host") != null) {
+				if (ScriptMethods.environment("proxy.bypass") == null || !url.getHost().matches(ScriptMethods.environment("proxy.bypass"))) {
+					String type = ScriptMethods.environment("proxy.type");
+					String host = ScriptMethods.environment("proxy.host");
+					String port = ScriptMethods.environment("proxy.port");
+					proxy = new Proxy(type != null && type.equalsIgnoreCase("SOCKS") ? Proxy.Type.SOCKS : Proxy.Type.HTTP, new InetSocketAddress(host, port == null ? 8080 : new Integer(port)));
+				}
+			}
+			if (proxy == null) {
+				return url.openStream();
+			}
+			else {
+				return url.openConnection(proxy).getInputStream();
+			}
 		}
 		else if (!(resource instanceof ReadableResource)) {
 			throw new IOException("Can not read from: " + fileName);
@@ -225,7 +246,11 @@ public class FileMethods {
 	}
 
 	private static Resource resolve(String fileName) throws IOException {
-		return ResourceFactory.getInstance().resolve(uri(fileName), null);
+		URI uri = uri(fileName);
+		if (ResourceFactory.getInstance().getResolver(uri.getScheme()) == null) {
+			return null;
+		}
+		return ResourceFactory.getInstance().resolve(uri, null);
 	}
 
 	public static URI uri(String fileName) throws IOException {
