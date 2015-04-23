@@ -95,15 +95,25 @@ public class StringMethods {
 	
 	public static Object remove(String regex, String...original) {
 		List<String> result = new ArrayList<String>();
-		for (String string : original) {
-			if (!string.matches(regex)) {
-				result.add(string);
+		if (original != null) {
+			for (String string : original) {
+				if (!string.matches(regex)) {
+					result.add(string);
+				}
 			}
 		}
-		return original.length == 1 ? result.get(0) : result.toArray(new String[result.size()]);
+		if (result.isEmpty()) {
+			return original == null || original.length == 1 ? null : new String[0];
+		}
+		else {
+			return original.length == 1 ? result.get(0) : result.toArray(new String[result.size()]);
+		}
 	}
 	
 	public static Object replace(String regex, String replacement, String...original) {
+		if (original == null) {
+			return null;
+		}
 		String [] result = new String[original.length];
 		for (int i = 0; i < original.length; i++) {
 			result[i] = original[i] == null ? null : original[i].replaceAll(regex, replacement);
