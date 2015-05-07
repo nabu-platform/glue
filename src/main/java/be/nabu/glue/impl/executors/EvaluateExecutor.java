@@ -35,7 +35,7 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 		this.overwriteIfExists = overwriteIfExists;
 		if (optionalType != null) {
 			if (optionalType.equalsIgnoreCase("integer")) {
-				targetType = Integer.class;
+				targetType = Long.class;
 			}
 			else if (optionalType.equalsIgnoreCase("decimal")) {
 				targetType = Double.class;
