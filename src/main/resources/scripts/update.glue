@@ -1,0 +1,21 @@
+url ?= null
+
+confirmNotNull("A valid endpoint must be passed along", url)
+
+if (environment("GLUE") != null)
+        echo("Switching to directory: " + environment("GLUE"))
+        system.cd(environment("GLUE"))
+
+if (exists("glue.zip"))
+        echo("Removing existing glue.zip file")
+        system.rm("glue.zip")
+
+echo("Downloading glue...")
+write("glue.zip", read(url))
+
+echo("Extracting glue...")
+system.unzip("-o", "glue.zip")
+
+for (bash : list(system.pwd(), ".*\.sh$"))
+        echo("Chmodding: " + bash)
+        system.chmod("u+x", bash)

@@ -444,6 +444,97 @@ for (record : testcases)
 
 If you fill in the same value for the different fields, this exact same code will also work for the java-managed testcases.
 
+# Variable Replacement
+
+## Inline Variables
+
+Each parser must implement a `substitute()` method. This method should replace variables in a string. The glue parser supports two ways of replacing:
+
+```
+This is my conclusion: ${conclusion}
+```
+
+In this text, the string `${conclusion}` will be replaced with the value of the variable `conclusion`. Important is that you can do any computation here that you can also do in an assignment in glue where the returned value is inserted, so for example:
+
+```
+This is my result: ${padLeft("0", 11, myResult + 1)}
+```
+
+This will pad your result with zeroes all the way up to eleven characters, for example if your variable is the number `9000`, it will print `00000009001`.
+
+## Inline Script
+
+Apart from inline variables, you can also inline an entire script. A script however has no return value, so instead it will print out everything that was echoed.
+
+```python
+Will he do it?
+${{
+switch(willHeDoIt)
+	case (true)
+		echo("He's done it!")
+	default
+		echo("Nope")
+}}
+```
+
+Suppose the variable `willHeDoIt` is set to true, the output would be:
+
+```
+Will he do it?
+He's done it!
+```
+
+**Important**: The output formatter used for inline scripts does **not** add linefeeds after each `echo()`, you have to add them yourself if you want them. 
+
+# Optional Typing
+
+Glue is dynamically typed but that means when performing operations the code has to decide which type will "win". The rule used is that the left operand wins, so:
+
+```python
+echo("5" + 5)
+echo(5 + "5")
+```
+
+This outputs:
+
+```
+55
+10
+```
+
+On the first line we have a string on the left so the right operand is cast to a string and concatenated.
+On the second line we have an integer on the left so the string is cast to a number and summed.
+
+The downside of such dynamic behavior is that within a script, you generally know what the types are or can rapidly deduce it from the context, but if the value comes from outside the script as an input variable, you are fully dependent on that external call.
+
+For example, what does this do?
+
+```python
+a ?= null
+b ?= null
+echo(a + b)
+```
+
+That is entirely dependent on what is passed in, this might not be too important for your code or it might be, what does this do?
+
+```python
+a ?= null
+while (a + 1 > 0)
+	# do something
+```
+
+To handle situations like this where you need additional guarantees about the type, you can use optional typing:
+
+```python
+integer a ?= null
+while (a + 1 > 0)
+	# do something
+``` 
+
+This will cast whatever is assigned to `a` to an integer number.
+
+If all else fails you can plug in methods to perform explicit conversion but these are not provided by default.
+
 # Tracing
 
 The code comes with the necessary tools to enable you to trace through your code step by step. The CLI implementation has an example of how this can be done.

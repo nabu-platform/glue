@@ -19,6 +19,7 @@ public class ForEachExecutor extends SequenceExecutor {
 	private Operation<ExecutionContext> forEach;
 	private String temporaryVariable;
 	private String temporaryIndex;
+	private boolean allowVariableReuse = true;
 
 	public ForEachExecutor(ExecutorGroup parent, ExecutorContext context, Operation<ExecutionContext> condition, Operation<ExecutionContext> forEach, String temporaryVariable, String temporaryIndex, Executor...steps) {
 		super(parent, context, condition, steps);
@@ -53,7 +54,7 @@ public class ForEachExecutor extends SequenceExecutor {
 				else {
 					throw new ExecutionException("The variable " + forEach + " is not of type array or collection");
 				}
-				if (context.getPipeline().get(temporaryVariable) != null) {
+				if (!allowVariableReuse && context.getPipeline().get(temporaryVariable) != null) {
 					throw new ExecutionException("The variable " + temporaryVariable + " is already taken, it can not be reused");
 				}
 				int index = 0;
@@ -100,5 +101,13 @@ public class ForEachExecutor extends SequenceExecutor {
 
 	public void setForEach(Operation<ExecutionContext> forEach) {
 		this.forEach = forEach;
+	}
+
+	public boolean isAllowVariableReuse() {
+		return allowVariableReuse;
+	}
+
+	public void setAllowVariableReuse(boolean allowVariableReuse) {
+		this.allowVariableReuse = allowVariableReuse;
 	}
 }

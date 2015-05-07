@@ -76,6 +76,8 @@ if (size(find("glue-editor", dependencies)) > 0)
 		"gluecide.cyg=" + join("\n", ecygwin),
 		"gluecide.bat=" + join("\r\n", ebat))
 
+files = array(files, "readme.txt=" + join("\n", "packaged = " + format(now(), "yyyy/MM/dd HH:mm:ss"), "by = " + environment("user.name")))
+
 # Create the zip
 zip = zip(files)
 
