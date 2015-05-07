@@ -121,8 +121,8 @@ public class GlueParser implements Parser {
 				boolean overwriteIfExists = true;
 				
 				// check if there is a comment on the line
-				int index = line.indexOf('#');
-				if (index >= 0) {
+				int index = -1;
+				while ((index = line.indexOf('#', index)) >= 0) {
 					// check for escape character
 					if (line.charAt(index - 1) == '\\') {
 						line = line.substring(0, index - 1) + line.substring(index);

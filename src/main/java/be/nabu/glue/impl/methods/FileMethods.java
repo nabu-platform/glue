@@ -39,6 +39,9 @@ public class FileMethods {
 	 * @throws IOException 
 	 */
 	public static InputStream read(String fileName) throws IOException {
+		if (fileName == null) {
+			return null;
+		}
 		Resource resource = resolve(fileName);
 		if (resource == null) {
 			return null;
