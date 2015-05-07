@@ -2,6 +2,7 @@ package be.nabu.glue.impl.parsers;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringWriter;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
@@ -9,8 +10,11 @@ import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import be.nabu.glue.ScriptRuntime;
+import be.nabu.glue.VirtualScript;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutorGroup;
+import be.nabu.glue.api.OutputFormatter;
 import be.nabu.glue.api.Parser;
 import be.nabu.glue.impl.GlueQueryParser;
 import be.nabu.glue.impl.SimpleExecutorContext;
@@ -20,6 +24,7 @@ import be.nabu.glue.impl.executors.ForEachExecutor;
 import be.nabu.glue.impl.executors.SequenceExecutor;
 import be.nabu.glue.impl.executors.SwitchExecutor;
 import be.nabu.glue.impl.executors.WhileExecutor;
+import be.nabu.glue.impl.formatters.SimpleOutputFormatter;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.converter.api.Converter;
 import be.nabu.libs.evaluator.EvaluationException;
@@ -274,8 +279,9 @@ public class GlueParser implements Parser {
 						}
 					}
 					context.setLine(line);
+					String type = null;
 					// check if there is a variable assignment on the line
-					if (line.matches("(?s)^[\\w]+[\\s?]*=.*")) {
+					if (line.matches("(?s)^[\\w ]+[\\s?]*=.*")) {
 						index = line.indexOf('=');
 						variableName = line.substring(0, index).trim();
 						line = line.substring(index + 1).trim();
@@ -284,9 +290,16 @@ public class GlueParser implements Parser {
 							overwriteIfExists = false;
 							variableName = variableName.substring(0, variableName.length() - 1).trim();
 						}
+						// if there is a space, you are probably defining a type
+						index = variableName.indexOf(' ');
+						if (index > 0) {
+							type = variableName.substring(0, index);
+							variableName = variableName.substring(index + 1);
+						}
 					}
 					Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(line));
-					executorGroups.peek().getChildren().add(new EvaluateExecutor(executorGroups.peek(), context, null, variableName, operation, overwriteIfExists));
+					EvaluateExecutor evaluateExecutor = new EvaluateExecutor(executorGroups.peek(), context, null, variableName, type, operation, overwriteIfExists);
+					executorGroups.peek().getChildren().add(evaluateExecutor);
 				}
 				lastPosition = currentPosition;
 			}
@@ -301,7 +314,7 @@ public class GlueParser implements Parser {
 		}
 		return root;
 	}
-
+	
 	public Operation<ExecutionContext> analyze(String line) throws ParseException {
 		return line == null || line.isEmpty() ? null : analyzer.analyze(GlueQueryParser.getInstance().parse(line));
 	}
@@ -321,6 +334,12 @@ public class GlueParser implements Parser {
 
 	@Override
 	public String substitute(String value, ExecutionContext context, boolean allowNull) {
+		value = substituteScripts(value, context, allowNull);
+		value = substituteOperations(value, context, allowNull);
+		return value;
+	}
+
+	private String substituteOperations(String value, ExecutionContext context, boolean allowNull) {
 		Pattern pattern = Pattern.compile("(?<!\\\\)\\$\\{([^}]+)\\}");
 		Matcher matcher = pattern.matcher(value);
 		try {
@@ -349,6 +368,32 @@ public class GlueParser implements Parser {
 		}
 		catch (EvaluationException e) {
 			throw new RuntimeException(e);
+		}
+	}
+	
+	private String substituteScripts(String value, ExecutionContext context, boolean allowNull) {
+		Pattern pattern = Pattern.compile("(?s)(?<!\\\\)\\$\\{\\{(.*?)\\}\\}");
+		Matcher matcher = pattern.matcher(value);
+		try {
+			while (matcher.find()) {
+				String script = matcher.group().replaceAll(pattern.pattern(), "$1");
+				ScriptRuntime fork = ScriptRuntime.getRuntime().fork(new VirtualScript(ScriptRuntime.getRuntime().getScript(), script));
+				StringWriter log = new StringWriter();
+				OutputFormatter buffer = new SimpleOutputFormatter(log, false);
+				fork.setFormatter(buffer);
+				fork.run();
+				if (fork.getException() != null) {
+					throw new RuntimeException(fork.getException());
+				}
+				value = value.replaceAll(Pattern.quote(matcher.group()), Matcher.quoteReplacement(log.toString()));
+			}
+			return value;
+		}
+		catch (ParseException e) {
+			throw new IllegalArgumentException(e);
+		}
+		catch (IOException e) {
+			throw new IllegalArgumentException("Can not parse embedded script", e);
 		}
 	}
 }

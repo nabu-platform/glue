@@ -72,10 +72,14 @@ public class TestMethods {
 	}
 	
 	public static boolean confirmEquals(String message, Object expected, Object actual) throws IOException {
-		return checkEquals(message, expected, actual, true);
+		return checkEquals(message, expected, actual, true, false);
+	}
+	
+	public static boolean confirmNotEquals(String message, Object expected, Object actual) throws IOException {
+		return checkEquals(message, expected, actual, true, true);
 	}
 
-	private static boolean checkEquals(String message, Object expected, Object actual, boolean fail) {
+	private static boolean checkEquals(String message, Object expected, Object actual, boolean fail, boolean invert) {
 		if (expected instanceof Object[]) {
 			expected = Arrays.asList((Object[]) expected);
 		}
@@ -97,7 +101,10 @@ public class TestMethods {
 		}
 		if (!checked) {
 			result = (expected == null && actual == null) || (expected != null && expected.equals(actual));
-			check(message, result, result ? stringify(expected) : stringify(expected) + " != " + stringify(actual), fail);
+			if (invert) {
+				result = !result;
+			}
+			check(message, result, result ? stringify(expected) : stringify(expected) + (invert ? " = " : " != ") + stringify(actual), fail);
 		}
 		return result;
 	}
@@ -135,7 +142,11 @@ public class TestMethods {
 	}
 	
 	public static boolean validateEquals(String message, Object expected, Object actual) throws IOException {
-		return checkEquals(message, expected, actual, false);
+		return checkEquals(message, expected, actual, false, false);
+	}
+	
+	public static boolean validateNotEquals(String message, Object expected, Object actual) throws IOException {
+		return checkEquals(message, expected, actual, false, true);
 	}
 	
 	public static boolean validateMatches(String message, String regex, Object actual) throws IOException {

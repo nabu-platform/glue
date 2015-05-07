@@ -6,7 +6,7 @@ public class ShellMethods {
 
 	public static String pwd() {
 		// remove the scheme
-		return new File("").toURI().toString().replaceFirst("^file:", "");
+		return new File("").toURI().getPath();
 	}
 	
 }

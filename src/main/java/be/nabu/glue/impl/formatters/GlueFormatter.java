@@ -65,6 +65,10 @@ public class GlueFormatter implements Formatter {
 	
 	private void format(ExecutorGroup group, Writer writer, int depth) throws IOException {
 		for (Executor executor : group.getChildren()) {
+			// ignore generated executors
+			if (executor.isGenerated()) {
+				continue;
+			}
 			// before each group, add a line feed
 			if (executor instanceof ExecutorGroup) {
 				println(writer);
@@ -78,6 +82,9 @@ public class GlueFormatter implements Formatter {
 			if (executor instanceof EvaluateExecutor) {
 				EvaluateExecutor evaluateExecutor = (EvaluateExecutor) executor;
 				String stringToPrint = "";
+				if (evaluateExecutor.getOptionalType() != null) {
+					stringToPrint += evaluateExecutor.getOptionalType() + " ";
+				}
 				if (evaluateExecutor.getVariableName() != null) {
 					stringToPrint += evaluateExecutor.getVariableName();
 					if (evaluateExecutor.isOverwriteIfExists()) {

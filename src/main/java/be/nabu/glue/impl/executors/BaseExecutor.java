@@ -73,4 +73,9 @@ abstract public class BaseExecutor implements Executor {
 	public void setCondition(Operation<ExecutionContext> condition) {
 		this.condition = condition;
 	}
+	
+	@Override
+	public boolean isGenerated() {
+		return false;
+	}
 }
