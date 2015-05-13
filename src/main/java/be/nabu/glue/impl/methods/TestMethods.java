@@ -9,6 +9,7 @@ import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.runs.AssertionException;
 import be.nabu.glue.api.runs.CallLocation;
+import be.nabu.glue.api.runs.Validation;
 import be.nabu.glue.api.runs.Validation.Level;
 import be.nabu.glue.impl.SimpleCallLocation;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
@@ -166,8 +167,8 @@ public class TestMethods {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static ValidationImpl[] report() {
-		List<ValidationImpl> messages = (List<ValidationImpl>) ScriptRuntime.getRuntime().getContext().get(VALIDATION);
+	public static Validation[] report() {
+		List<Validation> messages = (List<Validation>) ScriptRuntime.getRuntime().getContext().get(VALIDATION);
 		return messages == null || messages.isEmpty() ? null : messages.toArray(new ValidationImpl[0]);
 	}
 	
@@ -193,14 +194,14 @@ public class TestMethods {
 			current = current.getParent();
 		}
 		if (!runtime.getContext().containsKey(VALIDATION)) {
-			runtime.getContext().put(VALIDATION, new ArrayList<ValidationImpl>());
+			runtime.getContext().put(VALIDATION, new ArrayList<Validation>());
 		}
-		List<ValidationImpl> messages = (List<ValidationImpl>) runtime.getContext().get(VALIDATION);
+		List<Validation> messages = (List<Validation>) runtime.getContext().get(VALIDATION);
 		
 		Level level = result == null || !result ? Level.ERROR : Level.INFO;
 		
 		// add the message
-		ValidationImpl validation = new ValidationImpl(level, check, message, callStack, runtime.getExecutionContext().getCurrent());
+		Validation validation = new ValidationImpl(level, check, message, callStack, runtime.getExecutionContext().getCurrent());
 		messages.add(validation);
 		
 		runtime.getFormatter().validated(validation);

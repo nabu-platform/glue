@@ -98,6 +98,11 @@ public class ScriptMethods {
 			: System.getProperty(name, System.getenv(name));
 	}
 	
+	public static String environment(String name, String defaultValue) {
+		String value = environment(name);
+		return value == null ? defaultValue : value;
+	}
+	
 	public static void fail(String message) {
 		throw new ScriptRuntimeException(ScriptRuntime.getRuntime(), message);
 	}
