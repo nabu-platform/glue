@@ -46,6 +46,9 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 			else if (optionalType.equalsIgnoreCase("string")) {
 				targetType = String.class;
 			}
+			else if (optionalType.equalsIgnoreCase("boolean")) {
+				targetType = Boolean.class;
+			}
 			else {
 				throw new ParseException("Unknown type: " + optionalType, 0);
 			}

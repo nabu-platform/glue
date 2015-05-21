@@ -374,6 +374,10 @@ public class ScriptMethods {
 		return toBytesAndClose(toStream(object));
 	}
 	
+	public static boolean contains(Object object, Object...array) {
+		return Arrays.asList(array(array)).contains(object);
+	}
+	
 	static InputStream toStream(Object content) throws IOException {
 		if (content instanceof String) {
 			return new ByteArrayInputStream(((String) content).getBytes(ScriptRuntime.getRuntime().getScript().getCharset())); 

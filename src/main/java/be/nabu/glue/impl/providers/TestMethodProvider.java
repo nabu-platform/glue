@@ -66,7 +66,7 @@ public class TestMethodProvider implements MethodProvider {
 					new SimpleParameterDescription("message", "The message for this test", "String"),
 					new SimpleParameterDescription("toExecute", "Any amount of executable statements", "Method")
 			}),
-				new ArrayList<ParameterDescription>()));
+			new ArrayList<ParameterDescription>()));
 		return descriptions;
 	}
 	
