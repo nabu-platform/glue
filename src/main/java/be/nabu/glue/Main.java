@@ -283,12 +283,18 @@ public class Main {
 	}
 
 	public static MultipleRepository buildRepository(Charset charset, String...arguments) throws IOException, URISyntaxException {
+		return buildRepository(charset, true, arguments);
+	}
+	
+	public static MultipleRepository buildRepository(Charset charset, boolean includeLocal, String...arguments) throws IOException, URISyntaxException {
 		MultipleRepository repository = new MultipleRepository(null);
 		if (ResourceFactory.getInstance().getResolver("file") != null) {
 			// add the current directory so you can go to a directory and execute it there
-			ResourceContainer<?> localContainer = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(new File("").toURI(), null);
-			if (localContainer != null) {
-				repository.add(new ScannableScriptRepository(repository, localContainer, new GlueParserProvider(), charset));
+			if (includeLocal) {
+				ResourceContainer<?> localContainer = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(new File("").toURI(), null);
+				if (localContainer != null) {
+					repository.add(new ScannableScriptRepository(repository, localContainer, new GlueParserProvider(), charset));
+				}
 			}
 			// try a dedicated "GLUEPATH" variable first because the general "PATH" variable tends to be very big (at least when searching recursively) and slows down the startup of glue
 			String systemPath = System.getenv("GLUEPATH");
@@ -391,7 +397,7 @@ public class Main {
 		return null;
 	}
 	
-	private static String getArgument(String name, String defaultValue, String...arguments) {
+	public static String getArgument(String name, String defaultValue, String...arguments) {
 		for (String argument : arguments) {
 			if (argument.trim().startsWith(name + "=")) {
 				String value = argument.substring(name.length() + 1);

@@ -37,16 +37,23 @@ import be.nabu.utils.io.api.WritableContainer;
 @MethodProviderClass(namespace = "file")
 public class FileMethods {
 	
+	public static InputStream read(String fileName) throws IOException {
+		return read(fileName, true);
+	}
+	
 	/**
 	 * Reads a file from the file system
 	 * @throws IOException 
 	 */
-	public static InputStream read(String fileName) throws IOException {
+	public static InputStream read(String fileName, boolean tryURL) throws IOException {
 		if (fileName == null) {
 			return null;
 		}
 		Resource resource = resolve(fileName);
 		if (resource == null) {
+			if (!tryURL) {
+				return null;
+			}
 			// first try standard URL technology for a simple file read
 			URI uri = uri(fileName);
 			URL url = uri.toURL();
