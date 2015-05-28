@@ -291,6 +291,28 @@ Special care has to be taken with varargs in combination with overloading. Only 
 
 As an additional note the parameter here is exposed as "arg0" because no GlueParam annotation has been set.
 
+#### Varargs
+
+Glue provides a method called join() which looks like this in java:
+
+```java
+public static String join(@GlueParam(name = "separator") String separator, @GlueParam(name = "strings") String...strings)
+```
+
+In glue you can call this using named parameters:
+
+```python
+>> echo(join(strings: "this", "is", "a test!", separator: " "))
+this is a test!
+```
+
+Which is equivalent of building the array yourself:
+
+```python
+>> echo(join(strings: array("this", "is", "a test!"), separator: " "))
+this is a test!
+```
+
 ## Switch
 
 There is a switch statement that is actually a mixture of a regular java switch and an if/elseif structure. This is perhaps best explained by an example (available in the testcases of glue):
