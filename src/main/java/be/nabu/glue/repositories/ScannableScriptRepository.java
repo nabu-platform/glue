@@ -2,6 +2,7 @@ package be.nabu.glue.repositories;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -52,7 +53,7 @@ public class ScannableScriptRepository implements ResourceScriptRepository {
 	
 	@Override
 	public Iterator<Script> iterator() {
-		return getScripts().values().iterator();
+		return new ArrayList<Script>(getScripts().values()).iterator();
 	}
 
 	@Override

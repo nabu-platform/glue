@@ -72,4 +72,8 @@ public class DynamicMethodOperation extends BaseOperation<ExecutionContext> {
 		}
 		return operation.toString();
 	}
+
+	public MethodProvider[] getMethodProviders() {
+		return methodProviders;
+	}
 }

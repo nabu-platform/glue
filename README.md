@@ -210,6 +210,87 @@ result = format()
 
 In this case the format script would simply use the default values it has.
 
+### Named Parameters
+
+Glue optionally supports named parameters which can be turned on (default) or off by setting the system property `named.parameters`.
+
+For example suppose you have a script `test`:
+
+```python
+a ?= null
+b ?= null
+c ?= null
+echo(a, b, c)
+```
+
+And you have a script `test2`:
+
+```python
+test(1, 2, 3)
+```
+
+This will print out:
+
+```
+1
+2
+3
+```
+
+However you could also do this:
+
+```python
+test(c: 1, b: 2)
+```
+
+This would print out:
+
+```
+null
+2
+1
+```
+
+A slightly more complex example:
+
+```python
+test(c: test(b : "something")/b)
+```
+
+Which would print:
+
+```
+null
+something
+null
+null
+null
+something
+```
+
+Right before the first execution of an operation, glue will perform a rewrite of said operation (if enabled) that will remap the parameters based on their naming.
+
+Additional care has to be taken for java methods as they support overloading based on amount of parameters. The rewrite will always use the definition with the most parameters to perform the mapping but will only send along the max amount of parameters declared by the user (as long as this is at least the minimal amount of parameters expected).
+
+So for instance if you have two java methods:
+
+```java
+public Integer sum(Integer a, Integer b, Integer c);
+public Integer sum(Integer a, Integer b);
+```
+
+And in glue the user writes:
+
+```python
+sum(arg0: 1)
+```
+
+Glue will use the first description (the longest) to map the "arg0" parameter. Based on the user declaration, the highest declared parameter index is "0" (the first parameter). However the smallest sum() method known requires at least two parameters so glue will fill in the second parameter as "null" as part of the rewrite process.
+
+Special care has to be taken with varargs in combination with overloading. Only the longest match should use varargs to avoid incorrect rewriting.
+
+As an additional note the parameter here is exposed as "arg0" because no GlueParam annotation has been set.
+
 ## Switch
 
 There is a switch statement that is actually a mixture of a regular java switch and an if/elseif structure. This is perhaps best explained by an example (available in the testcases of glue):

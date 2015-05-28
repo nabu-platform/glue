@@ -149,7 +149,7 @@ public class StringMethods {
 		return original == null ? null : split("[\\s]+", original.trim());
 	}
 	
-	public static String join(String separator, String...strings) {
+	public static String join(@GlueParam(name = "separator") String separator, @GlueParam(name = "strings") String...strings) {
 		if (strings == null || strings.length == 0) {
 			return null;
 		}

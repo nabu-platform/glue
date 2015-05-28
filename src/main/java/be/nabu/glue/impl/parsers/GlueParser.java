@@ -41,8 +41,10 @@ import be.nabu.utils.io.api.ReadableContainer;
 public class GlueParser implements Parser {
 	
 	private Analyzer<ExecutionContext> analyzer;
+	private OperationProvider<ExecutionContext> operationProvider;
 
 	public GlueParser(OperationProvider<ExecutionContext> operationProvider) {
+		this.operationProvider = operationProvider;
 		this.analyzer = new PathAnalyzer<ExecutionContext>(operationProvider);
 	}
 	
@@ -298,7 +300,7 @@ public class GlueParser implements Parser {
 						}
 					}
 					Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(line));
-					EvaluateExecutor evaluateExecutor = new EvaluateExecutor(executorGroups.peek(), context, null, variableName, type, operation, overwriteIfExists);
+					EvaluateExecutor evaluateExecutor = new EvaluateExecutor(executorGroups.peek(), context, operationProvider, null, variableName, type, operation, overwriteIfExists);
 					executorGroups.peek().getChildren().add(evaluateExecutor);
 				}
 				lastPosition = currentPosition;
@@ -396,4 +398,9 @@ public class GlueParser implements Parser {
 			throw new IllegalArgumentException("Can not parse embedded script", e);
 		}
 	}
+
+	public OperationProvider<ExecutionContext> getOperationProvider() {
+		return operationProvider;
+	}
+	
 }

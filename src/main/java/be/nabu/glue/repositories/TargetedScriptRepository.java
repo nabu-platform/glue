@@ -5,6 +5,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.security.Principal;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class TargetedScriptRepository implements ResourceScriptRepository {
 	
 	@Override
 	public Iterator<Script> iterator() {
-		return scripts.values().iterator();
+		return new ArrayList<Script>(scripts.values()).iterator();
 	}
 
 	@Override
