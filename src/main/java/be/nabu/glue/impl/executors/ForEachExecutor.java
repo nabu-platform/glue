@@ -34,21 +34,20 @@ public class ForEachExecutor extends SequenceExecutor {
 		try {
 			Object original = forEach.evaluate(context);
 			if (original != null) {
-				List elements = new ArrayList();
-				if (original instanceof Collection) {
-					elements.addAll((Collection) original);
+				Iterable elements;
+				if (original instanceof Iterable) {
+					elements = (Iterable) original;
+				}
+				else if (original instanceof Collection) {
+					elements = new ArrayList((Collection) original);
 				}
 				else if (original instanceof Object[]) {
-					elements.addAll(Arrays.asList((Object[]) original));
+					elements = new ArrayList(Arrays.asList((Object[]) original));
 				}
-				else if (original instanceof Integer) {
-					for (int i = 0; i < (Integer) original; i++) {
-						elements.add(i);
-					}
-				}
-				else if (original instanceof Long) {
-					for (long i = 0; i < (Long) original; i++) {
-						elements.add(i);
+				else if (original instanceof Number) {
+					elements = new ArrayList();
+					for (int i = 0; i < ((Number) original).intValue(); i++) {
+						((List) elements).add(i);
 					}
 				}
 				else {
