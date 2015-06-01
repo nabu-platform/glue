@@ -26,7 +26,7 @@ import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.QueryPart.Type;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
-import be.nabu.libs.evaluator.base.BaseOperation;
+import be.nabu.libs.evaluator.base.BaseMethodOperation;
 import be.nabu.libs.resources.URIUtils;
 import be.nabu.utils.io.IOUtils;
 
@@ -47,7 +47,7 @@ public class SystemMethodProvider implements MethodProvider {
 		return new ArrayList<MethodDescription>();
 	}
 
-	private static class CLIOperation extends BaseOperation<ExecutionContext> {
+	private static class CLIOperation extends BaseMethodOperation<ExecutionContext> {
 
 		private Converter converter;
 		private String command;
@@ -136,12 +136,6 @@ public class SystemMethodProvider implements MethodProvider {
 					throw new EvaluationException(e);
 				}
 			}
-		}
-
-
-		@Override
-		public OperationType getType() {
-			return OperationType.METHOD;
 		}
 	}
 
