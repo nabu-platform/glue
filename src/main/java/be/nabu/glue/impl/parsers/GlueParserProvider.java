@@ -17,7 +17,7 @@ public class GlueParserProvider implements ParserProvider {
 		while (repository.getParent() != null) {
 			repository = repository.getParent();
 		}
-		return name.endsWith(".glue") ? new GlueParser(new GlueOperationProvider(
+		return name.endsWith(".glue") && !name.startsWith(".") ? new GlueParser(new GlueOperationProvider(
 			new ScriptMethodProvider(repository),
 			new SPIMethodProvider(),
 			new StaticJavaMethodProvider(),

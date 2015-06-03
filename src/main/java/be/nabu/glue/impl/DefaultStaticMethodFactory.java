@@ -6,6 +6,7 @@ import java.util.List;
 import be.nabu.glue.api.StaticMethodFactory;
 import be.nabu.glue.impl.methods.FileMethods;
 import be.nabu.glue.impl.methods.HTTPMethods;
+import be.nabu.glue.impl.methods.ReflectionMethods;
 import be.nabu.glue.impl.methods.ScriptMethods;
 import be.nabu.glue.impl.methods.StringMethods;
 import be.nabu.glue.impl.methods.SystemMethods;
@@ -18,6 +19,7 @@ public class DefaultStaticMethodFactory implements StaticMethodFactory {
 	public List<Class<?>> getStaticMethodClasses() {
 		List<Class<?>> classes = new ArrayList<Class<?>>();
 		classes.add(ScriptMethods.class);
+		classes.add(ReflectionMethods.class);
 		classes.add(FileMethods.class);
 		classes.add(TestMethods.class);
 		classes.add(StringMethods.class);

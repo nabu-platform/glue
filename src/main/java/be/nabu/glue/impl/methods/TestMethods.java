@@ -59,7 +59,7 @@ public class TestMethods {
 	
 	private static boolean checkMatches(String message, String regex, Object actual, boolean fail) {
 		if (actual == null) {
-			return check(message, false, "null !~ " + regex, true);
+			return check(message, false, "null !~ " + regex, fail);
 		}
 		else {
 			String converted = ConverterFactory.getInstance().getConverter().convert(actual, String.class);

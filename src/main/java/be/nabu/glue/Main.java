@@ -23,6 +23,7 @@ import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.api.ParameterDescription;
+import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.impl.EnvironmentLabelEvaluator;
 import be.nabu.glue.impl.SimpleExecutionEnvironment;
@@ -111,10 +112,17 @@ public class Main {
 			}
 		}
 		else {
+			Script script = null;
+			// assume you are streaming a glue script
 			if (commands.isEmpty()) {
-				throw new IllegalArgumentException("No command found");
+				Parser parser = repository.getParserProvider().newParser(repository, "temp.glue");
+				DynamicScript dynamicScript = new DynamicScript(repository, parser);
+				dynamicScript.setRoot(parser.parse(new BufferedReader(new InputStreamReader(System.in))));
+				script = dynamicScript;
 			}
-			Script script = repository.getScript(commands.get(0));
+			else {
+				script = repository.getScript(commands.get(0));
+			}
 			if (script == null) {
 				throw new IllegalArgumentException("No script found by the name of " + commands.get(0));
 			}
@@ -293,7 +301,7 @@ public class Main {
 			if (includeLocal) {
 				ResourceContainer<?> localContainer = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(new File("").toURI(), null);
 				if (localContainer != null) {
-					repository.add(new ScannableScriptRepository(repository, localContainer, new GlueParserProvider(), charset));
+					repository.add(new ScannableScriptRepository(repository, localContainer, new GlueParserProvider(), charset, false));
 				}
 			}
 			// try a dedicated "GLUEPATH" variable first because the general "PATH" variable tends to be very big (at least when searching recursively) and slows down the startup of glue

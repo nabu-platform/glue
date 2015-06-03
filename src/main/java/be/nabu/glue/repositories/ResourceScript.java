@@ -146,6 +146,9 @@ public class ResourceScript implements Script {
 	
 	private void scanResources(ResourceContainer<?> directory, String path, List<String> resources) {
 		for (Resource child : directory) {
+			if (child.getName().startsWith(".")) {
+				continue;
+			}
 			String childPath = path == null ? child.getName() : path + "/" + child.getName();
 			if (child instanceof ReadableResource) {
 				resources.add(childPath);
@@ -154,5 +157,10 @@ public class ResourceScript implements Script {
 				scanResources((ResourceContainer<?>) child, childPath, resources);
 			}
 		}
+	}
+	
+	@Override
+	public String toString() {
+		return (namespace == null ? "" : namespace + ".") + name;
 	}
 }

@@ -319,13 +319,6 @@ public class ScriptMethods {
 	}
 	
 	/**
-	 * Returns the type of the given object
-	 */
-	public static String typeof(Object object) {
-		return object == null ? "null" : object.getClass().getName();
-	}
-	
-	/**
 	 * Loads a resource as inputstream
 	 */
 	public static InputStream resource(String name) throws IOException {

@@ -25,19 +25,25 @@ public class ScannableScriptRepository implements ResourceScriptRepository {
 	private Map<String, Script> scripts;
 	private Charset charset;
 	private ScriptRepository parent;
+	private boolean recurse;
 
 	public ScannableScriptRepository(ScriptRepository parent, ResourceContainer<?> root, ParserProvider parserProvider, Charset charset) throws IOException {
+		this(parent, root, parserProvider, charset, true);
+	}
+	
+	public ScannableScriptRepository(ScriptRepository parent, ResourceContainer<?> root, ParserProvider parserProvider, Charset charset, boolean recurse) throws IOException {
 		this.parent = parent;
 		this.root = root;
 		this.parserProvider = parserProvider;
 		this.charset = charset;
-		scripts = scan(root, null);
+		this.recurse = recurse;
+		this.scripts = scan(root, null);
 	}
 	
 	private Map<String, Script> scan(ResourceContainer<?> folder, String namespace) throws IOException {
 		Map<String, Script> scripts = new HashMap<String, Script>();
 		for (Resource child : folder) {
-			if (child instanceof ResourceContainer) {
+			if (child instanceof ResourceContainer && recurse) {
 				scripts.putAll(scan((ResourceContainer<?>) child, namespace == null ? child.getName() : namespace + "." + child.getName()));
 			}
 			else {
@@ -88,4 +94,5 @@ public class ScannableScriptRepository implements ResourceScriptRepository {
 	public void refresh() throws IOException {
 		scripts = scan(root, null);
 	}
+
 }
