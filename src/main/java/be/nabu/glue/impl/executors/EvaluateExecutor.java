@@ -4,7 +4,6 @@ import java.io.Closeable;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +16,10 @@ import be.nabu.glue.api.ExecutorContext;
 import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.MethodProvider;
+import be.nabu.glue.api.OptionalTypeProvider;
 import be.nabu.glue.api.ParameterDescription;
+import be.nabu.glue.api.OptionalTypeConverter;
+import be.nabu.glue.impl.SPIOptionalTypeProvider;
 import be.nabu.glue.impl.TransactionalCloseable;
 import be.nabu.glue.impl.methods.ScriptMethods;
 import be.nabu.glue.impl.operations.GlueOperationProvider;
@@ -40,10 +42,12 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 	private boolean generated = false;
 	private boolean allowNamedParameters = Boolean.parseBoolean(System.getProperty("named.parameters", "true"));
 	private String optionalType;
-	private Class<?> targetType;
 	private OperationProvider<ExecutionContext> operationProvider;
 
 	private PathAnalyzer<ExecutionContext> pathAnalyzer;
+	private OptionalTypeProvider optionalTypeProvider = new SPIOptionalTypeProvider();
+
+	private OptionalTypeConverter converter;
 	
 	public EvaluateExecutor(ExecutorGroup parent, ExecutorContext context, OperationProvider<ExecutionContext> operationProvider, Operation<ExecutionContext> condition, String variableName, String optionalType, Operation<ExecutionContext> operation, boolean overwriteIfExists) throws ParseException {
 		super(parent, context, condition);
@@ -54,22 +58,8 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 		this.operation = operation;
 		this.overwriteIfExists = overwriteIfExists;
 		if (optionalType != null) {
-			if (optionalType.equalsIgnoreCase("integer")) {
-				targetType = Long.class;
-			}
-			else if (optionalType.equalsIgnoreCase("decimal")) {
-				targetType = Double.class;
-			}
-			else if (optionalType.equalsIgnoreCase("date")) {
-				targetType = Date.class;
-			}
-			else if (optionalType.equalsIgnoreCase("string")) {
-				targetType = String.class;
-			}
-			else if (optionalType.equalsIgnoreCase("boolean")) {
-				targetType = Boolean.class;
-			}
-			else {
+			converter = optionalTypeProvider.getConverter(optionalType);
+			if (converter == null) {
 				throw new ParseException("Unknown type: " + optionalType, 0);
 			}
 		}
@@ -236,9 +226,6 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 						}
 						context.getPipeline().put(variableName, value);
 					}
-					if (targetType != null && context.getPipeline().containsKey(variableName)) {
-						context.getPipeline().put(variableName, ConverterFactory.getInstance().getConverter().convert(context.getPipeline().get(variableName), targetType));
-					}
 				}
 			}
 			catch (Exception e) {
@@ -247,6 +234,9 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 		}
 		else if (context.isDebug() && variableName != null && context.getPipeline().get(variableName) != null && !overwriteIfExists) {
 			ScriptRuntime.getRuntime().getFormatter().print("Inherited parameter: " + variableName + " = " + context.getPipeline().get(variableName));
+		}
+		if (variableName != null && converter != null && context.getPipeline().containsKey(variableName)) {
+			context.getPipeline().put(variableName, converter.convert(context.getPipeline().get(variableName)));
 		}
 	}
 
