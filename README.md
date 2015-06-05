@@ -622,7 +622,8 @@ That is entirely dependent on what is passed in, this might not be too important
 
 ```python
 a ?= null
-while (a + 1 > 0)
+while (a < 0)
+	a = a + 1
 	# do something
 ```
 
@@ -637,6 +638,8 @@ while (a + 1 > 0)
 This will cast whatever is assigned to `a` to an integer number.
 
 If all else fails you can plug in methods to perform explicit conversion but these are not provided by default.
+
+Note that the type system is also pluggable so custom type resolving can be added.
 
 # Tracing
 
