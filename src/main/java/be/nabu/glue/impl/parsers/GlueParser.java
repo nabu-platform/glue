@@ -102,7 +102,7 @@ public class GlueParser implements Parser {
 				else if (line.trim().startsWith("@")) {
 					line = line.trim().substring(1).trim();
 					String [] parts = line.split("[\\s=]+", 2);
-					annotations.put(parts[0], parts.length >= 2 ? parts[1] : "true");
+					annotations.put(parts[0], parts.length >= 2 ? parts[1] : null);
 					continue;
 				}
 				int depth = getDepth(line);
