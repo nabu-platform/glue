@@ -1,6 +1,8 @@
 test = array(tuple("a", "b"), tuple("b", "c"), tuple("c", "d"))
 result = first(test[$0 == "b"]/$1)
 confirmEquals("Selected the second tuple", "c", result)
+confirmEquals("Select nested index", "a", test/$0/$0)
+confirmEquals("Select nested index", "a", test[0][0])
 
 single = first(array(tuple("a", "b")))
 confirmEquals("Check indexed access", "a", single[0])
