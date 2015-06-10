@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import be.nabu.glue.OptionalTypeProviderFactory;
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.AssignmentExecutor;
 import be.nabu.glue.api.ExecutionContext;
@@ -19,7 +20,9 @@ import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.api.OptionalTypeProvider;
 import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.OptionalTypeConverter;
-import be.nabu.glue.impl.SPIOptionalTypeProvider;
+import be.nabu.glue.api.ScriptRepository;
+import be.nabu.glue.impl.MultipleOptionalTypeProvider;
+import be.nabu.glue.impl.StructureTypeProvider;
 import be.nabu.glue.impl.TransactionalCloseable;
 import be.nabu.glue.impl.methods.ScriptMethods;
 import be.nabu.glue.impl.operations.GlueOperationProvider;
@@ -34,6 +37,7 @@ import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor {
 
 	private static final int BLOB_LENGTH = 500;
+	private static final boolean ALLOW_STRUCTURE_TYPES = Boolean.parseBoolean(System.getProperty("structure.allow.types", "true"));
 	
 	private String variableName;
 	private Operation<ExecutionContext> operation, rewrittenOperation;
@@ -45,11 +49,11 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 	private OperationProvider<ExecutionContext> operationProvider;
 
 	private PathAnalyzer<ExecutionContext> pathAnalyzer;
-	private OptionalTypeProvider optionalTypeProvider = new SPIOptionalTypeProvider();
+	private OptionalTypeProvider optionalTypeProvider;
 
 	private OptionalTypeConverter converter;
 	
-	public EvaluateExecutor(ExecutorGroup parent, ExecutorContext context, OperationProvider<ExecutionContext> operationProvider, Operation<ExecutionContext> condition, String variableName, String optionalType, Operation<ExecutionContext> operation, boolean overwriteIfExists) throws ParseException {
+	public EvaluateExecutor(ExecutorGroup parent, ExecutorContext context, ScriptRepository repository, OperationProvider<ExecutionContext> operationProvider, Operation<ExecutionContext> condition, String variableName, String optionalType, Operation<ExecutionContext> operation, boolean overwriteIfExists) throws ParseException {
 		super(parent, context, condition);
 		this.operationProvider = operationProvider;
 		this.pathAnalyzer = new PathAnalyzer<ExecutionContext>(operationProvider);
@@ -58,6 +62,9 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 		this.operation = operation;
 		this.overwriteIfExists = overwriteIfExists;
 		if (optionalType != null) {
+			optionalTypeProvider = ALLOW_STRUCTURE_TYPES
+				? new MultipleOptionalTypeProvider(Arrays.asList(OptionalTypeProviderFactory.getInstance().getProvider(), new StructureTypeProvider(repository)))
+				: OptionalTypeProviderFactory.getInstance().getProvider();
 			converter = optionalTypeProvider.getConverter(optionalType);
 			if (converter == null) {
 				throw new ParseException("Unknown type: " + optionalType, 0);
@@ -103,74 +110,79 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 					}
 				}
 			}
-			// we can only rewrite if we have a description
 			boolean canRewrite = description != null;
-			Map<String, QueryPart> newParts = new LinkedHashMap<String, QueryPart>();
-			if (description != null) {
-				for (ParameterDescription parameter : description.getParameters()) {
-					// two parameters with same name are not allowed!
-					if (newParts.containsKey(parameter.getName())) {
-						canRewrite = false;
-						break;
-					}
-					// set it to null
-					Operation<ExecutionContext> nullOperation = operationProvider.newOperation(OperationType.NATIVE);
-					nullOperation.add(new QueryPart(Type.NULL, null));
-					newParts.put(parameter.getName(), new QueryPart(Type.OPERATION, nullOperation));
-				}
-			}
-			// for index-based access
-			List<String> parameterNames = new ArrayList<String>(newParts.keySet());
-			// even if we can't rewrite, we need to check that you don't actually use the syntax in such a case
-			// the last set parameter index in case of mingling named and unnamed
-			int lastParameterIndex = -1;
-			int highestIndex = -1;
-			for (int i = 1; i < operation.getParts().size(); i++) {
-				boolean isRewritten = false;
-				if (operation.getParts().get(i).getContent() instanceof Operation) {
-					Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) operation.getParts().get(i).getContent();
-					if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.DIVIDE && argumentOperation.getParts().get(1).getContent().equals(":")) {
-						if (!canRewrite) {
-							throw new ParseException("The method '" + fullName + "' does not allow for named parameters", 0);
+			boolean shouldRewrite = description == null || !description.isNamedParametersAllowed();
+			// some methods don't need to be rewritten
+			// even if we should rewrite but we can't we need to check, because in that case you should _not_ have a named parameter
+			if (shouldRewrite) {
+				// we can only rewrite if we have a description
+				Map<String, QueryPart> newParts = new LinkedHashMap<String, QueryPart>();
+				if (description != null) {
+					for (ParameterDescription parameter : description.getParameters()) {
+						// two parameters with same name are not allowed!
+						if (newParts.containsKey(parameter.getName())) {
+							canRewrite = false;
+							break;
 						}
-						String parameterName = argumentOperation.getParts().get(0).getContent().toString();
-						QueryPart valuePart = argumentOperation.getParts().get(2);
-						if (!newParts.containsKey(parameterName)) {
-							throw new ParseException("The parameter '" + parameterName + "' does not exist in the method description of '" + description.getName() + "' (" + description.getNamespace() + ")", 0);
+						// set it to null
+						Operation<ExecutionContext> nullOperation = operationProvider.newOperation(OperationType.NATIVE);
+						nullOperation.add(new QueryPart(Type.NULL, null));
+						newParts.put(parameter.getName(), new QueryPart(Type.OPERATION, nullOperation));
+					}
+				}
+				// for index-based access
+				List<String> parameterNames = new ArrayList<String>(newParts.keySet());
+				// even if we can't rewrite, we need to check that you don't actually use the syntax in such a case
+				// the last set parameter index in case of mingling named and unnamed
+				int lastParameterIndex = -1;
+				int highestIndex = -1;
+				for (int i = 1; i < operation.getParts().size(); i++) {
+					boolean isRewritten = false;
+					if (operation.getParts().get(i).getContent() instanceof Operation) {
+						Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) operation.getParts().get(i).getContent();
+						if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.DIVIDE && argumentOperation.getParts().get(1).getContent().equals(":")) {
+							if (!canRewrite) {
+								throw new ParseException("The method '" + fullName + "' does not allow for named parameters", 0);
+							}
+							String parameterName = argumentOperation.getParts().get(0).getContent().toString();
+							QueryPart valuePart = argumentOperation.getParts().get(2);
+							if (!newParts.containsKey(parameterName)) {
+								throw new ParseException("The parameter '" + parameterName + "' does not exist in the method description of '" + description.getName() + "' (" + description.getNamespace() + ")", 0);
+							}
+							newParts.put(parameterName, valuePart.getType() == Type.OPERATION ? valuePart : new QueryPart(Type.OPERATION, pathAnalyzer.analyze(Arrays.asList(valuePart))));
+							lastParameterIndex = parameterNames.indexOf(parameterName);
+							isRewritten = true;
 						}
-						newParts.put(parameterName, valuePart.getType() == Type.OPERATION ? valuePart : new QueryPart(Type.OPERATION, pathAnalyzer.analyze(Arrays.asList(valuePart))));
-						lastParameterIndex = parameterNames.indexOf(parameterName);
-						isRewritten = true;
 					}
-				}
-				// we did not do a name-based rewrite in the above
-				if (canRewrite && !isRewritten) {
-					// if you have more parameters than defined, it must be a varargs parameter
-					if (lastParameterIndex + 1 >= parameterNames.size()) {
-						if (!description.getParameters().get(lastParameterIndex).isVarargs()) {
-							throw new ParseException("Too many parameters when calling: " + fullName, 0);
+					// we did not do a name-based rewrite in the above
+					if (canRewrite && !isRewritten) {
+						// if you have more parameters than defined, it must be a varargs parameter
+						if (lastParameterIndex + 1 >= parameterNames.size()) {
+							if (!description.getParameters().get(lastParameterIndex).isVarargs()) {
+								throw new ParseException("Too many parameters when calling: " + fullName, 0);
+							}
+							newParts.put(parameterNames.get(lastParameterIndex) + newParts.size(), operation.getParts().get(i));
+							// set the highest index higher!
+							highestIndex = newParts.size() - 1; 
 						}
-						newParts.put(parameterNames.get(lastParameterIndex) + newParts.size(), operation.getParts().get(i));
-						// set the highest index higher!
-						highestIndex = newParts.size() - 1; 
+						else {
+							newParts.put(parameterNames.get(++lastParameterIndex), operation.getParts().get(i));
+						}
 					}
-					else {
-						newParts.put(parameterNames.get(++lastParameterIndex), operation.getParts().get(i));
+					if (lastParameterIndex > highestIndex) {
+						highestIndex = lastParameterIndex;
 					}
 				}
-				if (lastParameterIndex > highestIndex) {
-					highestIndex = lastParameterIndex;
-				}
-			}
-			// only replace the parts if we can rewrite
-			if (canRewrite) {
-				// refresh names, some might have been added dynamically
-				parameterNames = new ArrayList<String>(newParts.keySet());
-				parts = new ArrayList<QueryPart>();
-				parts.add(operation.getParts().get(0).clone());
-				// put at least as many parameters in there as the smallest matching method expects
-				for (int i = 0; i <= Math.max(highestIndex, minimumAmountOfParameters); i++) {
-					parts.add(newParts.get(parameterNames.get(i)));
+				// only replace the parts if we can rewrite
+				if (canRewrite) {
+					// refresh names, some might have been added dynamically
+					parameterNames = new ArrayList<String>(newParts.keySet());
+					parts = new ArrayList<QueryPart>();
+					parts.add(operation.getParts().get(0).clone());
+					// put at least as many parameters in there as the smallest matching method expects
+					for (int i = 0; i <= Math.max(highestIndex, minimumAmountOfParameters); i++) {
+						parts.add(newParts.get(parameterNames.get(i)));
+					}
 				}
 			}
 		}

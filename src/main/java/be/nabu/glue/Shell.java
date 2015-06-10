@@ -40,7 +40,7 @@ public class Shell {
 		SimpleExecutionEnvironment environment = new SimpleExecutionEnvironment(Main.getEnvironmentName(arguments));
 		Main.setArguments(environment, arguments);
 		
-		Parser parser =  new GlueParser(new GlueOperationProvider(
+		Parser parser =  new GlueParser(repository, new GlueOperationProvider(
 			new StaticJavaMethodProvider(ShellMethods.class),
 			new ScriptMethodProvider(repository),
 			new SPIMethodProvider(),

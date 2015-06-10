@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 
-import be.nabu.glue.api.OptionalTypeProvider;
 import be.nabu.glue.api.OptionalTypeConverter;
+import be.nabu.glue.api.OptionalTypeProvider;
 
 public class SPIOptionalTypeProvider implements OptionalTypeProvider {
 
 	private List<OptionalTypeProvider> providers;
-
+	
 	@Override
 	public OptionalTypeConverter getConverter(String type) {
 		OptionalTypeConverter converter = null;
@@ -22,7 +22,7 @@ public class SPIOptionalTypeProvider implements OptionalTypeProvider {
 		}
 		return converter;
 	}
-
+	
 	private List<OptionalTypeProvider> getProviders() {
 		if (providers == null) {
 			synchronized(this) {
@@ -37,4 +37,5 @@ public class SPIOptionalTypeProvider implements OptionalTypeProvider {
 		}
 		return providers;
 	}
+
 }

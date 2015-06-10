@@ -41,6 +41,10 @@ public class TestMethods {
 	public static boolean confirmMatches(String message, String regex, Object actual) throws IOException {
 		return checkMatches(message, regex, actual, true);
 	}
+	
+	public static boolean confirmContains(String message, String regex, Object actual) throws IOException {
+		return checkMatches(message, "(?i)(?s).*" + regex + ".*", actual, true);
+	}
 
 	private static boolean checkNotMatches(String message, String regex, Object actual, boolean fail) {
 		if (actual == null) {
@@ -52,7 +56,7 @@ public class TestMethods {
 				return check(message, false, stringify(actual) + " ~ " + regex + " (incompatible types)", fail);
 			}
 			else {
-				return check(message, !converted.matches(regex), converted + " !~ " + regex, fail);
+				return check(message, !converted.matches(regex), !converted.matches(regex) ? regex : converted + " !~ " + regex, fail);
 			}
 		}
 	}
@@ -67,7 +71,7 @@ public class TestMethods {
 				return check(message, false, stringify(actual) + " !~ " + regex + " (incompatible types)", fail);
 			}
 			else {
-				return check(message, converted.matches(regex), converted + " ~ " + regex, fail);
+				return check(message, converted.matches(regex), converted.matches(regex) ? regex : converted + " ~ " + regex, fail);
 			}
 		}
 	}
@@ -154,12 +158,24 @@ public class TestMethods {
 		return checkMatches(message, regex, actual, false);
 	}
 	
+	public static boolean validateContains(String message, String regex, Object actual) throws IOException {
+		return checkMatches(message, "(?i)(?s).*" + regex + ".*", actual, false);
+	}
+	
 	public static boolean validateNotMatches(String message, String regex, Object actual) throws IOException {
 		return checkNotMatches(message, regex, actual, false);
 	}
 	
+	public static boolean validateNotContains(String message, String regex, Object actual) throws IOException {
+		return checkNotMatches(message, "(?i)(?s).*" + regex + ".*", actual, false);
+	}
+	
 	public static boolean confirmNotMatches(String message, String regex, Object actual) throws IOException {
 		return checkNotMatches(message, regex, actual, true);
+	}
+	
+	public static boolean confirmNotContains(String message, String regex, Object actual) throws IOException {
+		return checkNotMatches(message, "(?i)(?s).*" + regex + ".*", actual, true);
 	}
 	
 	public static boolean not(Boolean value) {

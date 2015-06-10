@@ -16,6 +16,7 @@ import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.api.OutputFormatter;
 import be.nabu.glue.api.Parser;
+import be.nabu.glue.api.ScriptRepository;
 import be.nabu.glue.impl.GlueQueryParser;
 import be.nabu.glue.impl.SimpleExecutorContext;
 import be.nabu.glue.impl.executors.BreakExecutor;
@@ -42,8 +43,10 @@ public class GlueParser implements Parser {
 	
 	private Analyzer<ExecutionContext> analyzer;
 	private OperationProvider<ExecutionContext> operationProvider;
+	private ScriptRepository repository;
 
-	public GlueParser(OperationProvider<ExecutionContext> operationProvider) {
+	public GlueParser(ScriptRepository repository, OperationProvider<ExecutionContext> operationProvider) {
+		this.repository = repository;
 		this.operationProvider = operationProvider;
 		this.analyzer = new PathAnalyzer<ExecutionContext>(operationProvider);
 	}
@@ -301,7 +304,7 @@ public class GlueParser implements Parser {
 						}
 					}
 					Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(line));
-					EvaluateExecutor evaluateExecutor = new EvaluateExecutor(executorGroups.peek(), context, operationProvider, null, variableName, type, operation, overwriteIfExists);
+					EvaluateExecutor evaluateExecutor = new EvaluateExecutor(executorGroups.peek(), context, repository, operationProvider, null, variableName, type, operation, overwriteIfExists);
 					executorGroups.peek().getChildren().add(evaluateExecutor);
 				}
 				lastPosition = currentPosition;
@@ -402,6 +405,10 @@ public class GlueParser implements Parser {
 
 	public OperationProvider<ExecutionContext> getOperationProvider() {
 		return operationProvider;
+	}
+
+	public ScriptRepository getRepository() {
+		return repository;
 	}
 	
 }

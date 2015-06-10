@@ -589,6 +589,54 @@ He's done it!
 
 **Important**: The output formatter used for inline scripts does **not** add linefeeds after each `echo()`, you have to add them yourself if you want them. 
 
+# Structures
+
+Because of the way glue works with multiple return, you can use scripts as "dynamic classes" which we generally refer to as `structures`, for example if you create a script `myStruct.glue`:
+
+```python
+a ?= null
+b ?= null
+```
+
+You can do this:
+
+```python
+result = myStruct("1", "2")
+echo(result/a, result/b)
+```
+
+Which will print:
+
+```
+$ glue test
+1
+2
+```
+
+The main reason to use structures is to combine multiple values that belong together, for example suppose you want to have a "person" who has a first name, a last name and an address.
+Now suppose you want to remove the person from a database (if he exists) and insert him again, you could do:
+
+```python
+deletePerson("John", "Doe", "Somewhere")
+createPerson("John", "Doe", "Somewhere")
+```
+
+The downside to this is that you spread out the inherently linked variables so what you could do is create a script called `structurePerson.glue`:
+
+```python
+firstName ?= null
+lastName ?= null
+address ?= null
+```
+
+And use it:
+
+```python
+person = structurePerson("John", "Doe", "Somewhere")
+deletePerson(person)
+createPerson(person)
+```
+
 # Optional Typing
 
 Glue is dynamically typed but that means when performing operations the code has to decide which type will "win". The rule used is that the left operand wins, so:
@@ -618,7 +666,42 @@ b ?= null
 echo(a + b)
 ```
 
-That is entirely dependent on what is passed in, this might not be too important for your code or it might be, what does this do?
+That is entirely dependent on what is passed in, for example:
+
+```python
+test(1, 1)
+test("1", 1)
+test(1, "1")
+test("1", "1")
+```
+
+This will print out:
+
+```
+2
+11
+2
+11
+```
+
+We can add type declarations to the variables in the original script:
+
+```python
+integer a ?= null
+integer b ?= null
+echo(a + b)
+```
+
+We get a more consistent output:
+
+```
+2
+2
+2
+2
+```
+
+This might not be important for your code or it might be, what does this do?
 
 ```python
 a ?= null
@@ -637,9 +720,41 @@ while (a + 1 > 0)
 
 This will cast whatever is assigned to `a` to an integer number.
 
-If all else fails you can plug in methods to perform explicit conversion but these are not provided by default.
+## Structure Typing
 
-Note that the type system is also pluggable so custom type resolving can be added.
+Because the glue typing system is pluggable you can plug in your own type resolvers.
+One resolver that can be turned on (default) or off by setting `structure.allow.types` is type resolving based on glue scripts themselves.
+
+Let's take the example of the structures above, the problem is when creating the `createPerson.glue` script, you do:
+
+```python
+person ?= null
+sql("insert into persons (firstName, lastName, address) values (:person/firstName, :person/lastName, :person/address)")
+```
+
+Which is nice except obviously (as with all dynamic typing) you have no control over what "person" actually is. I might call this script with a entirely different structure or a date or something.
+
+What you can do with structure typing turned on is:
+
+```python
+structurePerson person ?= null
+```
+
+The glue code will check that the incoming variable is "compatible" with the defined script which means it must (at least) have all variables with the same name, in this case "firstName", "lastName" and "address".
+This object does not have to be a glue script result, it can be a java object for example (this is also pluggable).
+
+Note that the typing will also perform any casting that is necessary, for example if whatever is given to the script has a string in it but the structure defines that as an integer, you will get an integer at runtime.
+
+### Default values
+
+There is another feature that is turned on by default but can be turned off by setting `structure.allow.defaultValues` to false. It allows you to reuse default values.
+This means if you have a structure with a field `myField` that has a default value, for example:
+
+```python
+myField ?= "myDefaultValue"
+```
+
+And you have another object that is identical to the structure except for the `myField` field, it is still allowed to pass and will get the value `myDefaultValue`.
 
 # Tracing
 

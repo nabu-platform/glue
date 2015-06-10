@@ -12,6 +12,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -358,5 +359,9 @@ public class FileMethods {
 		finally {
 			zip.close();
 		}
+	}
+	
+	public static byte [] gunzip(@GlueParam(name = "zipContent") Object content) throws IOException {
+		return ScriptMethods.bytes(new GZIPInputStream(ScriptMethods.toStream(ScriptMethods.bytes(content))));
 	}
 }
