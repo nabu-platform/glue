@@ -637,6 +637,25 @@ deletePerson(person)
 createPerson(person)
 ```
 
+## Dynamic structure generation
+
+Using the named parameter syntax you can also create structures on the fly:
+
+```python
+person = structure(firstName: "John", lastName: "Doe", address: "Somewhere")
+```
+
+This can also be used to create a clone of an existing structure with an update of a field or a merge of multiple:
+
+```python
+fullName = structure(firstName: "John", lastName: "Doe")
+person = structure(fullName, address: "Somewhere")
+example = structure(age: 16, year: "fourth")
+student = structure(person, example, firstName: "Alex")
+```
+
+Note that in this example `person/firstName` is "John" while `student/firstName` is "Alex". Structures remain immutable.
+
 # Optional Typing
 
 Glue is dynamically typed but that means when performing operations the code has to decide which type will "win". The rule used is that the left operand wins, so:
