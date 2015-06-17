@@ -325,7 +325,7 @@ public class GlueParser implements Parser {
 		return line == null || line.isEmpty() ? null : analyzer.analyze(GlueQueryParser.getInstance().parse(line));
 	}
 	
-	private int getDepth(String line) {
+	public static int getDepth(String line) {
 		int depth = 1;
 		for (int i = 0; i < line.length(); i++) {
 			if (line.charAt(i) == '\t' || line.charAt(i) == ' ') {

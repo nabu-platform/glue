@@ -44,15 +44,15 @@ if (environment("path") != null && includePath == true)
 # Add the actual java command to the bash/bat files
 gbash = array(bash, join(" ", array("java -cp $CLASSPATH be.nabu.glue.Main", commands, "\"$@\"")))
 gcygwin = array(cygwin, join(" ", array("java -cp $CLASSPATH be.nabu.glue.Main", commands, "\"$@\"")))
-gbat = array(bat, join(" ", array("java -cp %CLASSPATH% be.nabu.glue.Main", commands, "%*")))
+gbat = array(bat, join(" ", array("java -cp " + gluePath + "/lib/*.jar be.nabu.glue.Main", commands, "%*")))
 
 tbash = array(bash, join(" ", array("java -cp $CLASSPATH be.nabu.glue.Runner", commands, "\"$@\"")))
 tcygwin = array(cygwin, join(" ", array("java -cp $CLASSPATH be.nabu.glue.Runner", commands, "\"$@\"")))
-tbat = array(bat, join(" ", array("java -cp %CLASSPATH% be.nabu.glue.Runner", commands, "%*")))
+tbat = array(bat, join(" ", array("java -cp " + gluePath + "/lib/*.jar be.nabu.glue.Runner", commands, "%*")))
 
 sbash = array(bash, join(" ", array("java -cp $CLASSPATH be.nabu.glue.Shell", commands, "\"$@\"")))
 scygwin = array(cygwin, join(" ", array("java -cp $CLASSPATH be.nabu.glue.Shell", commands, "\"$@\"")))
-sbat = array(bat, join(" ", array("java -cp %CLASSPATH% be.nabu.glue.Shell", commands, "%*")))
+sbat = array(bat, join(" ", array("java -cp " + gluePath + "/lib/*.jar be.nabu.glue.Shell", commands, "%*")))
 
 # Check if there is a configuration file for glue
 switch
@@ -70,7 +70,7 @@ files = array(files, configuration,
 if (size(find("glue-editor", dependencies)) > 0)
 	ebash = array(bash, "java -cp $CLASSPATH -Denvironment=local -DtextOnly=true be.nabu.glue.editor.Main file:$GLUESCRIPTS")
 	ecygwin = array(cygwin, "java -cp $CLASSPATH -Denvironment=local -DtextOnly=true be.nabu.glue.editor.Main file:$GLUESCRIPTS")
-	ebat = array(bat, "java -cp %CLASSPATH% -Denvironment=local -DtextOnly=true be.nabu.glue.editor.Main file:%GLUESCRIPTS%")
+	ebat = array(bat, "java -cp " + gluePath + "/lib/*.jar -Denvironment=local -DtextOnly=true be.nabu.glue.editor.Main file:%GLUESCRIPTS%")
 	files = array(files,
 		"gluecide.sh=" + join("\n", ebash),
 		"gluecide.cyg=" + join("\n", ecygwin),
