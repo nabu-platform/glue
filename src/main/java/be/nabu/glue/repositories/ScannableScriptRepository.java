@@ -17,6 +17,7 @@ import be.nabu.libs.resources.ResourceUtils;
 import be.nabu.libs.resources.api.ReadableResource;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
+import be.nabu.libs.resources.api.features.CacheableResource;
 
 public class ScannableScriptRepository implements ResourceScriptRepository {
 
@@ -42,6 +43,9 @@ public class ScannableScriptRepository implements ResourceScriptRepository {
 	
 	private Map<String, Script> scan(ResourceContainer<?> folder, String namespace) throws IOException {
 		Map<String, Script> scripts = new HashMap<String, Script>();
+		if (folder instanceof CacheableResource) {
+			((CacheableResource) folder).resetCache();
+		}
 		for (Resource child : folder) {
 			if (child instanceof ResourceContainer && recurse) {
 				scripts.putAll(scan((ResourceContainer<?>) child, namespace == null ? child.getName() : namespace + "." + child.getName()));
