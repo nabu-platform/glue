@@ -368,7 +368,12 @@ public class ScriptMethods {
 	}
 	
 	public static boolean contains(Object object, Object...array) {
-		return Arrays.asList(array(array)).contains(object);
+		if (object instanceof String && array != null && array.length == 1 && array[0] instanceof String) {
+			return ((String) array[0]).contains((String) object);
+		}
+		else {
+			return Arrays.asList(array(array)).contains(object);
+		}
 	}
 	
 	static InputStream toStream(Object content) throws IOException {

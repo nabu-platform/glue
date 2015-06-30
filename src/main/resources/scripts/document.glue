@@ -1,0 +1,3 @@
+for (script : getRepository())
+	documentation = array(documentation, string("template.txt"))
+echo(documentation)

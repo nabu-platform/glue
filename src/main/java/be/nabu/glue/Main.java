@@ -352,7 +352,7 @@ public class Main {
 		}
 	}
 	
-	private static ScriptRuntime getCurrent(ScriptRuntime runtime) {
+	public static ScriptRuntime getCurrent(ScriptRuntime runtime) {
 		while (runtime.getChild() != null) {
 			runtime = runtime.getChild();
 		}
@@ -374,32 +374,31 @@ public class Main {
 		return null;
 	}
 	
-	private static Executor getNextStep(ScriptRuntime runtime, boolean goInto) {
+	public static Executor getNextStep(ScriptRuntime runtime, boolean goInto) {
 		while(runtime.getChild() != null) {
 			runtime = runtime.getChild();
 		}
 		return getNextStep(runtime.getExecutionContext().getCurrent(), goInto);
 	}
 	
-	private static Executor getNextStep(Executor current, boolean goInto) {
+	public static Executor getNextStep(Executor current, boolean goInto) {
 		while (current.getParent() != null) {
 			int currentIndex = current.getParent().getChildren().indexOf(current);
 			if (currentIndex < current.getParent().getChildren().size() - 1) {
 				Executor executor = current.getParent().getChildren().get(currentIndex + 1);
+				while (executor instanceof ExecutorGroup && goInto && !((ExecutorGroup) executor).getChildren().isEmpty()) {
+					executor = ((ExecutorGroup) executor).getChildren().get(0);
+				}
+				// if it's still a group, just get out of it
 				if (executor instanceof ExecutorGroup) {
-					if (goInto) {
-						return getNextStep(((ExecutorGroup) executor).getChildren().get(0), goInto);
-					}
-					else {
-						return getNextStep(executor, goInto);
-					}
+					getNextStep(current.getParent(), goInto);	
 				}
 				else {
 					return executor;
 				}
 			}
 			else {
-				current = current.getParent();
+				getNextStep(current.getParent(), goInto);
 			}
 		}
 		return null;

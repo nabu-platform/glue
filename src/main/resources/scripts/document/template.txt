@@ -1,0 +1,39 @@
+${{
+title = script/root/context/annotations["title"]
+
+if (title == null)
+	title = script/name
+
+namespace = script/namespace
+if (namespace == null)
+	namespace = "anonymous"
+
+echo("\# " + title + "\n")
+echo("\n")
+
+echo("- :Namespace: " + namespace + "\n")
+echo("- :Name: " + script/name + "\n")
+echo("- :Testcase: " + (script/root/context/annotations["testcase"] != null) + "\n")
+
+if (script/root/context/description != null)
+	echo("\n" + script/root/context/description + "\n")
+
+inputs = be.nabu.glue.ScriptUtils.getInputs(script)
+
+if (size(inputs) > 0)
+	echo("\n\#\# Inputs\n\n")
+	for (input : inputs)
+		echo("- " + input/name)
+		if (input/description != null)
+			echo(": " + input/description)
+		echo("\n")
+
+outputs = be.nabu.glue.ScriptUtils.getOutputs(script)
+if (size(outputs) > 0)
+	echo("\n\#\# Outputs\n\n")
+	for (output : outputs)
+		echo("- " + output/name)
+		if (output/description != null)
+			echo(": " + output/description)
+		echo("\n")
+}}
