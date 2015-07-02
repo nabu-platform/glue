@@ -382,26 +382,23 @@ public class Main {
 	}
 	
 	public static Executor getNextStep(Executor current, boolean goInto) {
-		while (current.getParent() != null) {
-			int currentIndex = current.getParent().getChildren().indexOf(current);
-			if (currentIndex < current.getParent().getChildren().size() - 1) {
-				Executor executor = current.getParent().getChildren().get(currentIndex + 1);
-				while (executor instanceof ExecutorGroup && goInto && !((ExecutorGroup) executor).getChildren().isEmpty()) {
-					executor = ((ExecutorGroup) executor).getChildren().get(0);
-				}
-				// if it's still a group, just get out of it
-				if (executor instanceof ExecutorGroup) {
-					getNextStep(current.getParent(), goInto);	
-				}
-				else {
-					return executor;
-				}
+		int currentIndex = current.getParent().getChildren().indexOf(current);
+		if (currentIndex < current.getParent().getChildren().size() - 1) {
+			Executor executor = current.getParent().getChildren().get(currentIndex + 1);
+			while (executor instanceof ExecutorGroup && goInto && !((ExecutorGroup) executor).getChildren().isEmpty()) {
+				executor = ((ExecutorGroup) executor).getChildren().get(0);
+			}
+			// if it's still a group, just get out of it
+			if (executor instanceof ExecutorGroup) {
+				return getNextStep(current.getParent(), goInto);	
 			}
 			else {
-				getNextStep(current.getParent(), goInto);
+				return executor;
 			}
 		}
-		return null;
+		else {
+			return getNextStep(current.getParent(), goInto);
+		}
 	}
 	
 	public static String getArgument(String name, String defaultValue, String...arguments) {

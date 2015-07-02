@@ -22,6 +22,8 @@ public class TestMethods {
 	
 	public static final String VALIDATION = "$validation";
 	
+	public static final int ELLIPSIS = Integer.parseInt(System.getProperty("test.ellipsis", "50"));
+	
 	public static boolean confirmNotNull(String message, Object result) throws IOException {
 		return check(message, result != null, stringify(result), true);
 	}
@@ -115,6 +117,7 @@ public class TestMethods {
 	}
 	
 	private static String stringify(Object object) {
+		String content;
 		if (object instanceof Object[]) {
 			List<Object> list = new ArrayList<Object>(Arrays.asList((Object[]) object));
 			// check for arrays in the array
@@ -123,11 +126,15 @@ public class TestMethods {
 					list.set(i, Arrays.asList((Object[]) list.get(i)));
 				}
 			}
-			return list.toString();
+			content = list.toString();
 		}
 		else {
-			return object == null ? "null" : object.toString();
+			content = object == null ? "null" : object.toString();
 		}
+		if (ELLIPSIS > 0 && content.length() > ELLIPSIS && !ScriptRuntime.getRuntime().getExecutionContext().isDebug()) {
+			content = content.substring(0, ELLIPSIS) + "...";
+		}
+		return content;
 	}
 	
 	public static boolean validateNotNull(String message, Object result) throws IOException {
