@@ -1,7 +1,7 @@
 package be.nabu.glue.converters;
 
+import be.nabu.glue.impl.providers.CustomDate;
 import be.nabu.libs.converter.api.ConverterProvider;
-import be.nabu.libs.evaluator.date.CustomDate;
 
 import java.util.Date;
 

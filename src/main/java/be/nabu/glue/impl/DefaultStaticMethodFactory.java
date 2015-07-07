@@ -11,7 +11,7 @@ import be.nabu.glue.impl.methods.ScriptMethods;
 import be.nabu.glue.impl.methods.StringMethods;
 import be.nabu.glue.impl.methods.SystemMethods;
 import be.nabu.glue.impl.methods.TestMethods;
-import be.nabu.libs.evaluator.date.DateMethods;
+import be.nabu.glue.impl.providers.DateMethods;
 
 public class DefaultStaticMethodFactory implements StaticMethodFactory {
 
