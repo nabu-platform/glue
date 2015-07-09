@@ -1,8 +1,15 @@
 package be.nabu.glue.impl.methods;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import be.nabu.glue.ScriptRuntime;
+import be.nabu.glue.api.MethodDescription;
+import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.api.ScriptRepository;
+import be.nabu.glue.impl.operations.GlueOperationProvider;
+import be.nabu.glue.impl.parsers.GlueParserProvider;
 import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 
 @MethodProviderClass(namespace = "reflection")
@@ -28,4 +35,29 @@ public class ReflectionMethods {
 		return Thread.currentThread().getContextClassLoader().loadClass(name).isAssignableFrom(object.getClass());
 	}
 
+	public static MethodDescription getMethodDescription(String name) {
+		GlueOperationProvider newOperationProvider = new GlueParserProvider().newOperationProvider(getRepository());
+		MethodDescription nameOnlyMatch = null;
+		for (MethodProvider methodProvider : newOperationProvider.getMethodProviders()) {
+			for (MethodDescription description : methodProvider.getAvailableMethods()) {
+				String fullName = (description.getNamespace() == null ? "" : description.getNamespace() + ".") + description.getName();
+				if (name.equals(fullName)) {
+					return description;
+				}
+				else if (nameOnlyMatch == null && name.equals(description.getName())) {
+					nameOnlyMatch = description;
+				}
+			}
+		}
+		return nameOnlyMatch;
+	}
+	
+	public static MethodDescription [] getMethodDescriptions() {
+		GlueOperationProvider newOperationProvider = new GlueParserProvider().newOperationProvider(getRepository());
+		List<MethodDescription> descriptions = new ArrayList<MethodDescription>();
+		for (MethodProvider methodProvider : newOperationProvider.getMethodProviders()) {
+			descriptions.addAll(methodProvider.getAvailableMethods());
+		}
+		return descriptions.toArray(new MethodDescription[descriptions.size()]);
+	}
 }

@@ -17,12 +17,16 @@ public class GlueParserProvider implements ParserProvider {
 		while (repository.getParent() != null) {
 			repository = repository.getParent();
 		}
-		return name.endsWith(".glue") && !name.startsWith(".") ? new GlueParser(repository, new GlueOperationProvider(
+		return name.endsWith(".glue") && !name.startsWith(".") ? new GlueParser(repository, newOperationProvider(repository)) : null;
+	}
+
+	public GlueOperationProvider newOperationProvider(ScriptRepository repository) {
+		return new GlueOperationProvider(
 			new ScriptMethodProvider(repository),
 			new SPIMethodProvider(),
 			new StaticJavaMethodProvider(),
 			new SystemMethodProvider()
-		)) : null;
+		);
 	}
 
 }
