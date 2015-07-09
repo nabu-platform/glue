@@ -45,26 +45,26 @@ public class TestMethodProvider implements MethodProvider {
 		List<MethodDescription> descriptions = new ArrayList<MethodDescription>();
 		descriptions.add(new SimpleMethodDescription("test", "validateFails", "This method will check that the arguments fail",
 			Arrays.asList(new ParameterDescription [] { 
-				new SimpleParameterDescription("message", "The message for this test", "String"),
-				new SimpleParameterDescription("toExecute", "Any amount of executable statements", "Method")
+				new SimpleParameterDescription("message", "The message for this test", "String", false),
+				new SimpleParameterDescription("toExecute", "Any amount of executable statements", "Method", false)
 			}),
 			new ArrayList<ParameterDescription>()));
 		descriptions.add(new SimpleMethodDescription("test", "validateNotFails", "This method will check that the arguments do not fail",
 			Arrays.asList(new ParameterDescription [] { 
-					new SimpleParameterDescription("message", "The message for this test", "String"),
-					new SimpleParameterDescription("toExecute", "Any amount of executable statements", "Method")
+					new SimpleParameterDescription("message", "The message for this test", "String", false),
+					new SimpleParameterDescription("toExecute", "Any amount of executable statements", "Method", false)
 			}),
 			new ArrayList<ParameterDescription>()));
 		descriptions.add(new SimpleMethodDescription("test", "confirmFails", "This method will check that the arguments fail",
 			Arrays.asList(new ParameterDescription [] { 
-				new SimpleParameterDescription("message", "The message for this test", "String"),
-				new SimpleParameterDescription("toExecute", "Any amount of executable statements", "Method")
+				new SimpleParameterDescription("message", "The message for this test", "String", false),
+				new SimpleParameterDescription("toExecute", "Any amount of executable statements", "Method", false)
 			}),
 			new ArrayList<ParameterDescription>()));
 		descriptions.add(new SimpleMethodDescription("test", "confirmNotFails", "This method will check that the arguments do not fail",
 			Arrays.asList(new ParameterDescription [] { 
-					new SimpleParameterDescription("message", "The message for this test", "String"),
-					new SimpleParameterDescription("toExecute", "Any amount of executable statements", "Method")
+					new SimpleParameterDescription("message", "The message for this test", "String", false),
+					new SimpleParameterDescription("toExecute", "Any amount of executable statements", "Method", false)
 			}),
 			new ArrayList<ParameterDescription>()));
 		return descriptions;

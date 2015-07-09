@@ -38,15 +38,13 @@ import be.nabu.utils.io.api.WritableContainer;
 @MethodProviderClass(namespace = "file")
 public class FileMethods {
 	
-	public static InputStream read(String fileName) throws IOException {
+	@GlueMethod(description = "Returns the contents of the given file")
+	public static InputStream read(@GlueParam(name = "fileName", description = "The name of the file to read") String fileName) throws IOException {
 		return read(fileName, true);
 	}
 	
-	/**
-	 * Reads a file from the file system
-	 * @throws IOException 
-	 */
-	public static InputStream read(String fileName, boolean tryURL) throws IOException {
+	@GlueMethod(description = "Returns the contents of the given file")
+	public static InputStream read(@GlueParam(name = "fileName", description = "The name of the file to read") String fileName, @GlueParam(name = "tryURL", description = "Whether or not to try default URL logic") boolean tryURL) throws IOException {
 		if (fileName == null) {
 			return null;
 		}
@@ -81,16 +79,12 @@ public class FileMethods {
 		return IOUtils.toInputStream(((ReadableResource) resource).getReadable());
 	}
 	
-	/**
-	 * Lists all files that match the given regex in the given directory
-	 * @param path
-	 * @param fileRegex
-	 * @param directoryRegex
-	 * @param recursive
-	 * @return
-	 * @throws IOException 
-	 */
-	public static String [] list(String path, String fileRegex, String directoryRegex, boolean recursive) throws IOException {
+	@GlueMethod(description = "Lists the files matching the given regex in the given directory")
+	public static String [] list(
+			@GlueParam(name = "directory", description = "The directory to search in") String path, 
+			@GlueParam(name = "fileRegex", description = "The file regex to match. If they are matched, they are added to the result list. Pass in null if you are not interested in files") String fileRegex, 
+			@GlueParam(name = "directoryRegex", description = "The directory regex to match. If they are matched, they are added to the result list. Pass in null if you are not interested in directories") String directoryRegex, 
+			@GlueParam(name = "recursive", description = "Whether or not to look recursively") boolean recursive) throws IOException {
 		Resource resource = resolve(path);
 		if (resource == null) {
 			return new String[0];
@@ -98,11 +92,13 @@ public class FileMethods {
 		return list((ResourceContainer<?>) resource, fileRegex, directoryRegex, recursive, null).toArray(new String[0]);
 	}
 	
-	public static String [] list(Object object) throws IOException {
+	@GlueMethod(description = "Lists all the files inside the given directory or zip file")
+	public static String [] list(@GlueParam(name = "target", description = "If a string is passed in, it is assumed to be a path to a directory. Otherwise it is assumed to be a zip") Object object) throws IOException {
 		return list(object, ".*");
 	}
 	
-	public static String [] list(Object object, String fileRegex) throws IOException {
+	@GlueMethod(description = "Lists the files that match the given regex inside the given directory or zip file")
+	public static String [] list(@GlueParam(name = "target", description = "If a string is passed in, it is assumed to be a path to a directory. Otherwise it is assumed to be a zip") Object object, @GlueParam(name = "fileRegex", description = "If the filename matches this regex, it will be added to the result list") String fileRegex) throws IOException {
 		if (object instanceof String) {
 			return list((String) object, fileRegex, null, true);
 		}

@@ -70,11 +70,13 @@ public class StaticJavaMethodProvider implements MethodProvider {
 								for (int i = 0; i < parameterTypes.length; i++) {
 									String parameterName = null;
 									String parameterDescription = null;
+									String parameterDefaultValue = null;
 									Class<?> parameter = parameterTypes[i];
 									for (int j = 0; j < parameterAnnotations[i].length; j++) {
 										if (parameterAnnotations[i][j] instanceof GlueParam) {
 											parameterName = ((GlueParam) parameterAnnotations[i][j]).name();
 											parameterDescription = ((GlueParam) parameterAnnotations[i][j]).description();
+											parameterDefaultValue = ((GlueParam) parameterAnnotations[i][j]).defaultValue();
 											break;
 										}
 									}
@@ -83,10 +85,12 @@ public class StaticJavaMethodProvider implements MethodProvider {
 									}
 									boolean isVarargs = i == parameterTypes.length - 1 && parameter.isArray();
 									if (Enum.class.isAssignableFrom(parameter)) {
-										parameters.add(new SimpleParameterDescription(parameterName, parameterDescription, parameter.isArray() ? parameter.getComponentType().getSimpleName() + "[]" : parameter.getSimpleName(), isVarargs, parameter.getEnumConstants()));	
+										parameters.add(new SimpleParameterDescription(parameterName, parameterDescription, parameter.isArray() ? parameter.getComponentType().getSimpleName() + "[]" : parameter.getSimpleName(), isVarargs, parameter.getEnumConstants()).setDefaultValue(parameterDefaultValue));	
 									}
 									else {
-										parameters.add(new SimpleParameterDescription(parameterName, parameterDescription, parameter.isArray() ? parameter.getComponentType().getSimpleName() + "[]" : parameter.getSimpleName(), isVarargs));
+										parameters.add(new SimpleParameterDescription(parameterName, parameterDescription, 
+											parameter.isArray() ? parameter.getComponentType().getSimpleName() + "[]" : parameter.getSimpleName(), isVarargs)
+												.setDefaultValue(parameterDefaultValue == null || parameterDefaultValue.isEmpty() ? null : parameterDefaultValue));
 									}
 								}
 								List<ParameterDescription> returnValues = new ArrayList<ParameterDescription>();
