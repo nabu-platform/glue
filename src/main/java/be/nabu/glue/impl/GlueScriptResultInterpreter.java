@@ -17,13 +17,13 @@ import be.nabu.glue.api.ScriptRepository;
 import be.nabu.glue.api.runs.ScriptResult;
 import be.nabu.glue.api.runs.ScriptResultInterpretation;
 import be.nabu.glue.api.runs.ScriptResultInterpreter;
-import be.nabu.glue.api.runs.Validation.Level;
 import be.nabu.glue.impl.formatters.GlueFormatter;
 import be.nabu.glue.repositories.ResourceScript;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.converter.api.Converter;
 import be.nabu.libs.resources.api.ReadableResource;
 import be.nabu.libs.resources.api.WritableResource;
+import be.nabu.libs.validator.api.ValidationMessage.Severity;
 import be.nabu.utils.io.IOUtils;
 import be.nabu.utils.io.api.ByteBuffer;
 import be.nabu.utils.io.api.WritableContainer;
@@ -63,7 +63,7 @@ public class GlueScriptResultInterpreter implements ScriptResultInterpreter {
 				}
 				if (value == null) {
 					// if there is no expected value just yet and this result is positive, set that
-					if (result.getResultLevel() == Level.INFO) {
+					if (result.getResultLevel() == Severity.INFO) {
 						addExpectation(result);
 					}
 				}

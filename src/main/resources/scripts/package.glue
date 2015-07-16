@@ -70,7 +70,7 @@ files = array(files, configuration,
 if (size(find("glue-editor", dependencies)) > 0)
 	ebash = array(bash, "java -cp $CLASSPATH -Denvironment=local -DtextOnly=true be.nabu.glue.editor.Main file:$GLUESCRIPTS")
 	ecygwin = array(cygwin, "java -cp $CLASSPATH -Denvironment=local -DtextOnly=true be.nabu.glue.editor.Main file:$GLUESCRIPTS")
-	ebat = array(bat, "java -version:1.8 -cp " + batGluePath + "/lib/* -Denvironment=local -DtextOnly=true be.nabu.glue.editor.Main file:%GLUESCRIPTS%")
+	ebat = array("java -version:1.8 -cp " + batGluePath + "/lib/* -Denvironment=local -DtextOnly=true be.nabu.glue.editor.Main file:%GLUESCRIPTS%")
 	files = array(files,
 		"gluecide.sh=" + join("\n", ebash),
 		"gluecide.cyg=" + join("\n", ecygwin),

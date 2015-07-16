@@ -9,13 +9,13 @@ import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.runs.AssertionException;
 import be.nabu.glue.api.runs.CallLocation;
-import be.nabu.glue.api.runs.Validation;
-import be.nabu.glue.api.runs.Validation.Level;
+import be.nabu.glue.api.runs.GlueValidation;
 import be.nabu.glue.impl.SimpleCallLocation;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 import be.nabu.libs.evaluator.api.Operation;
+import be.nabu.libs.validator.api.ValidationMessage.Severity;
 
 @MethodProviderClass(namespace = "test")
 public class TestMethods {
@@ -190,9 +190,9 @@ public class TestMethods {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static Validation[] report() {
-		List<Validation> messages = (List<Validation>) ScriptRuntime.getRuntime().getContext().get(VALIDATION);
-		return messages == null || messages.isEmpty() ? null : messages.toArray(new ValidationImpl[0]);
+	public static GlueValidation[] report() {
+		List<GlueValidation> messages = (List<GlueValidation>) ScriptRuntime.getRuntime().getContext().get(VALIDATION);
+		return messages == null || messages.isEmpty() ? null : messages.toArray(new GlueValidationImpl[0]);
 	}
 	
 	private static String getCheck() {
@@ -217,19 +217,19 @@ public class TestMethods {
 			current = current.getParent();
 		}
 		if (!runtime.getContext().containsKey(VALIDATION)) {
-			runtime.getContext().put(VALIDATION, new ArrayList<Validation>());
+			runtime.getContext().put(VALIDATION, new ArrayList<GlueValidation>());
 		}
-		List<Validation> messages = (List<Validation>) runtime.getContext().get(VALIDATION);
+		List<GlueValidation> messages = (List<GlueValidation>) runtime.getContext().get(VALIDATION);
 		
-		Level level = result == null || !result ? Level.ERROR : Level.INFO;
+		Severity level = result == null || !result ? Severity.ERROR : Severity.INFO;
 		
 		// add the message
-		Validation validation = new ValidationImpl(level, check, message, callStack, runtime.getExecutionContext().getCurrent());
+		GlueValidation validation = new GlueValidationImpl(level, check, message, callStack, runtime.getExecutionContext().getCurrent());
 		messages.add(validation);
 		
 		runtime.getFormatter().validated(validation);
 		// stop if necessary
-		if (level == Level.ERROR && fail) {
+		if (level == Severity.ERROR && fail) {
 			throw new AssertionException(validation.toString());
 		}
 		return result != null && result;

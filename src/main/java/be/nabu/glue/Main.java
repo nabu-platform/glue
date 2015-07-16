@@ -29,7 +29,7 @@ import be.nabu.glue.impl.EnvironmentLabelEvaluator;
 import be.nabu.glue.impl.SimpleExecutionEnvironment;
 import be.nabu.glue.impl.formatters.MarkdownOutputFormatter;
 import be.nabu.glue.impl.methods.TestMethods;
-import be.nabu.glue.impl.methods.ValidationImpl;
+import be.nabu.glue.impl.methods.GlueValidationImpl;
 import be.nabu.glue.impl.operations.GlueOperationProvider;
 import be.nabu.glue.impl.parsers.GlueParserProvider;
 import be.nabu.glue.impl.providers.ScriptMethodProvider;
@@ -245,9 +245,9 @@ public class Main {
 				System.out.println("Executed in " + (runtime.getDuration() / 1000d) + "s");
 			}
 			if (printReport) {
-				List<ValidationImpl> messages = (List<ValidationImpl>) runtime.getContext().get(TestMethods.VALIDATION);
+				List<GlueValidationImpl> messages = (List<GlueValidationImpl>) runtime.getContext().get(TestMethods.VALIDATION);
 				if (messages != null && !messages.isEmpty()) {
-					for (ValidationImpl message : messages) {
+					for (GlueValidationImpl message : messages) {
 						 System.out.println(message);
 					}
 				}

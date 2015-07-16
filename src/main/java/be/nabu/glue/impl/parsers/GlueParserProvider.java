@@ -1,5 +1,6 @@
 package be.nabu.glue.impl.parsers;
 
+import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ParserProvider;
 import be.nabu.glue.api.ScriptRepository;
@@ -21,12 +22,16 @@ public class GlueParserProvider implements ParserProvider {
 	}
 
 	public GlueOperationProvider newOperationProvider(ScriptRepository repository) {
-		return new GlueOperationProvider(
+		return new GlueOperationProvider(getMethodProviders(repository));
+	}
+	
+	public MethodProvider[] getMethodProviders(ScriptRepository repository) {
+		return new MethodProvider[] {
 			new ScriptMethodProvider(repository),
 			new SPIMethodProvider(),
 			new StaticJavaMethodProvider(),
 			new SystemMethodProvider()
-		);
+		};
 	}
 
 }
