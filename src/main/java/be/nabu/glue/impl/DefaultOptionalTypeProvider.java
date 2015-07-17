@@ -29,6 +29,9 @@ public class DefaultOptionalTypeProvider implements OptionalTypeProvider {
 		else if (optionalType.equalsIgnoreCase("boolean")) {
 			targetClass = Boolean.class;
 		}
+		else if (optionalType.equalsIgnoreCase("bytes")) {
+			targetClass = byte[].class;
+		}
 		else {
 			try {
 				targetClass = Thread.currentThread().getContextClassLoader().loadClass(optionalType);

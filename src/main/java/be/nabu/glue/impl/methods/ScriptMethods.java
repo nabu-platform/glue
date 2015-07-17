@@ -341,6 +341,9 @@ public class ScriptMethods {
 	 * Will stringify the object
 	 */
 	public static String string(Object object, boolean substitute) throws IOException {
+		if (object == null) {
+			return null;
+		}
 		byte [] bytes = bytes(object);
 		String result = bytes == null ? null : new String(bytes, ScriptRuntime.getRuntime().getScript().getCharset());
 		return substitute 
@@ -353,7 +356,10 @@ public class ScriptMethods {
 	}
 	
 	public static byte [] bytes(Object object) throws IOException {
-		if (object instanceof String && ((String) object).matches("^[^\n<>]+$")) {
+		if (object == null) {
+			return null;
+		}
+		else if (object instanceof String && ((String) object).matches("^[^\n<>]+$")) {
 			try {
 				InputStream data = getInputStream((String) object);
 				if (data != null) {
