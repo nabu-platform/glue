@@ -16,6 +16,7 @@ import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.api.ScriptRepository;
 import be.nabu.glue.impl.SimpleMethodDescription;
+import be.nabu.glue.impl.methods.ScriptMethods;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
@@ -23,6 +24,7 @@ import be.nabu.libs.evaluator.base.BaseMethodOperation;
 public class ScriptMethodProvider implements MethodProvider {
 
 	private ScriptRepository repository;
+	public static boolean ALLOW_VARARGS = Boolean.parseBoolean(System.getProperty("script.varargs", "true"));
 
 	public ScriptMethodProvider(ScriptRepository repository) {
 		this.repository = repository;
@@ -79,11 +81,18 @@ public class ScriptMethodProvider implements MethodProvider {
 			try {
 				List<ParameterDescription> keys = ScriptUtils.getInputs(script);
 				for (int i = 1; i < getParts().size(); i++) {
-					if (i > keys.size()) {
-						throw new EvaluationException("Too many parameters, expecting: " + keys);
-					}
 					Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
-					input.put(keys.get(i - 1).getName(), argumentOperation.evaluate(context));
+					if (i > keys.size()) { 
+						if (!ALLOW_VARARGS || keys.isEmpty() || !keys.get(keys.size() - 1).isVarargs()) {
+							throw new EvaluationException("Too many parameters, expecting: " + keys.size());
+						}
+						else {
+							input.put(keys.get(keys.size() - 1).getName(), ScriptMethods.array(input.get(keys.get(keys.size() - 1).getName()), argumentOperation.evaluate(context)));
+						}
+					}
+					else {
+						input.put(keys.get(i - 1).getName(), argumentOperation.evaluate(context));
+					}
 				}
 				ScriptRuntime runtime = new ScriptRuntime(script, context.getExecutionEnvironment(), context.isDebug(), input);
 				runtime.setTrace(context.isTrace());

@@ -46,6 +46,7 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 	private boolean generated = false;
 	private boolean allowNamedParameters = Boolean.parseBoolean(System.getProperty("named.parameters", "true"));
 	private String optionalType;
+	private boolean isList = false;
 	private OperationProvider<ExecutionContext> operationProvider;
 
 	private PathAnalyzer<ExecutionContext> pathAnalyzer;
@@ -247,8 +248,23 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 		else if (context.isDebug() && variableName != null && context.getPipeline().get(variableName) != null && !overwriteIfExists) {
 			ScriptRuntime.getRuntime().getFormatter().print("Inherited parameter: " + variableName + " = " + context.getPipeline().get(variableName));
 		}
-		if (variableName != null && converter != null && context.getPipeline().containsKey(variableName)) {
-			context.getPipeline().put(variableName, converter.convert(context.getPipeline().get(variableName)));
+		// convert if necessary
+		if (variableName != null && converter != null && context.getPipeline().get(variableName) != null) {
+			// for arrays, loop over the items
+			if (context.getPipeline().get(variableName) instanceof Object[]) {
+				Object [] items = (Object[]) context.getPipeline().get(variableName);
+				for (int i = 0; i < items.length; i++) {
+					items[i] = converter.convert(items[i]);
+				}
+				context.getPipeline().put(variableName, items);
+			}
+			else {
+				context.getPipeline().put(variableName, converter.convert(context.getPipeline().get(variableName)));
+			}
+		}
+		// make it an array if neccessary
+		if (isList && context.getPipeline().get(variableName) != null && !(context.getPipeline().get(variableName) instanceof Object[])) {
+			context.getPipeline().put(variableName, ScriptMethods.array(context.getPipeline().get(variableName)));
 		}
 	}
 
@@ -306,5 +322,14 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 
 	public void setOptionalType(String optionalType) {
 		this.optionalType = optionalType;
+	}
+
+	@Override
+	public boolean isList() {
+		return isList;
+	}
+
+	public void setList(boolean isList) {
+		this.isList = isList;
 	}
 }

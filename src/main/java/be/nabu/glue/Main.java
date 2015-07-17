@@ -28,6 +28,7 @@ import be.nabu.glue.api.Script;
 import be.nabu.glue.impl.EnvironmentLabelEvaluator;
 import be.nabu.glue.impl.SimpleExecutionEnvironment;
 import be.nabu.glue.impl.formatters.MarkdownOutputFormatter;
+import be.nabu.glue.impl.methods.ScriptMethods;
 import be.nabu.glue.impl.methods.TestMethods;
 import be.nabu.glue.impl.methods.GlueValidationImpl;
 import be.nabu.glue.impl.operations.GlueOperationProvider;
@@ -261,9 +262,16 @@ public class Main {
 		List<String> commands = getCommands(arguments);
 		for (int i = 1; i < commands.size(); i++) {
 			if (i > inputs.size()) {
-				throw new IllegalArgumentException("Too many arguments, expecting " + inputs.size());
+				if (!ScriptMethodProvider.ALLOW_VARARGS || inputs.isEmpty() || !inputs.get(inputs.size() - 1).isVarargs()) {
+					throw new IllegalArgumentException("Too many arguments, expecting " + inputs.size());
+				}
+				else {
+					parameters.put(inputs.get(inputs.size() - 1).getName(), ScriptMethods.array(parameters.get(inputs.get(inputs.size() - 1).getName()), commands.get(i)));
+				}
 			}
-			parameters.put(inputs.get(i - 1).getName(), commands.get(i));
+			else {
+				parameters.put(inputs.get(i - 1).getName(), commands.get(i));
+			}
 		}
 		return parameters;
 	}

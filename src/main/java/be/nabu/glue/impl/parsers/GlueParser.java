@@ -285,9 +285,10 @@ public class GlueParser implements Parser {
 					}
 					context.setLine(line);
 					String type = null;
+					boolean mustBeArray = false;
 					// check if there is a variable assignment on the line
 					// the first regex checks only for the variable name while the second allows for an optional type
-					if (line.matches("(?s)^[\\w]+[\\s?]*=.*") || line.matches("(?s)^[\\w.]+[\\s]+[\\w]+[\\s?]*=.*")) {
+					if (line.matches("(?s)^[\\w]+[\\s?]*=.*") || line.matches("(?s)^[\\w.]*([\\s]*\\[\\]|)[\\s]+[\\w]+[\\s?]*=.*")) {
 						index = line.indexOf('=');
 						variableName = line.substring(0, index).trim();
 						line = line.substring(index + 1).trim();
@@ -297,14 +298,22 @@ public class GlueParser implements Parser {
 							variableName = variableName.substring(0, variableName.length() - 1).trim();
 						}
 						// if there is a space, you are probably defining a type
-						index = variableName.indexOf(' ');
+						index = variableName.lastIndexOf(' ');
 						if (index > 0) {
-							type = variableName.substring(0, index);
+							type = variableName.substring(0, index).trim();
+							if (type.endsWith("[]")) {
+								type = type.substring(0, type.length() - 2).trim();
+								if (type.isEmpty()) {
+									type = null;
+								}
+								mustBeArray = true;
+							}
 							variableName = variableName.substring(index + 1);
 						}
 					}
 					Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(line));
 					EvaluateExecutor evaluateExecutor = new EvaluateExecutor(executorGroups.peek(), context, repository, operationProvider, null, variableName, type, operation, overwriteIfExists);
+					evaluateExecutor.setList(mustBeArray);
 					executorGroups.peek().getChildren().add(evaluateExecutor);
 				}
 				lastPosition = currentPosition;

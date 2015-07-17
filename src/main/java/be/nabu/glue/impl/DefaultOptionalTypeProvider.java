@@ -31,22 +31,20 @@ public class DefaultOptionalTypeProvider implements OptionalTypeProvider {
 		else if (optionalType.equalsIgnoreCase("bytes")) {
 			targetClass = byte[].class;
 		}
-		else {
-			if (targetClass == null) {
-				try {
-					targetClass = Thread.currentThread().getContextClassLoader().loadClass(optionalType);
-				}
-				catch (ClassNotFoundException e) {
-					// ignore
-				}
-			}
-		}
 		return targetClass;
 	}
 	
 	@Override
 	public OptionalTypeConverter getConverter(String optionalType) {
 		Class<?> targetClass = wrapDefault(optionalType);
+		if (targetClass == null) {
+			try {
+				targetClass = Thread.currentThread().getContextClassLoader().loadClass(optionalType);
+			}
+			catch (ClassNotFoundException e) {
+				// ignore
+			}
+		}
 		return targetClass != null ? new DefaultTypeConverter(converter, targetClass) : null;
 	}
 

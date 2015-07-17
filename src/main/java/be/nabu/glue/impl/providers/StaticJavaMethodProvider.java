@@ -85,17 +85,21 @@ public class StaticJavaMethodProvider implements MethodProvider {
 									}
 									boolean isVarargs = i == parameterTypes.length - 1 && parameter.isArray();
 									if (Enum.class.isAssignableFrom(parameter)) {
-										parameters.add(new SimpleParameterDescription(parameterName, parameterDescription, parameter.isArray() ? parameter.getComponentType().getSimpleName() + "[]" : parameter.getSimpleName(), isVarargs, parameter.getEnumConstants()).setDefaultValue(parameterDefaultValue));	
+										parameters.add(new SimpleParameterDescription(parameterName, parameterDescription, parameter.isArray() ? parameter.getComponentType().getName() : parameter.getName(), isVarargs, parameter.getEnumConstants())
+												.setDefaultValue(parameterDefaultValue)
+												.setList(parameter.isArray()));
 									}
 									else {
 										parameters.add(new SimpleParameterDescription(parameterName, parameterDescription, 
-											parameter.isArray() ? parameter.getComponentType().getSimpleName() + "[]" : parameter.getSimpleName(), isVarargs)
-												.setDefaultValue(parameterDefaultValue == null || parameterDefaultValue.isEmpty() ? null : parameterDefaultValue));
+											parameter.isArray() ? parameter.getComponentType().getSimpleName() : parameter.getName(), isVarargs)
+												.setDefaultValue(parameterDefaultValue == null || parameterDefaultValue.isEmpty() ? null : parameterDefaultValue)
+												.setList(parameter.isArray()));
 									}
 								}
 								List<ParameterDescription> returnValues = new ArrayList<ParameterDescription>();
 								if (!Void.class.isAssignableFrom(method.getReturnType())) {
-									returnValues.add(new SimpleParameterDescription(null, methodAnnotation == null ? null : methodAnnotation.returns(), method.getReturnType().getName(), false));
+									returnValues.add(new SimpleParameterDescription(null, methodAnnotation == null ? null : methodAnnotation.returns(), method.getReturnType().isArray() ? method.getReturnType().getComponentType().getName() : method.getReturnType().getName(), false)
+											.setList(method.getReturnType().isArray()));
 								}
 								descriptions.add(new SimpleMethodDescription(
 										method.getDeclaringClass().getName(), 
