@@ -11,8 +11,7 @@ public class DefaultOptionalTypeProvider implements OptionalTypeProvider {
 
 	private Converter converter = ConverterFactory.getInstance().getConverter();
 	
-	@Override
-	public OptionalTypeConverter getConverter(String optionalType) {
+	public static Class<?> wrapDefault(String optionalType) {
 		Class<?> targetClass = null;
 		if (optionalType.equalsIgnoreCase("integer")) {
 			targetClass = Long.class;
@@ -33,13 +32,21 @@ public class DefaultOptionalTypeProvider implements OptionalTypeProvider {
 			targetClass = byte[].class;
 		}
 		else {
-			try {
-				targetClass = Thread.currentThread().getContextClassLoader().loadClass(optionalType);
-			}
-			catch (ClassNotFoundException e) {
-				// ignore
+			if (targetClass == null) {
+				try {
+					targetClass = Thread.currentThread().getContextClassLoader().loadClass(optionalType);
+				}
+				catch (ClassNotFoundException e) {
+					// ignore
+				}
 			}
 		}
+		return targetClass;
+	}
+	
+	@Override
+	public OptionalTypeConverter getConverter(String optionalType) {
+		Class<?> targetClass = wrapDefault(optionalType);
 		return targetClass != null ? new DefaultTypeConverter(converter, targetClass) : null;
 	}
 
