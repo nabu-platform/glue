@@ -91,16 +91,9 @@ public class StringMethods {
 	@GlueMethod(description = "Retrieves a substring of the given string")
 	public static String substring(
 			@GlueParam(name = "string", description = "The original string") String string, 
-			@GlueParam(name = "start", description = "The start position") int start) {
-		return string.substring(start);
-	}
-	
-	@GlueMethod(description = "Retrieves a substring of the given string")
-	public static String substring(
-			@GlueParam(name = "string", description = "The original string") String string, 
 			@GlueParam(name = "start", description = "The start position") int start,
-			@GlueParam(name = "start", description = "The stop position") int stop) {
-		return string.substring(start, stop);
+			@GlueParam(name = "stop", description = "The stop position", defaultValue = "To the end of the string") Integer stop) {
+		return stop == null ? string.substring(start) : string.substring(start, stop);
 	}
 	
 	@GlueMethod(description = "Allows you to retain only a certain part of the given string(s) based on the given regex")

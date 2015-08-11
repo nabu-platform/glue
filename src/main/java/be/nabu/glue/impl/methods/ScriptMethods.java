@@ -17,6 +17,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.ScriptRuntimeException;
@@ -268,6 +269,12 @@ public class ScriptMethods {
 			}
 		}
 		return maps.toArray(new Map[0]);
+	}
+	
+	@GlueMethod(description = "Returns a globally unique id (type 4)")
+	public static String uuid(@GlueParam(name = "formatted", description = "Whether or not the uuid should be formatted using '-'", defaultValue = "false") Boolean formatted) {
+		String uuid = UUID.randomUUID().toString();
+		return formatted != null && formatted ? uuid : uuid.replace("-", "");
 	}
 
 	public static Object first(Object...array) {
