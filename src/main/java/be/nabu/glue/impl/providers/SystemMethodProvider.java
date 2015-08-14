@@ -178,7 +178,7 @@ public class SystemMethodProvider implements MethodProvider {
 		InputStream input = new BufferedInputStream(process.getInputStream());
 		try {
 			byte [] bytes = IOUtils.toBytes(IOUtils.wrap(input));
-			return new String(bytes);
+			return bytes == null ? null : new String(bytes);
 		}
 		finally {
 			input.close();

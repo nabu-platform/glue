@@ -271,7 +271,7 @@ public class ScriptMethods {
 	}
 
 	public static Object first(Object...array) {
-		return array.length == 0 ? null : array[0];
+		return array == null || array.length == 0 ? null : array[0];
 	}
 	
 	public static Object index(int index, Object...array) {
