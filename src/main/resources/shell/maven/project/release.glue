@@ -1,5 +1,6 @@
 name ?= last(find("[\\w]+", system.pwd()))
 targetFolder ?= environment("release.directory")
+mainClass ?= null
 
 echo("Creating release zip for: " + name)
 zip = maven.project.package(name, mainClass)/zip
