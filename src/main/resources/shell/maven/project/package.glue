@@ -1,6 +1,6 @@
 projectName ?= null
-mainClass ?= null
-projects ?= null
+mainClass ?= first(maven.project.mainClass(system.pwd())/mainClass)
+projects ?= system.pwd()
 repository ?= environment("M2_REPO")
 
 # If no repository is set/found, use the default location

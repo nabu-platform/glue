@@ -62,6 +62,11 @@ public class DefaultOptionalTypeProvider implements OptionalTypeProvider {
 		public Object convert(Object object) {
 			return object == null ? null : converter.convert(object, targetClass);
 		}
+
+		@Override
+		public Class<?> getComponentType() {
+			return targetClass;
+		}
 		
 	}
 }

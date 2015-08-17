@@ -1,0 +1,6 @@
+project ?= system.pwd()
+
+for (file : list(project, ".*\.java"))
+	content = string(read(file))
+	if (size(find("public static void main\(", content)) > 0)
+		mainClass = array(mainClass, replace("/", ".", replace("src/main/java/(.*)\\.java$", "$1", file)))

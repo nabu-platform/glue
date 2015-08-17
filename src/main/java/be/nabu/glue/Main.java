@@ -204,7 +204,7 @@ public class Main {
 						}
 					}
 					// you want a breakpoint in a specific script
-					else if (response.matches("[\\w]+:[0-9]+")) {
+					else if (response.matches("[\\w.]+:[0-9]+")) {
 						String scriptName = response.replaceAll(":.*", "");
 						Script target = repository.getScript(scriptName);
 						if (target == null) {

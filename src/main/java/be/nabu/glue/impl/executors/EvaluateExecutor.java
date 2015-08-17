@@ -1,6 +1,7 @@
 package be.nabu.glue.impl.executors;
 
 import java.io.Closeable;
+import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -253,10 +254,11 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 			// for arrays, loop over the items
 			if (context.getPipeline().get(variableName) instanceof Object[]) {
 				Object [] items = (Object[]) context.getPipeline().get(variableName);
+				Object [] targetItems = (Object[]) Array.newInstance(converter.getComponentType(), items.length);
 				for (int i = 0; i < items.length; i++) {
-					items[i] = converter.convert(items[i]);
+					targetItems[i] = converter.convert(items[i]);
 				}
-				context.getPipeline().put(variableName, items);
+				context.getPipeline().put(variableName, targetItems);
 			}
 			else {
 				context.getPipeline().put(variableName, converter.convert(context.getPipeline().get(variableName)));

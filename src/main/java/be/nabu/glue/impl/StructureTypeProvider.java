@@ -168,6 +168,11 @@ public class StructureTypeProvider implements OptionalTypeProvider {
 			}
 			return castValues;
 		}
+
+		@Override
+		public Class<?> getComponentType() {
+			return Map.class;
+		}
 	}
 	
 }

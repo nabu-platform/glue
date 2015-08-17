@@ -24,7 +24,7 @@ for (directory : array(directories))
 	dependencies = replace(":[^:]+$", "", dependencies)
 	
 	# Add the project
-	dependencies = array(project, dependencies)
+	string [] dependencies = array(project, dependencies)
 	
 	# Make sure we have a unique list
 	dependencies = unique(replace(":bundle:", ":jar:", dependencies))
