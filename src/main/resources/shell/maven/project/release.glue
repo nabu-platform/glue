@@ -1,0 +1,17 @@
+name ?= last(find("[\\w]+", system.pwd()))
+targetFolder ?= environment("release.directory")
+
+echo("Creating release zip for: " + name)
+zip = maven.project.package(name, mainClass)/zip
+echo("Writing " + system.pwd() + "/" + name + ".zip")
+write(name + ".zip", zip)
+
+switch(targetFolder)
+	case(null)
+		echo("No release directory set, you can configure it using thee 'release.directory' environment property")
+	default
+		echo("Unzipping in: " + system.cd(targetFolder))
+		system.unzip("-o", name + ".zip")
+		echo("Making " + name + ".sh executable")
+		system.chmod("u+x", name + ".sh")
+		
