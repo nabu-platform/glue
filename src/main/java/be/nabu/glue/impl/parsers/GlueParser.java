@@ -242,11 +242,6 @@ public class GlueParser implements Parser {
 					String nextLine = null;
 					while (comment == null && (nextLine = readLine(pushback)) != null) {
 						if (getDepth(nextLine) > depth) {
-							// no labels on appended lines
-							if (nextLine.trim().matches("^[\\w\\s]+:.*")) {
-								pushback.pushback(IOUtils.wrap(nextLine + "\n"));
-								break;
-							}
 							// a comment will stop the appending
 							index = nextLine.indexOf('#');
 							if (index >= 0) {
