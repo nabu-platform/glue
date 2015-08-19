@@ -81,30 +81,30 @@ public class FileMethods {
 	
 	@GlueMethod(description = "Lists the files matching the given regex in the given directory")
 	public static String [] list(
-			@GlueParam(name = "directory", description = "The directory to search in") String path, 
+			@GlueParam(name = "target", description = "The directory to search in or the object to list from") Object target, 
 			@GlueParam(name = "fileRegex", description = "The file regex to match. If they are matched, they are added to the result list. Pass in null if you are not interested in files") String fileRegex, 
 			@GlueParam(name = "directoryRegex", description = "The directory regex to match. If they are matched, they are added to the result list. Pass in null if you are not interested in directories") String directoryRegex, 
-			@GlueParam(name = "recursive", description = "Whether or not to look recursively") boolean recursive) throws IOException {
-		Resource resource = resolve(path);
-		if (resource == null) {
-			return new String[0];
+			@GlueParam(name = "recursive", description = "Whether or not to look recursively") Boolean recursive) throws IOException {
+		if (target == null) {
+			target = ShellMethods.pwd();
 		}
-		return list((ResourceContainer<?>) resource, fileRegex, directoryRegex, recursive, null).toArray(new String[0]);
-	}
-	
-	@GlueMethod(description = "Lists all the files inside the given directory or zip file")
-	public static String [] list(@GlueParam(name = "target", description = "If a string is passed in, it is assumed to be a path to a directory. Otherwise it is assumed to be a zip") Object object) throws IOException {
-		return list(object, ".*");
-	}
-	
-	@GlueMethod(description = "Lists the files that match the given regex inside the given directory or zip file")
-	public static String [] list(@GlueParam(name = "target", description = "If a string is passed in, it is assumed to be a path to a directory. Otherwise it is assumed to be a zip") Object object, @GlueParam(name = "fileRegex", description = "If the filename matches this regex, it will be added to the result list") String fileRegex) throws IOException {
-		if (object instanceof String) {
-			return list((String) object, fileRegex, null, true);
+		if (target instanceof String) {
+			Resource resource = resolve((String) target);
+			if (resource == null) {
+				return new String[0];
+			}
+			if (fileRegex == null) {
+				fileRegex = ".*";
+			}
+			if (recursive == null) {
+				recursive = true;
+			}
+			return list((ResourceContainer<?>) resource, fileRegex, directoryRegex, recursive, null).toArray(new String[0]);
 		}
+		// we assume it's a zip for now
 		else {
 			List<String> files = new ArrayList<String>();
-			ZipInputStream zip = new ZipInputStream(ScriptMethods.toStream(ScriptMethods.bytes(object)));
+			ZipInputStream zip = new ZipInputStream(ScriptMethods.toStream(ScriptMethods.bytes(target)));
 			try {
 				ZipEntry entry = null;
 				while ((entry = zip.getNextEntry()) != null) {

@@ -16,6 +16,7 @@ import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.StaticMethodFactory;
 import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.impl.SimpleParameterDescription;
+import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.impl.MethodOperation;
 
@@ -62,7 +63,7 @@ public class StaticJavaMethodProvider implements MethodProvider {
 					List<MethodDescription> descriptions = new ArrayList<MethodDescription>();
 					for (Class<?> methodClass : methodClasses) {
 						for (Method method : methodClass.getDeclaredMethods()) {
-							if (Modifier.isStatic(method.getModifiers())) {
+							if (Modifier.isStatic(method.getModifiers()) && Modifier.isPublic(method.getModifiers())) {
 								GlueMethod methodAnnotation = method.getAnnotation(GlueMethod.class);
 								List<ParameterDescription> parameters = new ArrayList<ParameterDescription>();
 								Annotation[][] parameterAnnotations = method.getParameterAnnotations();
@@ -101,8 +102,10 @@ public class StaticJavaMethodProvider implements MethodProvider {
 									returnValues.add(new SimpleParameterDescription(null, methodAnnotation == null ? null : methodAnnotation.returns(), method.getReturnType().isArray() ? method.getReturnType().getComponentType().getName() : method.getReturnType().getName(), false)
 											.setList(method.getReturnType().isArray()));
 								}
+								MethodProviderClass annotation = method.getDeclaringClass().getAnnotation(MethodProviderClass.class);
+								String namespace = annotation == null || annotation.namespace() == null || annotation.namespace().isEmpty() ? method.getDeclaringClass().getName() : annotation.namespace(); 
 								descriptions.add(new SimpleMethodDescription(
-										method.getDeclaringClass().getName(), 
+										namespace, 
 										method.getName(), 
 										methodAnnotation == null ? null : methodAnnotation.description(), 
 												parameters, 
