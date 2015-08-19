@@ -1,5 +1,7 @@
 package be.nabu.glue.impl.executors;
 
+import java.text.ParseException;
+
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutionException;
@@ -13,7 +15,7 @@ import be.nabu.libs.evaluator.api.Operation;
 
 public class WhileExecutor extends SequenceExecutor {
 
-	private Operation<ExecutionContext> whileOperation;
+	private Operation<ExecutionContext> whileOperation, rewritten;
 	private Converter converter = ConverterFactory.getInstance().getConverter();
 
 	public WhileExecutor(ExecutorGroup parent, ExecutorContext context, Operation<ExecutionContext> condition, Operation<ExecutionContext> whileOperation, Executor...children) {
@@ -21,9 +23,26 @@ public class WhileExecutor extends SequenceExecutor {
 		this.whileOperation = whileOperation;
 	}
 
+	private Operation<ExecutionContext> getRewrittenWhile() throws ExecutionException {
+		// can only rewrite operations if we have a glue operation provider that can give us static method descriptions
+		if (rewritten == null && whileOperation != null) {
+			synchronized(this) {
+				if (rewritten == null) {
+					try {
+						rewritten = rewrite(whileOperation);
+					}
+					catch (ParseException e) {
+						throw new ExecutionException(e);
+					}
+				}
+			}
+		}
+		return rewritten;
+	}
+	
 	public void execute(ExecutionContext context) throws ExecutionException {
 		try {
-			Boolean result = converter.convert(whileOperation.evaluate(context), Boolean.class);
+			Boolean result = converter.convert(getRewrittenWhile().evaluate(context), Boolean.class);
 			while (result != null && result && !ScriptRuntime.getRuntime().isAborted()) {
 				super.execute(context);
 				if (context.getBreakCount() > 0) {
@@ -31,7 +50,7 @@ public class WhileExecutor extends SequenceExecutor {
 					break;
 				}
 				// execute again
-				result = converter.convert(whileOperation.evaluate(context), Boolean.class);	
+				result = converter.convert(getRewrittenWhile().evaluate(context), Boolean.class);	
 			}
 		}
 		catch (EvaluationException e) {

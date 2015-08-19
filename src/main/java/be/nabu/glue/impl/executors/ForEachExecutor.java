@@ -1,5 +1,6 @@
 package be.nabu.glue.impl.executors;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,7 +17,7 @@ import be.nabu.libs.evaluator.api.Operation;
 
 public class ForEachExecutor extends SequenceExecutor {
 
-	private Operation<ExecutionContext> forEach;
+	private Operation<ExecutionContext> forEach, rewritten;
 	private String temporaryVariable;
 	private String temporaryIndex;
 	private boolean allowVariableReuse = true;
@@ -28,11 +29,23 @@ public class ForEachExecutor extends SequenceExecutor {
 		this.temporaryIndex = temporaryIndex;
 	}
 
+	private Operation<ExecutionContext> getRewrittenForEach() throws ParseException {
+		// can only rewrite operations if we have a glue operation provider that can give us static method descriptions
+		if (rewritten == null) {
+			synchronized(this) {
+				if (rewritten == null) {
+					rewritten = rewrite(forEach);
+				}
+			}
+		}
+		return rewritten;
+	}
+	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	public void execute(ExecutionContext context) throws ExecutionException {
 		try {
-			Object original = forEach.evaluate(context);
+			Object original = getRewrittenForEach().evaluate(context);
 			if (original != null) {
 				Iterable elements;
 				if (original instanceof Iterable) {
@@ -74,6 +87,9 @@ public class ForEachExecutor extends SequenceExecutor {
 			}
 		}
 		catch (EvaluationException e) {
+			throw new ExecutionException(e);
+		}
+		catch (ParseException e) {
 			throw new ExecutionException(e);
 		}
 	}

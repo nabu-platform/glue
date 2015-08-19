@@ -174,11 +174,13 @@ public class GlueParser implements Parser {
 				if (line.matches("^if[\\s]*\\(.*\\)$")) {
 					line = line.replaceAll("^if[\\s]*\\((.*)\\)$", "$1");
 					SequenceExecutor sequenceExecutor = new SequenceExecutor(executorGroups.peek(), context, analyzer.analyze(GlueQueryParser.getInstance().parse(line)));
+					sequenceExecutor.setOperationProvider(operationProvider);
 					executorGroups.peek().getChildren().add(sequenceExecutor);
 					executorGroups.push(sequenceExecutor);
 				}
 				else if (line.equals("sequence")) {
 					SequenceExecutor sequenceExecutor = new SequenceExecutor(executorGroups.peek(), context, null);
+					sequenceExecutor.setOperationProvider(operationProvider);
 					executorGroups.peek().getChildren().add(sequenceExecutor);
 					executorGroups.push(sequenceExecutor);
 				}
@@ -186,6 +188,7 @@ public class GlueParser implements Parser {
 					line = line.replaceAll("^while[\\s]*\\((.*)\\)$", "$1");
 					Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(line));
 					WhileExecutor whileExecutor = new WhileExecutor(executorGroups.peek(), context, null, operation);
+					whileExecutor.setOperationProvider(operationProvider);
 					executorGroups.peek().getChildren().add(whileExecutor);
 					executorGroups.push(whileExecutor);
 				}
@@ -200,12 +203,14 @@ public class GlueParser implements Parser {
 					}
 					Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(line));
 					ForEachExecutor forEachExecutor = new ForEachExecutor(executorGroups.peek(), context, null, operation, variableName, indexName);
+					forEachExecutor.setOperationProvider(operationProvider);
 					executorGroups.peek().getChildren().add(forEachExecutor);
 					executorGroups.push(forEachExecutor);
 				}
 				else if (line.matches("^break[\\s]*[0-9]+$") || line.equals("break")) {
 					int breakCount =  line.matches("^break[\\s]*[0-9]+$") ? Integer.parseInt(line.replaceAll("^break[\\s]*([0-9]+)$", "$1")) : 1; 
 					BreakExecutor breakExecutor = new BreakExecutor(executorGroups.peek(), context, null, breakCount);
+					breakExecutor.setOperationProvider(operationProvider);
 					executorGroups.peek().getChildren().add(breakExecutor);
 				}
 				else if (line.matches("^switch[\\s]*\\(.*\\)$") || line.equals("switch")) {
@@ -216,6 +221,7 @@ public class GlueParser implements Parser {
 						operation = analyzer.analyze(GlueQueryParser.getInstance().parse(line));
 					}
 					SwitchExecutor switchExecutor = new SwitchExecutor(executorGroups.peek(), context, null, variableName, operation);
+					switchExecutor.setOperationProvider(operationProvider);
 					executorGroups.peek().getChildren().add(switchExecutor);
 					executorGroups.push(switchExecutor);
 				}
@@ -226,6 +232,7 @@ public class GlueParser implements Parser {
 					}
 					Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse("$value == (" + line + ")"));
 					SequenceExecutor sequenceExecutor = new SequenceExecutor(executorGroups.peek(), context, operation);
+					sequenceExecutor.setOperationProvider(operationProvider);
 					executorGroups.peek().getChildren().add(sequenceExecutor);
 					executorGroups.push(sequenceExecutor);
 				}
@@ -234,6 +241,7 @@ public class GlueParser implements Parser {
 						throw new ParseException("A default can only exist inside a switch", 0);
 					}
 					SequenceExecutor sequenceExecutor = new SequenceExecutor(executorGroups.peek(), context, null);
+					sequenceExecutor.setOperationProvider(operationProvider);
 					executorGroups.peek().getChildren().add(sequenceExecutor);
 					executorGroups.push(sequenceExecutor);
 				}
@@ -307,7 +315,8 @@ public class GlueParser implements Parser {
 						}
 					}
 					Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(line));
-					EvaluateExecutor evaluateExecutor = new EvaluateExecutor(executorGroups.peek(), context, repository, operationProvider, null, variableName, type, operation, overwriteIfExists);
+					EvaluateExecutor evaluateExecutor = new EvaluateExecutor(executorGroups.peek(), context, repository, null, variableName, type, operation, overwriteIfExists);
+					evaluateExecutor.setOperationProvider(operationProvider);
 					evaluateExecutor.setList(mustBeArray);
 					executorGroups.peek().getChildren().add(evaluateExecutor);
 				}
