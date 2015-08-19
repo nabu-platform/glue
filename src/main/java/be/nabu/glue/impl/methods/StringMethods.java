@@ -96,35 +96,6 @@ public class StringMethods {
 		return stop == null ? string.substring(start) : string.substring(start, stop);
 	}
 	
-	@GlueMethod(description = "Allows you to retain only a certain part of the given string(s) based on the given regex")
-	public static Object retain(@GlueParam(name = "regex", description = "The regex to match") String regex, @GlueParam(name = "strings", description = "The string(s) to filter") String...original) {
-		List<String> result = new ArrayList<String>();
-		for (String string : original) {
-			if (string.matches(regex)) {
-				result.add(string);
-			}
-		}
-		return original.length == 1 ? result.get(0) : result.toArray(new String[result.size()]);
-	}
-	
-	@GlueMethod(description = "Removes the string(s) matching the given regex")
-	public static Object remove(@GlueParam(name = "regex", description = "The regex to match in order to remove the string(s)") String regex, @GlueParam(name = "strings", description = "The string(s) to filter") String...original) {
-		List<String> result = new ArrayList<String>();
-		if (original != null) {
-			for (String string : original) {
-				if (!string.matches(regex)) {
-					result.add(string);
-				}
-			}
-		}
-		if (result.isEmpty()) {
-			return original == null || original.length == 1 ? null : new String[0];
-		}
-		else {
-			return original.length == 1 ? result.get(0) : result.toArray(new String[result.size()]);
-		}
-	}
-	
 	@GlueMethod(description = "Replaces the given regex with the replacement in the given string(s)")
 	public static Object replace(
 			@GlueParam(name = "regex", description = "The regex to match") String regex, 

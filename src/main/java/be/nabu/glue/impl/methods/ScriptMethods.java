@@ -475,4 +475,78 @@ public class ScriptMethods {
 		// don't re-close it
 		ScriptRuntime.getRuntime().removeTransactionable(new TransactionalCloseable(closeable));
 	}
+	
+	
+	@GlueMethod(description = "Allows you to retain only a certain part of the given string(s) based on the given regex")
+	public static Object retain(@GlueParam(name = "needle", description = "The regex to match") Object needle, @GlueParam(name = "haystack", description = "The string(s) to filter") Object...haystack) {
+		List<Object> result = new ArrayList<Object>();
+		if (haystack != null && haystack.length > 0) {
+			if (needle instanceof String) {
+				for (Object object : haystack) {
+					String string = ConverterFactory.getInstance().getConverter().convert(object, String.class);
+					if (string != null && string.matches((String) needle)) {
+						result.add(string);
+					}
+				}
+			}
+			else {
+				List<Object> needles = listify(needle);
+				for (Object object : haystack) {
+					if (needles.contains(object)) {
+						result.add(object);
+					}
+				}
+			}
+		}
+		if (result.isEmpty()) {
+			return null;
+		}
+		else {
+			return haystack.length == 1 ? result.get(0) : array(result.toArray());
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<Object> listify(Object needle) {
+		List<Object> needles;
+		if (needle instanceof Collection) {
+			needles = new ArrayList<Object>((Collection<Object>) needle);
+		}
+		else if (needle instanceof Object[]) {
+			needles = Arrays.asList((Object[]) needle);
+		}
+		else {
+			needles = Arrays.asList(needle);
+		}
+		return needles;
+	}
+	
+	@GlueMethod(description = "Removes the string(s) matching the given regex")
+	public static Object remove(@GlueParam(name = "needle", description = "The regex to match in order to remove the string(s)") Object needle, @GlueParam(name = "haystack", description = "The string(s) to filter") Object...haystack) {
+		List<Object> result = new ArrayList<Object>();
+		if (haystack != null && haystack.length > 0) {
+			if (needle instanceof String) {
+				for (Object object : haystack) {
+					String string = ConverterFactory.getInstance().getConverter().convert(object, String.class);
+					if (!string.matches((String) needle)) {
+						result.add(string);
+					}
+				}
+			}
+			else {
+				List<Object> needles = listify(needle);
+				for (Object object : haystack) {
+					if (!needles.contains(object)) {
+						result.add(object);
+					}
+				}
+			}
+		}
+		if (result.isEmpty()) {
+			return null;
+		}
+		else {
+			return haystack.length == 1 ? result.get(0) : array(result.toArray());
+		}
+	}
 }
