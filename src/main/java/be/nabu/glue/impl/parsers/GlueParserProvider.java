@@ -12,6 +12,12 @@ import be.nabu.glue.spi.SPIMethodProvider;
 
 public class GlueParserProvider implements ParserProvider {
 
+	private MethodProvider[] methodProviders;
+
+	public GlueParserProvider(MethodProvider...methodProviders) {
+		this.methodProviders = methodProviders;
+	}
+	
 	@Override
 	public Parser newParser(ScriptRepository repository, String name) {
 		// make sure we have the root repository which should have access to all the other repositories
@@ -26,12 +32,15 @@ public class GlueParserProvider implements ParserProvider {
 	}
 	
 	public MethodProvider[] getMethodProviders(ScriptRepository repository) {
-		return new MethodProvider[] {
-			new ScriptMethodProvider(repository),
-			new SPIMethodProvider(),
-			new StaticJavaMethodProvider(),
-			new SystemMethodProvider()
-		};
+		MethodProvider [] providers = new MethodProvider[methodProviders.length + 4];
+		for (int i = 0; i < methodProviders.length; i++) {
+			providers[i] = methodProviders[i];
+		}
+		providers[providers.length - 4] = new ScriptMethodProvider(repository);
+		providers[providers.length - 3] = new SPIMethodProvider();
+		providers[providers.length - 2] = new StaticJavaMethodProvider();
+		providers[providers.length - 1] = new SystemMethodProvider();
+		return providers;
 	}
 
 }
