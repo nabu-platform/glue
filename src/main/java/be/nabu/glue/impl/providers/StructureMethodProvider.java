@@ -3,6 +3,7 @@ package be.nabu.glue.impl.providers;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import be.nabu.glue.api.ExecutionContext;
@@ -54,7 +55,7 @@ public class StructureMethodProvider implements MethodProvider {
 		@SuppressWarnings({ "unchecked", "rawtypes" })
 		@Override
 		public Object evaluate(ExecutionContext context) throws EvaluationException {
-			ForkedExecutionContext forkedContext = new ForkedExecutionContext(context, true);
+			ForkedExecutionContext forkedContext = new ForkedExecutionContext(context, new HashMap<String, Object>());
 			for (int i = 1; i < getParts().size(); i++) {
 				Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
 				if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.DIVIDE && argumentOperation.getParts().get(1).getContent().equals(":")) {
