@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutionException;
 import be.nabu.glue.api.Executor;
@@ -71,6 +72,9 @@ abstract public class BaseExecutor implements Executor {
 	@Override
 	public boolean shouldExecute(ExecutionContext context) throws ExecutionException {
 		if (getContext().getAnnotations().containsKey("disabled")) {
+			return false;
+		}
+		else if (!ScriptRuntime.getRuntime().getFormatter().shouldExecute(this)) {
 			return false;
 		}
 		boolean shouldExecute = true;
