@@ -86,7 +86,7 @@ public class FileMethods {
 			@GlueParam(name = "directoryRegex", description = "The directory regex to match. If they are matched, they are added to the result list. Pass in null if you are not interested in directories") String directoryRegex, 
 			@GlueParam(name = "recursive", description = "Whether or not to look recursively") Boolean recursive) throws IOException {
 		if (target == null) {
-			target = ShellMethods.pwd();
+			target = SystemMethodProvider.getDirectory();
 		}
 		if (target instanceof String) {
 			Resource resource = resolve((String) target);
