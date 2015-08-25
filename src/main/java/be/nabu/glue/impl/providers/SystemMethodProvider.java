@@ -32,7 +32,7 @@ import be.nabu.utils.io.IOUtils;
 
 public class SystemMethodProvider implements MethodProvider {
 
-	private static final String CLI_DIRECTORY = "cli.directory";
+	public static final String CLI_DIRECTORY = "cli.directory";
 
 	@Override
 	public Operation<ExecutionContext> resolve(String name) {
