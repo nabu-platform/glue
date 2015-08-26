@@ -14,7 +14,6 @@ import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.VirtualScript;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutorGroup;
-import be.nabu.glue.api.OutputFormatter;
 import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ScriptRepository;
 import be.nabu.glue.impl.GlueQueryParser;
@@ -398,7 +397,8 @@ public class GlueParser implements Parser {
 				String script = matcher.group().replaceAll(pattern.pattern(), "$1");
 				ScriptRuntime fork = ScriptRuntime.getRuntime().fork(new VirtualScript(ScriptRuntime.getRuntime().getScript(), script));
 				StringWriter log = new StringWriter();
-				OutputFormatter buffer = new SimpleOutputFormatter(log, false);
+				SimpleOutputFormatter buffer = new SimpleOutputFormatter(log, false);
+				buffer.setParent(ScriptRuntime.getRuntime().getFormatter());
 				fork.setFormatter(buffer);
 				fork.run();
 				if (fork.getException() != null) {
