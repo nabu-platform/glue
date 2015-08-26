@@ -183,7 +183,7 @@ abstract public class BaseExecutor implements Executor {
 					boolean isRewritten = false;
 					if (operation.getParts().get(i).getContent() instanceof Operation) {
 						Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) operation.getParts().get(i).getContent();
-						if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.DIVIDE && argumentOperation.getParts().get(1).getContent().equals(":")) {
+						if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.NAMING && argumentOperation.getParts().get(1).getContent().equals(":")) {
 							if (!canRewrite) {
 								throw new ParseException("The method '" + fullName + "' does not allow for named parameters", 0);
 							}

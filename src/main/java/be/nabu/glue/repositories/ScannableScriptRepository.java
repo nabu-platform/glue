@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import be.nabu.glue.ScriptUtils;
+import be.nabu.glue.api.GroupedScriptRepository;
 import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ParserProvider;
 import be.nabu.glue.api.ResourceScriptRepository;
@@ -19,7 +20,7 @@ import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
 import be.nabu.libs.resources.api.features.CacheableResource;
 
-public class ScannableScriptRepository implements ResourceScriptRepository {
+public class ScannableScriptRepository implements ResourceScriptRepository, GroupedScriptRepository {
 
 	private ParserProvider parserProvider;
 	private ResourceContainer<?> root;
@@ -27,6 +28,7 @@ public class ScannableScriptRepository implements ResourceScriptRepository {
 	private Charset charset;
 	private ScriptRepository parent;
 	private boolean recurse;
+	private String group;
 
 	public ScannableScriptRepository(ScriptRepository parent, ResourceContainer<?> root, ParserProvider parserProvider, Charset charset) throws IOException {
 		this(parent, root, parserProvider, charset, true);
@@ -97,6 +99,15 @@ public class ScannableScriptRepository implements ResourceScriptRepository {
 	@Override
 	public void refresh() throws IOException {
 		scripts = scan(root, null);
+	}
+
+	@Override
+	public String getGroup() {
+		return group;
+	}
+
+	public void setGroup(String group) {
+		this.group = group;
 	}
 
 }

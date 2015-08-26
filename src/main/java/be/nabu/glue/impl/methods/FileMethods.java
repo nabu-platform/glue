@@ -84,20 +84,20 @@ public class FileMethods {
 			@GlueParam(name = "target", description = "The directory to search in or the object to list from") Object target, 
 			@GlueParam(name = "fileRegex", description = "The file regex to match. If they are matched, they are added to the result list. Pass in null if you are not interested in files") String fileRegex, 
 			@GlueParam(name = "directoryRegex", description = "The directory regex to match. If they are matched, they are added to the result list. Pass in null if you are not interested in directories") String directoryRegex, 
-			@GlueParam(name = "recursive", description = "Whether or not to look recursively") Boolean recursive) throws IOException {
+			@GlueParam(name = "recursive", description = "Whether or not to look recursively", defaultValue = "false") Boolean recursive) throws IOException {
 		if (target == null) {
 			target = SystemMethodProvider.getDirectory();
+		}
+		if (fileRegex == null && directoryRegex == null) {
+			fileRegex = ".*";
+		}
+		if (recursive == null) {
+			recursive = false;
 		}
 		if (target instanceof String) {
 			Resource resource = resolve((String) target);
 			if (resource == null) {
 				return new String[0];
-			}
-			if (fileRegex == null) {
-				fileRegex = ".*";
-			}
-			if (recursive == null) {
-				recursive = true;
 			}
 			return list((ResourceContainer<?>) resource, fileRegex, directoryRegex, recursive, null).toArray(new String[0]);
 		}

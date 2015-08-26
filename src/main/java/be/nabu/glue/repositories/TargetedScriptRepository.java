@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import be.nabu.glue.api.GroupedScriptRepository;
 import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ParserProvider;
 import be.nabu.glue.api.ResourceScriptRepository;
@@ -21,7 +22,7 @@ import be.nabu.libs.resources.api.ReadableResource;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceRoot;
 
-public class TargetedScriptRepository implements ResourceScriptRepository {
+public class TargetedScriptRepository implements ResourceScriptRepository, GroupedScriptRepository {
 
 	private URI base;
 	private String[] extensions;
@@ -31,6 +32,7 @@ public class TargetedScriptRepository implements ResourceScriptRepository {
 	private ParserProvider parserProvider;
 	private Charset charset;
 	private ScriptRepository parent;
+	private String group;
 
 	public TargetedScriptRepository(ScriptRepository parent, URI base, Principal principal, ParserProvider parserProvider, Charset charset, String...extensions) {
 		this.parent = parent;
@@ -83,4 +85,14 @@ public class TargetedScriptRepository implements ResourceScriptRepository {
 	public void refresh() throws IOException {
 		scripts.clear();
 	}
+
+	@Override
+	public String getGroup() {
+		return group;
+	}
+
+	public void setGroup(String group) {
+		this.group = group;
+	}
+	
 }

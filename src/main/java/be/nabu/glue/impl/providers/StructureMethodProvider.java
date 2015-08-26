@@ -58,7 +58,7 @@ public class StructureMethodProvider implements MethodProvider {
 			ForkedExecutionContext forkedContext = new ForkedExecutionContext(context, new HashMap<String, Object>());
 			for (int i = 1; i < getParts().size(); i++) {
 				Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
-				if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.DIVIDE && argumentOperation.getParts().get(1).getContent().equals(":")) {
+				if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.NAMING && argumentOperation.getParts().get(1).getContent().equals(":")) {
 					String parameterName = argumentOperation.getParts().get(0).getContent().toString();
 					Object value = argumentOperation.getParts().get(2).getType() == QueryPart.Type.OPERATION 
 						? ((Operation<ExecutionContext>) argumentOperation.getParts().get(2).getContent()).evaluate(context)

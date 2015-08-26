@@ -133,7 +133,7 @@ public class GlueParser implements Parser {
 				int index = -1;
 				while ((index = line.indexOf('#', index)) >= 0) {
 					// check for escape character
-					if (line.charAt(index - 1) == '\\') {
+					if (index > 0 && line.charAt(index - 1) == '\\') {
 						line = line.substring(0, index - 1) + line.substring(index);
 					}
 					else {
@@ -250,27 +250,33 @@ public class GlueParser implements Parser {
 					while (comment == null && (nextLine = readLine(pushback)) != null) {
 						if (getDepth(nextLine) > depth) {
 							// a comment will stop the appending
-							index = nextLine.indexOf('#');
-							if (index >= 0) {
-								comment = nextLine.substring(index + 1).trim();
-								if (comment.startsWith("#")) {
-									comment = comment.substring(1).trim();
-									if (context.getDescription() == null) {
-										context.setDescription(comment);
+							index = -1;
+							while ((index = nextLine.indexOf('#', index)) >= 0) {
+								// check for escape character
+								if (index > 0 && nextLine.charAt(index - 1) == '\\') {
+									nextLine = nextLine.substring(0, index - 1) + nextLine.substring(index);
+								}
+								else if (index >= 0) {
+									comment = nextLine.substring(index + 1).trim();
+									if (comment.startsWith("#")) {
+										comment = comment.substring(1).trim();
+										if (context.getDescription() == null) {
+											context.setDescription(comment);
+										}
+										else {
+											context.setDescription(context.getDescription() + System.getProperty("line.separator") + comment);
+										}
 									}
 									else {
-										context.setDescription(context.getDescription() + System.getProperty("line.separator") + comment);
+										if (context.getComment() == null) {
+											context.setComment(comment.trim());
+										}
+										else {
+											context.setComment(context.getComment() + System.getProperty("line.separator") + comment.trim());
+										}
 									}
+									nextLine = nextLine.substring(0, index).trim();
 								}
-								else {
-									if (context.getComment() == null) {
-										context.setComment(comment.trim());
-									}
-									else {
-										context.setComment(context.getComment() + System.getProperty("line.separator") + comment.trim());
-									}
-								}
-								nextLine = nextLine.substring(0, index).trim();
 							}
 							// append with spaces intact, this should not bother the query parser but may allow reconstruction of multilines later on
 							line += "\n" + nextLine;
