@@ -81,7 +81,7 @@ public class StructureMethodProvider implements MethodProvider {
 					}
 				}
 			}
-			return forkedContext;
+			return forkedContext.getPipeline();
 		}
 		
 	}
