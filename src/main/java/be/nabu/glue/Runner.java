@@ -11,11 +11,14 @@ import java.util.List;
 
 import javax.xml.bind.JAXBException;
 
+import be.nabu.glue.api.ScriptFilter;
+import be.nabu.glue.api.ScriptRepository;
 import be.nabu.glue.api.runs.ScriptResult;
 import be.nabu.glue.api.runs.ScriptResultInterpreter;
 import be.nabu.glue.api.runs.ScriptRunner;
 import be.nabu.glue.impl.EnvironmentLabelEvaluator;
 import be.nabu.glue.impl.GlueScriptResultInterpreter;
+import be.nabu.glue.impl.MatrixScriptRepository;
 import be.nabu.glue.impl.MultithreadedScriptRunner;
 import be.nabu.glue.impl.SimpleExecutionEnvironment;
 import be.nabu.glue.impl.TestCaseFilter;
@@ -42,6 +45,7 @@ public class Runner {
 		int poolSize = new Integer(getArgument("poolSize", "1", arguments));
 		String resultPath = getArgument("results", new File("results").toURI().toString(), arguments);
 		boolean useNamespaces = Boolean.parseBoolean(getArgument("useNamespaces", "false", arguments));
+		boolean allowMatrices = Boolean.parseBoolean(getArgument("allowMatrices", "true", arguments));
 		double allowedVariance = Double.parseDouble(getArgument("allowedVariance", "0.4", arguments));
 		// defaults to 5 minutes
 		long maxScriptRuntime = Long.parseLong(getArgument("maxScriptRuntime", "300000", arguments));
@@ -60,6 +64,7 @@ public class Runner {
 				repository.add(new ScannableScriptRepository(repository, container, new GlueParserProvider(), charset));
 			}
 		}
+		
 		Boolean debug = new Boolean(getArgument("debug", "false", arguments));
 		
 		SimpleExecutionEnvironment environment = new SimpleExecutionEnvironment(environmentName);
@@ -73,9 +78,11 @@ public class Runner {
 		
 		ScriptRunner runner = new MultithreadedScriptRunner(poolSize, maxScriptRuntime, debug);
 		
-		ScriptResultInterpreter interpreter = new GlueScriptResultInterpreter(repository, useNamespaces, allowedVariance);
+		ScriptFilter filter = new TestCaseFilter();
+		ScriptRepository repositoryToUse = allowMatrices ? new MatrixScriptRepository(repository, filter) : repository;
+		ScriptResultInterpreter interpreter = new GlueScriptResultInterpreter(repositoryToUse, useNamespaces, allowedVariance);
 		System.out.println("Starting test suite for environment '" + environment.getName() + "' with " + poolSize + " thread(s)" + (debug ? " in debug mode" : ""));
-		List<ScriptResult> results = runner.run(environment, repository, new TestCaseFilter(), new EnvironmentLabelEvaluator(label));
+		List<ScriptResult> results = runner.run(environment, repositoryToUse, filter, new EnvironmentLabelEvaluator(label));
 		for (ScriptResult result : results) {
 			try {
 				FormattedScriptResult formatted = FormattedScriptResult.format(result, interpreter.interpret(result));

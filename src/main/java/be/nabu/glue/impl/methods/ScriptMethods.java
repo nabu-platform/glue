@@ -65,16 +65,32 @@ public class ScriptMethods {
 		return eval(evaluation, ScriptRuntime.getRuntime().getExecutionContext());
 	}
 	
-	public static void inject(int offset) {
-		inject(offset, false);
+	public static void inject(Object object) {
+		inject(object, false);
 	}
 	
-	public static void inject(int offset, boolean overwriteExisting) {
-		Map<String, Object> current = ScriptRuntime.getRuntime().getExecutionContext().getPipeline();
-		Map<String, Object> pipeline = scope(offset);
-		for (String key : pipeline.keySet()) {
-			if (overwriteExisting || !current.containsKey(key)) {
-				current.put(key, pipeline.get(key));
+	@SuppressWarnings("unchecked")
+	public static void inject(Object object, boolean overwriteExisting) {
+		if (object != null) {
+			Map<String, Object> current = ScriptRuntime.getRuntime().getExecutionContext().getPipeline();
+			
+			Map<String, Object> pipeline;
+			if (object instanceof ExecutionContext) {
+				pipeline = ((ExecutionContext) object).getPipeline();
+			}
+			else if (object instanceof Map) {
+				pipeline = (Map<String, Object>) object;
+			}
+			else if (object instanceof Number) {
+				pipeline = scope(((Number) object).intValue());
+			}
+			else {
+				throw new IllegalArgumentException("Can not inject: " + object);
+			}
+			for (String key : pipeline.keySet()) {
+				if (overwriteExisting || !current.containsKey(key)) {
+					current.put(key, pipeline.get(key));
+				}
 			}
 		}
 	}

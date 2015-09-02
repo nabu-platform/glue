@@ -22,7 +22,7 @@ public class TestMethods {
 	
 	public static final String VALIDATION = "$validation";
 	
-	public static final int ELLIPSIS = Integer.parseInt(System.getProperty("test.ellipsis", "50"));
+	public static final int ELLIPSIS = Integer.parseInt(System.getProperty("test.ellipsis", "250"));
 	
 	public static boolean confirmNotNull(String message, Object result) throws IOException {
 		return check(message, result != null, stringify(result), true);
