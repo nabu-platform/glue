@@ -12,6 +12,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -131,6 +132,25 @@ public class ScriptMethods {
 			flattened.add(column < values.length ? values[column] : null);
 		}
 		return flattened.toArray();
+	}
+	
+	public static Object [] slice(@GlueParam(name = "start", defaultValue = "0") Integer start, @GlueParam(name = "stop", defaultValue = "End of the list") Integer stop, @GlueParam(name = "objects") Object...objects) {
+		Object[] array = array(objects);
+		return array(Arrays.asList(array).subList(start == null ? 0 : start, stop == null ? array.length : Math.min(stop, array.length)).toArray());
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static Object [] sort(@GlueParam(name = "objects") Object...objects) {
+		List<? extends Comparable> list = new ArrayList(Arrays.asList(array(objects)));
+		Collections.sort(list);
+		return array(list.toArray());
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static Object [] reverse(@GlueParam(name = "objects") Object...objects) {
+		List<? extends Comparable> list = new ArrayList(Arrays.asList(array(objects)));
+		Collections.reverse(list);
+		return array(list.toArray());
 	}
 	
 	/**

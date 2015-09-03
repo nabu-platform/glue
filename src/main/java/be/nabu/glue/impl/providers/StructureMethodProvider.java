@@ -73,10 +73,7 @@ public class StructureMethodProvider implements MethodProvider {
 							throw new EvaluationException("Can not access the returned content of type: " + value.getClass());
 						}
 						for (String variable : ((ListableContextAccessor<Object>) accessor).list(value)) {
-							Object fieldValue = accessor.get(value, variable);
-							if (fieldValue != null) {
-								forkedContext.getPipeline().put(variable, fieldValue);
-							}
+							forkedContext.getPipeline().put(variable, accessor.get(value, variable));
 						}
 					}
 				}
