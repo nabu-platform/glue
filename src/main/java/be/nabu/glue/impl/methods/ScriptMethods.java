@@ -28,6 +28,7 @@ import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutionException;
 import be.nabu.glue.api.ExecutorGroup;
+import be.nabu.glue.impl.ForkedExecutionContext;
 import be.nabu.glue.impl.TransactionalCloseable;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.libs.converter.ConverterFactory;
@@ -54,7 +55,8 @@ public class ScriptMethods {
 		}
 	}
 
-	public static Object eval(String evaluation, ExecutionContext context) throws IOException, ParseException, ExecutionException, EvaluationException {
+	@SuppressWarnings("unchecked")
+	public static Object eval(String evaluation, Object context) throws IOException, ParseException, ExecutionException, EvaluationException {
 		ExecutorGroup parsed = ScriptRuntime.getRuntime().getScript().getParser().parse(new StringReader(evaluation));
 		if (parsed.getChildren().size() > 1) {
 			throw new ParseException("Only single lines of code are allowed for eval", 0);
@@ -62,7 +64,17 @@ public class ScriptMethods {
 		if (!(parsed.getChildren().get(0) instanceof EvaluateExecutor)) {
 			throw new ParseException("Invalid evaluation string: " + evaluation, 0);
 		}
-		return ((EvaluateExecutor) parsed.getChildren().get(0)).getOperation().evaluate(context);
+		ExecutionContext executionContext;
+		if (context instanceof ExecutionContext) {
+			executionContext = (ExecutionContext) context;
+		}
+		else if (context instanceof Map) {
+			executionContext = new ForkedExecutionContext(ScriptRuntime.getRuntime().getExecutionContext(), (Map<String, Object>) context);
+		}
+		else {
+			throw new IllegalArgumentException("Eval can only be done on an execution context or a map, not: " + context);
+		}
+		return ((EvaluateExecutor) parsed.getChildren().get(0)).getOperation().evaluate(executionContext);
 	}
 	
 	public static Object eval(String evaluation) throws IOException, ParseException, ExecutionException, EvaluationException {
