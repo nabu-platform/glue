@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -35,6 +36,8 @@ import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 
 @MethodProviderClass(namespace = "script")
 public class ScriptMethods {
+
+	public static final String SEQUENCES = "sequences";
 	
 	public static List<String> extensions = Arrays.asList(new String [] { "xml", "json", "txt", "ini", "properties", "sql", "csv", "html", "htm", "glue", "py", "c++", "cpp", "c", "php", "js", "java" });
 
@@ -583,6 +586,22 @@ public class ScriptMethods {
 		}
 		else {
 			return haystack.length == 1 ? result.get(0) : array(result.toArray());
+		}
+	}
+	
+
+	@SuppressWarnings("unchecked")
+	@GlueMethod(description = "Generates a sequential number guaranteed to be unique for the given named sequence during a single script run")
+	public static long sequence(@GlueParam(name = "name", description = "You can have multiple sequences at runtime", defaultValue = "default") String name) {
+		Map<String, Object> context = ScriptRuntime.getRuntime().getContext();
+		if (!context.containsKey(SEQUENCES)) {
+			context.put(SEQUENCES, new HashMap<String, Integer>());
+		}
+		Map<String, Integer> sequences = (Map<String, Integer>) context.get(SEQUENCES);
+		synchronized(sequences) {
+			Integer sequence = sequences.containsKey(name) ? sequences.get(name) + 1 : 1;
+			sequences.put(name, sequence);
+			return sequence;
 		}
 	}
 }
