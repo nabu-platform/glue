@@ -205,8 +205,14 @@ public class TestMethods {
 		return operation.getParts().size() >= 3 ? operation.getParts().get(2).getContent().toString() : null;
 	}
 	
-	@SuppressWarnings("unchecked")
 	public static boolean check(String message, Boolean result, String check, boolean fail) {
+		Severity level = result == null || !result ? Severity.ERROR : Severity.INFO;
+		addValidation(level, check, message, fail);
+		return result != null && result;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static void addValidation(Severity severity, String message, String description, boolean fail) {
 		ScriptRuntime runtime = ScriptRuntime.getRuntime();
 		
 		// build callstack
@@ -221,17 +227,15 @@ public class TestMethods {
 		}
 		List<GlueValidation> messages = (List<GlueValidation>) runtime.getContext().get(VALIDATION);
 		
-		Severity level = result == null || !result ? Severity.ERROR : Severity.INFO;
 		
 		// add the message
-		GlueValidation validation = new GlueValidationImpl(level, check, message, callStack, runtime.getExecutionContext().getCurrent());
+		GlueValidation validation = new GlueValidationImpl(severity, message, description, callStack, runtime.getExecutionContext().getCurrent());
 		messages.add(validation);
 		
 		runtime.getFormatter().validated(validation);
 		// stop if necessary
-		if (level == Severity.ERROR && fail) {
+		if (severity == Severity.ERROR && fail) {
 			throw new AssertionException(validation.toString());
 		}
-		return result != null && result;
 	}
 }
