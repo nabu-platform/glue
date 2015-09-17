@@ -111,7 +111,11 @@ public class ScriptMethods {
 		}
 	}
 	
-	public static Map<String, Object> scope(int offset) {
+	public static Map<String, Object> scope(Integer offset) {
+		// take the current scope
+		if (offset == null) {
+			offset = 0;
+		}
 		ScriptRuntime runtime = ScriptRuntime.getRuntime();
 		for (int i = 0; i < offset; i++) {
 			if (runtime.getParent() == null) {
