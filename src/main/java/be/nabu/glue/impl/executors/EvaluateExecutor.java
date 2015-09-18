@@ -24,7 +24,6 @@ import be.nabu.libs.evaluator.api.Operation;
 
 public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor {
 
-	private static final int BLOB_LENGTH = 500;
 	private static final boolean ALLOW_STRUCTURE_TYPES = Boolean.parseBoolean(System.getProperty("structure.allow.types", "true"));
 	
 	private String variableName;
@@ -87,14 +86,6 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 						}
 					}
 					else {
-						if (context.isDebug()) {
-							// trim values that are too long
-							String stringValue = value == null ? "" : value.toString();
-							if (stringValue.length() > BLOB_LENGTH) {
-								stringValue = "BLOB: " + stringValue.substring(0, BLOB_LENGTH).replaceAll("[\r\n]+", " ") + "...";
-							}
-							ScriptMethods.debug("Result: " + variableName + " = " + stringValue);
-						}
 						context.getPipeline().put(variableName, value);
 					}
 				}
@@ -102,9 +93,6 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 			catch (Exception e) {
 				throw new ExecutionException(e);
 			}
-		}
-		else if (context.isDebug() && variableName != null && context.getPipeline().get(variableName) != null && !overwriteIfExists) {
-			ScriptRuntime.getRuntime().getFormatter().print("Inherited parameter: " + variableName + " = " + context.getPipeline().get(variableName));
 		}
 		// convert if necessary
 		if (variableName != null && converter != null && context.getPipeline().get(variableName) != null) {

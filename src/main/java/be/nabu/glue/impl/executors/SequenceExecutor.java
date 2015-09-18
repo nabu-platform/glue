@@ -47,9 +47,6 @@ public class SequenceExecutor extends BaseExecutor implements ExecutorGroup {
 				child.execute(context);
 				ScriptRuntime.getRuntime().getFormatter().after(child);
 			}
-			else if (context.isDebug()) {
-				ScriptRuntime.getRuntime().getFormatter().print("Skipping " + child.getContext().getLine());
-			}
 		}
 	}
 
