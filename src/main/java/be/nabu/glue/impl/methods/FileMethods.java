@@ -11,6 +11,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
@@ -29,6 +30,7 @@ import be.nabu.libs.resources.api.ManageableContainer;
 import be.nabu.libs.resources.api.ReadableResource;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
+import be.nabu.libs.resources.api.TimestampedResource;
 import be.nabu.libs.resources.api.WritableResource;
 import be.nabu.utils.io.IOUtils;
 import be.nabu.utils.io.api.ByteBuffer;
@@ -37,6 +39,11 @@ import be.nabu.utils.io.api.WritableContainer;
 
 @MethodProviderClass(namespace = "file")
 public class FileMethods {
+
+	public static Date modified(@GlueParam(name = "fileName", description = "The name of the file to read") String fileName) throws IOException {
+		Resource resource = resolve(fileName);
+		return resource instanceof TimestampedResource ? ((TimestampedResource) resource).getLastModified() : null;
+	}
 	
 	@GlueMethod(description = "Returns the contents of the given file")
 	public static InputStream read(@GlueParam(name = "fileName", description = "The name of the file to read") String fileName) throws IOException {
@@ -209,7 +216,8 @@ public class FileMethods {
 	 * @param content
 	 * @throws IOException
 	 */
-	public static void write(String fileName, Object content) throws IOException {
+	@GlueMethod(description = "Writes the content to the given file")
+	public static void write(@GlueParam(name = "fileName", description = "The file to write to") String fileName, @GlueParam(name = "content", description = "The content to write to the file") Object content) throws IOException {
 		if (content != null) {
 			InputStream input = ScriptMethods.toStream(content);
 			try {
@@ -242,13 +250,15 @@ public class FileMethods {
 	 * Delete a file, this will delete recursively if its a directory
 	 * @throws IOException 
 	 */
-	public static void delete(String fileName) throws IOException {
-		Resource resource = resolve(fileName);
-		if (resource != null) {
-			if (!(resource.getParent() instanceof ManageableContainer)) {
-				throw new IOException("Can not delete: " + fileName);
+	public static void delete(String...fileNames) throws IOException {
+		for (String fileName : fileNames) {
+			Resource resource = resolve(fileName);
+			if (resource != null) {
+				if (!(resource.getParent() instanceof ManageableContainer)) {
+					throw new IOException("Can not delete: " + fileName);
+				}
+				((ManageableContainer<?>) resource.getParent()).delete(resource.getName());
 			}
-			((ManageableContainer<?>) resource.getParent()).delete(resource.getName());
 		}
 	}
 

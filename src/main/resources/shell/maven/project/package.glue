@@ -10,7 +10,10 @@ if (repository == null)
 # This gets all the dependencies for these projects
 for (project : array(projects))
 	dependencies = unique(array(dependencies, last(maven.dependencies(project))))
-	
+
+echo("Packaging dependencies:")
+echo("- " + join("\n- ", dependencies))
+
 # This gets the paths relative to the maven repository
 for (path : last(maven.paths(dependencies)))
 	# The target file name

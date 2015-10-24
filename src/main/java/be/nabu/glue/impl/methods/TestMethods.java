@@ -6,6 +6,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import be.nabu.glue.ScriptRuntime;
+import be.nabu.glue.annotations.GlueMethod;
+import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.runs.AssertionException;
 import be.nabu.glue.api.runs.CallLocation;
@@ -153,11 +155,19 @@ public class TestMethods {
 		return check(message, !result, getCheck(), false);
 	}
 	
-	public static boolean validateEquals(String message, Object expected, Object actual) throws IOException {
+	@GlueMethod(description = "Checks that the actual value equals the expected value")
+	public static boolean validateEquals(
+			@GlueParam(name = "message", description = "The validation message") String message, 
+			@GlueParam(name = "expected", description = "The expected value") Object expected, 
+			@GlueParam(name = "actual", description = "The actual value") Object actual) throws IOException {
 		return checkEquals(message, expected, actual, false, false);
 	}
 	
-	public static boolean validateNotEquals(String message, Object expected, Object actual) throws IOException {
+	@GlueMethod(description = "Checks that the actual value does not equal the expected value")
+	public static boolean validateNotEquals(
+			@GlueParam(name = "message", description = "The validation message") String message, 
+			@GlueParam(name = "expected", description = "The expected value") Object expected, 
+			@GlueParam(name = "actual", description = "The actual value") Object actual) throws IOException {
 		return checkEquals(message, expected, actual, false, true);
 	}
 	
