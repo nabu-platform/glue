@@ -335,7 +335,12 @@ public class Main {
 		else {
 			System.out.println("WARNING: To pick up scripts on the file system you need to include the project 'resources-file'");
 		}
-		repository.add(new TargetedScriptRepository(repository, new URI("classpath:/scripts"), null, new GlueParserProvider(), charset, "glue"));
+		if (new Boolean(getArgument("classpath", "true", arguments))) {
+			repository.add(new TargetedScriptRepository(repository, new URI("classpath:/scripts"), null, new GlueParserProvider(), charset, "glue"));
+		}
+		if (new Boolean(getArgument("remote", "true", arguments))) {
+			repository.add(new TargetedScriptRepository(repository, new URI("https://raw.githubusercontent.com/nablex/scripts/master"), null, new GlueParserProvider(), charset, "glue"));
+		}
 		return repository;
 	}
 	
