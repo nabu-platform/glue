@@ -338,8 +338,16 @@ public class Main {
 		if (new Boolean(getArgument("classpath", "true", arguments))) {
 			repository.add(new TargetedScriptRepository(repository, new URI("classpath:/scripts"), null, new GlueParserProvider(), charset, "glue"));
 		}
-		if (new Boolean(getArgument("remote", "true", arguments))) {
+		if (new Boolean(getArgument("remote", "false", arguments))) {
+			// the default remote repository
 			repository.add(new TargetedScriptRepository(repository, new URI("https://raw.githubusercontent.com/nablex/scripts/master"), null, new GlueParserProvider(), charset, "glue"));
+		}
+		// you can configure your own remote repositories
+		String repositories = getArgument("repositories", null, arguments);
+		if (repositories != null) {
+			for (String remoteRepository : repositories.split(",")) {
+				repository.add(new TargetedScriptRepository(repository, new URI(remoteRepository), null, new GlueParserProvider(), charset, "glue"));		
+			}
 		}
 		return repository;
 	}
