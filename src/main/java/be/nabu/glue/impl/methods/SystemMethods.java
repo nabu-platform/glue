@@ -1,9 +1,11 @@
 package be.nabu.glue.impl.methods;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,6 +33,23 @@ public class SystemMethods {
 		}
 		finally {
 			input.close();
+		}
+	}
+
+	public static String input(String message, Boolean secret) throws IOException {
+		if (message != null) {
+			System.out.print(message);
+		}
+		if (System.console() != null) {
+			if (secret != null && secret) {
+				return new String(System.console().readPassword());
+			}
+			else {
+				return System.console().readLine();
+			}
+		}
+		else {
+			return new BufferedReader(new InputStreamReader(System.in)).readLine();
 		}
 	}
 	
