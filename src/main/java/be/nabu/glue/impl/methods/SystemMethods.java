@@ -52,5 +52,8 @@ public class SystemMethods {
 			return new BufferedReader(new InputStreamReader(System.in)).readLine();
 		}
 	}
-	
+
+	public static boolean linux() {
+		return System.getProperty("os.name", "generic").contains("nux");
+	}
 }
