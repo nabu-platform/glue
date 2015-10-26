@@ -32,8 +32,11 @@ import be.nabu.glue.impl.ForkedExecutionContext;
 import be.nabu.glue.impl.TransactionalCloseable;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.libs.converter.ConverterFactory;
+import be.nabu.libs.evaluator.ContextAccessorFactory;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.annotations.MethodProviderClass;
+import be.nabu.libs.evaluator.api.ContextAccessor;
+import be.nabu.libs.evaluator.api.ListableContextAccessor;
 
 @MethodProviderClass(namespace = "script")
 public class ScriptMethods {
@@ -619,5 +622,17 @@ public class ScriptMethods {
 			sequences.put(name, sequence);
 			return sequence;
 		}
+	}
+	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static String [] keys(Object object) {
+		if (object == null) {
+			return new String[0];
+		}
+		ContextAccessor accessor = ContextAccessorFactory.getInstance().getAccessor(object.getClass());
+		if (accessor instanceof ListableContextAccessor) {
+			return (String[]) ((ListableContextAccessor) accessor).list(object).toArray(new String[0]);
+		}
+		return new String[0];
 	}
 }

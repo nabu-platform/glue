@@ -11,6 +11,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import be.nabu.glue.ScriptRuntime;
@@ -34,9 +35,11 @@ public class SystemMethodProvider implements MethodProvider {
 
 	public static final String CLI_DIRECTORY = "cli.directory";
 
+	private static List<String> predefined = Arrays.asList("system.exec", "system.linux", "system.input");
+	
 	@Override
 	public Operation<ExecutionContext> resolve(String name) {
-		if (name.matches("^system\\.[\\w]+$")) {
+		if (!predefined.contains(name) && name.matches("^system\\.[\\w]+$")) {
 			return new CLIOperation(name.substring("system.".length()));
 		}
 		return null;
