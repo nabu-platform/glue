@@ -251,13 +251,15 @@ public class FileMethods {
 	 * @throws IOException 
 	 */
 	public static void delete(String...fileNames) throws IOException {
-		for (String fileName : fileNames) {
-			Resource resource = resolve(fileName);
-			if (resource != null) {
-				if (!(resource.getParent() instanceof ManageableContainer)) {
-					throw new IOException("Can not delete: " + fileName);
+		if (fileNames != null && fileNames.length > 0) {
+			for (String fileName : fileNames) {
+				Resource resource = resolve(fileName);
+				if (resource != null) {
+					if (!(resource.getParent() instanceof ManageableContainer)) {
+						throw new IOException("Can not delete: " + fileName);
+					}
+					((ManageableContainer<?>) resource.getParent()).delete(resource.getName());
 				}
-				((ManageableContainer<?>) resource.getParent()).delete(resource.getName());
 			}
 		}
 	}

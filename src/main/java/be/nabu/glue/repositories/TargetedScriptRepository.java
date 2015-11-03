@@ -20,7 +20,6 @@ import be.nabu.libs.resources.ResourceFactory;
 import be.nabu.libs.resources.URIUtils;
 import be.nabu.libs.resources.api.ReadableResource;
 import be.nabu.libs.resources.api.Resource;
-import be.nabu.libs.resources.api.ResourceRoot;
 
 public class TargetedScriptRepository implements ResourceScriptRepository, GroupedScriptRepository {
 
@@ -54,7 +53,7 @@ public class TargetedScriptRepository implements ResourceScriptRepository, Group
 			for (String extension : extensions) {
 				String path = name.replace('.', '/') + "." + extension;
 				URI child = URIUtils.getChild(base, path);
-				ResourceRoot resource = resourceFactory.resolve(child, principal);
+				Resource resource = resourceFactory.resolve(child, principal);
 				if (resource != null) {
 					Parser parser = parserProvider.newParser(this, path);
 					int index = name.lastIndexOf('.');
