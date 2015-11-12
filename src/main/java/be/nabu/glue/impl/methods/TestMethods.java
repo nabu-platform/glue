@@ -89,10 +89,16 @@ public class TestMethods {
 	}
 
 	private static boolean checkEquals(String message, Object expected, Object actual, boolean fail, boolean invert) {
-		if (expected instanceof Object[]) {
+		if (expected instanceof String) {
+			expected = preprocess((String) expected);
+		}
+		else if (expected instanceof Object[]) {
 			expected = Arrays.asList((Object[]) expected);
 		}
-		if (actual instanceof Object[]) {
+		if (actual instanceof String) {
+			actual = preprocess((String) actual);
+		}
+		else if (actual instanceof Object[]) {
 			actual = Arrays.asList((Object[]) actual);
 		}
 		boolean checked = false;
@@ -118,6 +124,11 @@ public class TestMethods {
 		return result;
 	}
 	
+	private static String preprocess(String actual) {
+		// remove carriage returns, they are nasty cross-system
+		return actual == null ? null : actual.replace("\r", "");
+	}
+
 	private static String stringify(Object object) {
 		String content;
 		if (object instanceof Object[]) {

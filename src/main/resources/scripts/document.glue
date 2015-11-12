@@ -1,3 +1,36 @@
+skipExisting ?= true
+outputDirectory ?= system.pwd()
+includeCode ?= true
+
+# Get all the scripts
 for (script : getRepository())
-	documentation = array(documentation, string("template.txt"))
-echo(documentation)
+	namespace = script/namespace
+	if (namespace == null)
+		namespace = "$global"
+	namespaces = unique(array(namespaces, namespace))
+	scriptMap = map(scriptMap, "namespace", "name", "script", tuple(namespace, script/name, script))
+
+# Now we need the method descriptions of all the non script methods
+for (method : getMethodDescriptions())
+	namespace = method/namespace;
+	if (namespace == null)
+		namespace = "$global"
+	scriptByFullName = scriptMap[namespace == /namespace && name == /method/name]
+	# It's not a script, add it as a method
+	if (size(scriptByFullName) == 0)
+		namespaces = unique(array(namespaces, namespace))
+		methodMap = map(methodMap, "namespace", "name", "method", tuple(namespace, name, method))
+
+namespaces = sort(namespaces)
+
+for (namespace : namespaces)
+	fileName = namespace + ".html"
+	switch(!skipExisting || !exists(outputDirectory + "/" + fileName))
+		case(true)
+			echo("Documenting: ${namespace}")
+			scripts = scriptMap[namespace = /namespace]/script
+			methods = methodMap[namespace = /namespace]/method
+			documentation = string("template.txt")
+			write(outputDirectory + "/" + fileName, documentation)
+		default
+			echo("Skipping: ${namespace}")

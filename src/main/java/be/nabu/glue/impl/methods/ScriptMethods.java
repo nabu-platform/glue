@@ -52,6 +52,14 @@ public class ScriptMethods {
 		ScriptRuntime.getRuntime().getFormatter().print(messages);
 	}
 	
+	public static void console(Object...messages) {
+		if (messages != null && messages.length > 0) {
+			for (Object message : messages) {
+				System.out.println(message);
+			}
+		}
+	}
+	
 	public static void debug(Object...messages) {
 		if (ScriptRuntime.getRuntime().getExecutionContext().isDebug()) {
 			echo(messages);

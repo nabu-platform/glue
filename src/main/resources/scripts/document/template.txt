@@ -1,39 +1,236 @@
-${{
-title = script/root/context/annotations["title"]
-
-if (title == null)
-	title = script/name
-
-namespace = script/namespace
-if (namespace == null)
-	namespace = "anonymous"
-
-echo("\# " + title + "\n")
-echo("\n")
-
-echo("- :Namespace: " + namespace + "\n")
-echo("- :Name: " + script/name + "\n")
-echo("- :Testcase: " + (script/root/context/annotations["testcase"] != null) + "\n")
-
-if (script/root/context/description != null)
-	echo("\n" + script/root/context/description + "\n")
-
-inputs = be.nabu.glue.ScriptUtils.getInputs(script)
-
-if (size(inputs) > 0)
-	echo("\n\#\# Inputs\n\n")
-	for (input : inputs)
-		echo("- " + input/name)
-		if (input/description != null)
-			echo(": " + input/description)
-		echo("\n")
-
-outputs = be.nabu.glue.ScriptUtils.getOutputs(script)
-if (size(outputs) > 0)
-	echo("\n\#\# Outputs\n\n")
-	for (output : outputs)
-		echo("- " + output/name)
-		if (output/description != null)
-			echo(": " + output/description)
-		echo("\n")
-}}
+<html>
+	<head>
+		<title>${namespace}</title>
+		<style>
+			/** General **/
+			body {
+				padding: 0px;
+				margin: 0px;
+			}
+			* {
+				font-family: Monospace;
+				font-size: 9pt;
+			}
+			a, a:visited {
+				color: #bc5400;
+				text-decoration: none;
+			}
+			.documentation a:hover {
+				text-decoration: underline;
+			}
+			li {
+				padding: 5px;
+			}
+			
+			/** Top **/
+			.top, .top > ul {
+				background-color: #333333;
+				margin: 0px;
+			}
+			.top > ul > li {
+				color: #FFFFFF;
+				padding: 10px;
+				display: inline-block;
+			}
+			.top ul {
+				list-style-type: none;
+				padding: 0px;
+				overflow-y: auto;
+				overflow-x: hidden;
+				max-height: 90%;
+			}
+			.top li:hover ul {
+				display: block !important;
+				position: absolute;
+				border: solid 1px #CCCCCC;
+			}
+			.top a {
+				width: 100%;
+				display: block;
+				padding: 10px;
+			}
+			.top li ul {
+				min-width: 350px;
+			}
+			.top li ul li {
+				padding: 0px;
+				background-color: #bf5500;
+			}
+			.top li ul li:hover {
+				background-color: #d47d37;
+			}
+			.top li ul li a {
+				color: #FFFFFF;
+			}
+			
+			/** Breadcrumbs **/
+			.breadcrumbs {
+				background-color: #FAFAFA;
+				border: solid 1px #CCCCCC;
+				margin: 2px 0px;
+			}
+			.breadcrumbs a {
+				display: inline-block;
+				padding: 10px;
+				color: #0aaec1;
+			}
+			.breadcrumbs a:hover {
+				color: #007a88;
+			}
+			.breadcrumbs a:hover {
+				background-color: #EAEAEA;
+			}
+			
+			/** Headers **/
+			h1 {
+				font-size: 30pt;
+				border: solid 1px #CCCCCC;
+				border-style: none none solid none;
+				padding: 10px;
+				margin: 0px;
+				margin-bottom: 10px;
+			}
+			h2 {
+				font-size: 18pt;
+				border: dashed 1px #CCCCCC;
+				border-style: none none solid none;
+				padding: 10px;
+				margin: 10px 0px;
+			}
+			h3 {
+				font-size: 12pt;
+				color: #940000;
+			}
+			
+			/** Layout **/
+			.menu {
+				padding: 10px;
+				float: left;
+				width: 30%;
+				box-sizing: border-box;
+				height: 80%;
+				overflow: auto;
+			}
+			.documentation {
+				float: right;
+				width: 70%;
+				box-sizing: border-box;
+				height: 80%;
+				overflow: auto;
+				border: solid 1px #CCCCCC;
+				border-style: none none none solid;
+			}
+			
+			/** Menu **/
+			.menu ul {
+				list-style-type: circle;
+			}
+			.menu li:hover {
+				border: solid 20px #CCCCCC;
+				border-style: none solid none none;
+				background-color: #EAEAEA;
+			}
+			
+			/** Misc **/
+			.name {
+				font-weight: bold;
+			}
+			.entry {
+				padding: 10px;
+				border: solid 1px #CCCCCC;
+				border-style: none none solid none;
+			}
+			.entry:nth-child(even) {
+				background-color: #EAEAEA;
+			}
+			
+			/** Code **/
+			.code:hover code {
+				display: block !important;
+			}
+			code {
+				position: absolute;
+				top: 10%;
+				height: 80%;
+				width: 65%;
+				overflow: auto;
+				padding: 10px;
+				background-color: #333333;
+				color: #FFFFFF;
+				border: solid 1px #CCCCCC;
+			}
+			.code {
+				display: inline-block;
+			}
+			.code > a:after {
+				content: ' (?)';
+			}
+			span.method {
+				color: #ff6363;
+			}
+			span.string {
+				color: #5dc64b;
+			}
+			span.comment {
+				color: #867ac8;
+			}
+		</style>
+	</head>
+	<body>
+		<div class='top'>
+			<ul>
+				<li class='namespaces'>Script Namespaces
+					<ul style='display: none'>
+						${{
+							for (namespaces)
+								if (size(scriptMap[namespace == /$value]) > 0)
+									echo("<li><a href='${namespaces[$index]}.html'>${namespaces[$index]}</a></li>")
+						}}
+					</ul>
+				</li>
+				<li class='namespaces'>Method Namespaces
+					<ul style='display: none'>
+						${{
+							for (namespaces)
+								if (size(methodMap[namespace == /$value]) > 0)
+									echo("<li><a href='${namespaces[$index]}.html'>${namespaces[$index]}</a></li>")
+						}}
+					</ul>
+				</li>
+			</ul>
+		</div>
+		<h1>${namespace}</h1>
+		<div class="breadcrumbs">
+			${{
+				crumbs = split("\.", namespace)
+				echo("<a class='crumb' href='$global.html'>GLOBAL</a>")
+				for (size(crumbs) - 1)
+					echo("<a class='crumb' href='" + join(".", slice(stop: $index + 1, crumbs)) + ".html'>" + crumbs[$index] + "</a>")
+			}}
+		</div>
+		<div class='menu'>
+			${{
+				if (size(scripts) > 0)
+					echo("<h3>Scripts</h3><ul>")
+					for (script : scripts)
+						echo("<li><a href='\#${script/name}'>${script/name}</a></li>")
+					echo("</ul>")
+			}}
+			${{
+				if (size(methods) > 0)
+					echo("<h3>Methods</h3><ul>")
+					for (method : methods)
+						echo("<li><a href='\#${method/name}'>${method/name}</a></li>")
+					echo("</ul>")
+			}}
+		</div>
+		<div class='documentation'>
+			${{
+	for (script : scripts)
+		echo(string("templateScript.txt"))
+	for (method : methods)
+		echo(string("templateMethod.txt"))
+			}}
+		</div>
+	</body>
+</html>

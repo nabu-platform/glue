@@ -57,7 +57,7 @@ public class TargetedScriptRepository implements ResourceScriptRepository, Group
 				if (resource != null) {
 					Parser parser = parserProvider.newParser(this, path);
 					int index = name.lastIndexOf('.');
-					scripts.put(name, new ResourceScript(this, charset, index >= 0 ? name.substring(0, index) : null, index >= 0 ? name.substring(index + 1) : name, (ReadableResource) resource, parser));
+					scripts.put(name, new ResourceScript(this, charset, index >= 0 ? name.substring(0, index) : null, resource.getName(), (ReadableResource) resource, parser));
 					break;
 				}
 			}

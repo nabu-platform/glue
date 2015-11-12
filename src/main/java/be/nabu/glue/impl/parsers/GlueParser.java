@@ -71,6 +71,8 @@ public class GlueParser implements Parser {
 		// the annotations before the first line will be set on the root instead
 		Map<String, String> annotations = new HashMap<String, String>();
 		int lastPosition = 0;
+		// keeps track of the "offset" of the depth over the script
+		int depthOffset = -1;
 		try {
 			while ((line = readLine(pushback)) != null) {
 				// add 1 for the linefeed that separates the last line and this line except if we are at the start
@@ -108,8 +110,12 @@ public class GlueParser implements Parser {
 					continue;
 				}
 				int depth = getDepth(line);
-				int originalSize = executorGroups.size();
-				for (int i = depth; i < originalSize; i++) {
+				// you can reduce the depth
+				if (depthOffset < 0 || depthOffset > depth) {
+					depthOffset = depth;
+				}
+				// note that the root executor is the sequence itself
+				while(depth - depthOffset < executorGroups.size() - 1) {
 					executorGroups.pop();
 				}
 				if (!codeHasBegun) {
@@ -344,7 +350,7 @@ public class GlueParser implements Parser {
 	}
 	
 	public static int getDepth(String line) {
-		int depth = 1;
+		int depth = 0;
 		for (int i = 0; i < line.length(); i++) {
 			if (line.charAt(i) == '\t' || line.charAt(i) == ' ') {
 				depth++;
@@ -401,6 +407,8 @@ public class GlueParser implements Parser {
 		try {
 			while (matcher.find()) {
 				String script = matcher.group().replaceAll(pattern.pattern(), "$1");
+				// remove empty lines at front, they might throw off the depthOffset!
+				script = script.replaceAll("(?s)^[\r\n]+", "");
 				ScriptRuntime fork = ScriptRuntime.getRuntime().fork(new VirtualScript(ScriptRuntime.getRuntime().getScript(), script));
 				StringWriter log = new StringWriter();
 				SimpleOutputFormatter buffer = new SimpleOutputFormatter(log, false);

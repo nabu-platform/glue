@@ -1,0 +1,41 @@
+<div class='entry method'>
+<a name='${method/name}'></a>
+<h2>${method/name}</h2>
+<ul class='description'>
+	<li><span class='name'>Namespace: </span>${namespace}</li>
+	<li><span class='name'>Name: </span>${method/name}</li>
+</ul>
+${{
+if (method/description != null)
+	echo("<p class='description'>${method/description}</p>")
+
+inputs = method/parameters
+
+if (size(inputs) > 0)
+	echo("<h3>Inputs</h3><ul class='inputs'>")
+	for (input : inputs)
+		echo("<li><span class='name'>" + input/name)
+		switch(input/description)
+			case(null)
+				echo("</span>")
+			default
+				echo(": </span>" + input/description)
+		echo("</li>")
+	echo("</ul>")
+
+outputs = method/returnValues
+
+if (size(outputs) > 0)
+	echo("<h3>Outputs</h3><ul class='inputs'>")
+	for (output : outputs)
+		echo("<li><span class='name'>" + output/name)
+		switch(output/description)
+			case(null)
+				echo("</span>")
+			default
+				echo(": </span>" + output/description)
+		echo("</li>")
+	echo("</ul>")
+}}
+
+</div>

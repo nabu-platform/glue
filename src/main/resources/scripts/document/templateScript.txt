@@ -1,0 +1,71 @@
+<div class='entry script'>
+${{
+console("Templating: " + script/name)
+title = script/root/context/annotations["title"]
+	
+echo("<a name='${script/name}'></a>")
+switch(title)
+	case(null)
+		echo("<h2>${script/name}</h2>")
+	default
+		echo("<h2>${script/name} <small>${title}</small></h2>")
+}}
+<ul class='description'>
+	<li><span class='name'>Namespace: </span>${namespace}</li>
+	<li><span class='name'>Name: </span>${script/name}</li>
+	<li><span class='name'>Is TestCase: </span>${script/root/context/annotations["testcase"] != null}</li>
+</ul>
+
+${{
+if (script/root/context/description != null)
+	echo("<p class='description'>${script/root/context/description}</p>")
+
+inputs = be.nabu.glue.ScriptUtils.getInputs(script)
+
+if (size(inputs) > 0)
+	echo("<h3>Inputs</h3><ul class='inputs'>")
+	for (input : inputs)
+		echo("<li><span class='name'>" + input/name)
+		switch(input/description)
+			case(null)
+				echo("</span>")
+			default
+				echo(": </span>" + input/description)
+		echo("</li>")
+	echo("</ul>")
+
+outputs = be.nabu.glue.ScriptUtils.getOutputs(script)
+
+if (size(outputs) > 0)
+	echo("<h3>Outputs</h3><ul class='inputs'>")
+	for (output : outputs)
+		echo("<li><span class='name'>" + output/name)
+		switch(output/description)
+			case(null)
+				echo("</span>")
+			default
+				echo(": </span>" + output/description)
+		echo("</li>")
+	echo("</ul>")
+}}
+
+	
+	${{
+		if (includeCode)
+			echo("<div class='code'><a href='\#' class='view-code'>Code</a>")
+			echo("<code style='display:none'>")
+			content = string(script/source, false)
+			content = replace("&", "&amp;", content)
+			content = replace("\$", "&\#36;", content)
+			content = replace("<", "&lt;", content)
+			content = replace(">", "&gt;", content)
+			content = replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;", content)
+			content = replace("(?s)('[^']*')", "<span class='string'>$1</span>", content)
+			content = replace('(?s)("[^"]*")', "<span class='string'>$1</span>", content)
+			content = replace("(?m)^(\#.*)$", "<span class='comment'>$1</span>", content)
+			content = replace("([\w]+)([\s]*)\(", "<span class='method'>$1</span>$2(", content)
+			content = replace("\n", "<br/>", content)
+			echo(content)
+			echo("</code></div>")
+	}}
+</div>
