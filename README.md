@@ -1,13 +1,62 @@
 # What is it?
 
-Glue is a simplistic dynamically typed scripting language based on a more complex fully typed language.
+Glue is a simplistic optionally typed functional scripting language based on a more complex fully typed service oriented language.
 The syntax and execution logic is based mostly on java except for the "code blocks" which have a python twist in that **white space is used** instead of brackets.
+
+## Design goals:
+
+- **Lightweight syntax**: syntax is only introduced to increase readibility, not to decrease character count
+- **Easy to use**: focus on readability and ease of use by limiting the amount of concepts you need to grasp to make something work (e.g. namespaces are supported but not mandatory)
+- **Modular**: everything is a method and method resolving is fully dynamic, even the core methods can be removed if required. Apart from that pretty much everything is pluggable, the typing system, the syntax parser,...
+- **Hooks**: glue has a very extensive hook system allowing you to do pretty much anything at runtime. The loggers take advantage of this to format the output in different ways. The web framework also uses this hook system to optionally execute steps based on permission annotations.
+
+## Scalability
+
+Glue can scale to many requirements, for example:
+
+- [Glue Testing](http://www.glueverse.be/): an automated testing framework that incorporates support for selenium, soapui, RMI via soap,...
+- [Glue Web Framework](https://github.com/nablex/http-glue): a web-framework that adds a whole bunch of methods and interesting annotations to rapidly build web applications
+- **Integration Scripting Language**: glue is based on a fully statically typed integration environment and there is also a compatibility layer that integrates glue fully with that backend environment (both at the typing and method level)
+- **System Management**: glue integrates fully with the commandline, allowing very complex system management scripts
+- **Partial FoxPro Reimplementation**: In order to run pre-existing fox-pro scripts, the subset of foxpro methods used was reimplemented in glue to allow it to run them
+...
+
+## Advanced Features
+
+A number of advanced features have been introduced that are not unique to glue:
+
+- **Named Parameters**: both anonymous and named parameters are allowed
+- **Operator Overloading**: for example we added easy date management using: `date = now() + "1month"`
+- **Virtual File System**: the file methods (read, write,...) actually work on a virtual file system allowing you to plug in transparent support for other protocols
+- **Lambdas**: lambdas that fully enclose their originating scope are functional
+- **Lazy Lists**: the haskell-esque lazy lists are available (currently in an external plugin)
+
+There are some advanced features that are somewhat unique to glue:
+
+### Quirks
+
+A lot of what you'll see in glue is pretty standard as far as programming languages go, but there are some quirks that are not generally available in most languages:
+
+- **Multiple Return**: all script executions have multiple return: they give you (read) access to all the variables used by the script that was called
+- **Advanced Querying**: glue runs on an evaluation engine that by default has a xpath-like syntax, allowing not only `employees[1]` but also `employees[age > 30]`
+- **Resources**: every script has an (optional) resources folder attached to it, allowing you to add additional files (templates, results,...) to any script
+
+Also: breakpoints in CLI!
+
+## Runnability
+
+Glue is based fully on java and has been extensively tested on linux, windows & mac.
+
+To run glue scripts there are a few default options:
+
+- a commandline client
+- an interactive shell
+- a batch runner
+- a custom IDE
 
 # Hello World!
 
-Glue comes with a command line client, you can look at the included example bash script "glue.sh" to see how you can run glue.
-
-There are a few parameters that you can pass in but all of them have sensible defaults:
+In the command line client, there are a few parameters that you can pass in but all of them have sensible defaults:
 
 - extension: the extension of the glue scripts (default "glue")
 - charset: the character set used by the glue engine to parse scripts and files (default "UTF-8")
@@ -29,7 +78,7 @@ This will print out: `Hello World!`
 
 ## Available Methods
 
-You can run `glue -l` to get a list of all available methods. The problem with this is though that it needs to parse **all** available glue scripts to create its compendium which can be slow if you have thousands of scripts. Aside from that it will also check all available methods apart from the glue scripts.
+You can run `glue -l` to get a rudimentary list of all available methods. You can also run `glue document` to generate javadoc-like documentation of all the available methods.
 
 A better way to find scripts or read the information about them is to run `glue man <name>` which will find all scripts that match the given name. The wildcard `*` is allowed and it is a case insensitive search. For example if you want to find all scripts that have the word "test" in their name, use `glue man *test*`.
 
@@ -95,9 +144,8 @@ myVar ?= "test"
 ```
 
 The difference between the two is that on the first line, the value is always assigned but on the second line it is only assigned if it doesn't exist yet.
-These "optional assignments" are also used to detect the input parameters of a script. They are assigned in the order that they are detected so don't move them too much.
-Additionally it is best practice to put these optional input parameters at the top of a script for easy readability.
-On the to do list is to (optionally) support named parameters that bypass the order of the parameters.
+These "optional assignments" are also used to detect the input parameters of a script. They are assigned in the order that they are detected or by name.
+Additionally it is best practice (though not mandatory) to put these optional input parameters at the top of a script for easy readability.
 
 ## Comments
 
@@ -128,7 +176,7 @@ Note that **all full line comments** before the **first line of code** (or an em
 
 ## Annotations
 
-It is possible to set annotations on lines. Currently the annotations do not have much use except descriptive but other uses will likely be given to them in the future.
+It is possible to set annotations on lines. The annotation can be used to accomplish something (permission checks, additional documentation,...) or can be merely descriptive.
 
 ```
 @tag = test, someOtherTag
@@ -137,16 +185,16 @@ myVar = "test"
 
 ### Used annotations
 
-#### Disabled
+Some annotations are used by the core system.
 
-Some annotations are already in use by the application, for example you can set:
+#### Disabled
 
 ```
 @disabled
 doSomething()
 ```
 
-Which actually disables that line so it is not executed if you run the script
+This disables the line so it is not executed if you run the script.
 
 #### Breakpoint
 
@@ -160,7 +208,7 @@ doSomething()
 
 #### Testcase
 
-The `@testcase` annotation can be at the script level to indicate that a script should be picked up by gluet (the test runner).
+The `@testcase` annotation can be added to the script level to indicate that a script should be picked up by gluet (the test runner). The selection based on this annotation is also pluggable.
 Gluet can be run by jenkins and will simply execute all the scripts on its path with this annotation.
 
 ### Script annotations
@@ -312,6 +360,21 @@ Which is equivalent of building the array yourself:
 >> echo(join(strings: array("this", "is", "a test!"), separator: " "))
 this is a test!
 ```
+
+Note that varargs are also supported at the script level (unless you set `script.varargs` to false) if you specifically define the **last** input variable as an array. For example if we have `test.glue`:
+
+```python
+[] a ?= null
+echo(size(a))
+```
+
+And `test2.glue`
+
+```python
+test("a", "b", "c")
+```
+
+Then `glue test2` will print `3`
 
 ## Switch
 
@@ -780,16 +843,38 @@ And you have another object that is identical to the structure except for the `m
 The code comes with the necessary tools to enable you to trace through your code step by step. The CLI implementation has an example of how this can be done.
 When tracing there is a timeout that can be configured as an environment variable "timeout" (default is Long.MAX_VALUE). After this timeout, the script will simply continue and you will be out of tracing mode.
 
-# Advanced Use
+# Lambdas
 
-While glue comes with a default CLI client, it was primarily developed to plug it into other systems. As such you have control over a huge number of aspects should you decide to delve deeper. For example (this list is not exhaustive):
+Glue supports lambdas which can be turned on (default) or off by toggling `script.lambdas`. For example you could create `test.glue`:
 
-- You can redirect the output of any runtime to somewhere else
-- You can trace to any breakpoint (not just the next line)
-- You can plug in custom ways to resolve methods, e.g. webservices
-- You can go further and plug in custom ways of calculating stuff, for example if you do a lot of date handling you can allow: `date = now() + "1month"`
-- You can set up custom repositories (e.g. stream scripts from HTTP or fetch them from an FTP)
-- You can plug in custom parsers to develop a new syntax or add to the existing one
-...
+```python
+a ?= null
+echo(a(1, 2))
+```
 
-Of course because of this extensibility, all the above is only valid for the default setup.
+And `test2.glue`:
+
+```python
+test(lambda(x, y, x + y)) 
+``` 
+
+Note that the lambda function first takes all the names of the parameters that you will use and as last parameter the actual action to run.
+Also note that lambdas take **precedence** when resolving a method, so you can effectively "hide" a public method by creating a variable that holds a lambda with the same name.
+
+The lambdas fully enclose the environment where they are defined in, as such you could create `test.glue`:
+
+```python
+a ?= null
+something = 5
+echo(a(something, 2)) 
+``` 
+
+And define `test2.glue`:
+
+```python
+fixed = -5
+dynamic = lambda(x, x * 2)
+test(lambda(x, y, x+y+fixed+dynamic(fixed))) 
+```
+
+Note that the lambda has access to the variables defined in the originating context and as such also any lambdas that were defined there.
