@@ -9,11 +9,13 @@ import java.util.Map;
 import java.util.UUID;
 
 import be.nabu.glue.ScriptRuntime;
+import be.nabu.glue.api.DescribedOperation;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutionException;
 import be.nabu.glue.api.Executor;
 import be.nabu.glue.api.ExecutorContext;
 import be.nabu.glue.api.ExecutorGroup;
+import be.nabu.glue.api.Lambda;
 import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.api.ParameterDescription;
@@ -138,22 +140,37 @@ abstract public class BaseExecutor implements Executor {
 			String fullName = operation.getParts().get(0).getContent().toString();
 			MethodDescription description = null;
 			int minimumAmountOfParameters = 0;
-			// we need to find the description that has the most parameters for this method
-			// the methods with the same name are assumed to be overloaded versions of one another!
-			// depending on the variable calculation, it is possible that fewer parameters are sent along
-			for (MethodProvider provider : operationProvider.getMethodProviders()) {
-				for (MethodDescription possibleDescription : provider.getAvailableMethods()) {
-					if (possibleDescription.getName().equals(fullName) || (possibleDescription.getNamespace() != null && fullName.equals(possibleDescription.getNamespace() + "." + possibleDescription.getName()))) {
-						if (description == null || possibleDescription.getParameters().size() > description.getParameters().size()) {
-							description = possibleDescription;
-						}
-						if (possibleDescription.getParameters().size() <= minimumAmountOfParameters) {
-							minimumAmountOfParameters = possibleDescription.getParameters().size() - 1;
+			if (operation instanceof DescribedOperation) {
+				description = ((DescribedOperation<?>) operation).getMethodDescription();
+			}
+			if (description == null) {
+				Object object = ScriptRuntime.getRuntime().getExecutionContext().getPipeline().get(fullName);
+				if (object instanceof Lambda) {
+					description = ((Lambda) object).getDescription();
+				}
+			}
+			if (description == null) {
+				// we need to find the description that has the most parameters for this method
+				// the methods with the same name are assumed to be overloaded versions of one another!
+				// depending on the variable calculation, it is possible that fewer parameters are sent along
+				for (MethodProvider provider : operationProvider.getMethodProviders()) {
+					for (MethodDescription possibleDescription : provider.getAvailableMethods()) {
+						if (possibleDescription.getName().equals(fullName) || (possibleDescription.getNamespace() != null && fullName.equals(possibleDescription.getNamespace() + "." + possibleDescription.getName()))) {
+							if (description == null || possibleDescription.getParameters().size() > description.getParameters().size()) {
+								description = possibleDescription;
+							}
+							if (possibleDescription.getParameters().size() <= minimumAmountOfParameters) {
+								minimumAmountOfParameters = possibleDescription.getParameters().size() - 1;
+							}
 						}
 					}
 				}
 			}
+			else {
+				minimumAmountOfParameters = description.getParameters().size() - 1;
+			}
 			boolean canRewrite = description != null;
+			// note the "isNamedParametersAllowed" is from the perspective of the method! If the method supports named parameters on its own, we don't need to resolve them here!
 			boolean shouldRewrite = description == null || !description.isNamedParametersAllowed();
 			// some methods don't need to be rewritten
 			// even if we should rewrite but we can't we need to check, because in that case you should _not_ have a named parameter

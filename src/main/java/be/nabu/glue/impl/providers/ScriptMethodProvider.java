@@ -21,7 +21,10 @@ import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.impl.SimpleParameterDescription;
 import be.nabu.glue.impl.methods.ScriptMethods;
 import be.nabu.libs.evaluator.EvaluationException;
+import be.nabu.libs.evaluator.QueryPart;
+import be.nabu.libs.evaluator.QueryPart.Type;
 import be.nabu.libs.evaluator.api.Operation;
+import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
 
 public class ScriptMethodProvider implements MethodProvider {
@@ -70,6 +73,14 @@ public class ScriptMethodProvider implements MethodProvider {
 				// ignore
 			}
 		}
+		// add lambda if necessary
+		if (ALLOW_LAMBDAS) {
+			descriptions.add(new SimpleMethodDescription("script", "lambda", null, 
+				Arrays.asList(new ParameterDescription [] { new SimpleParameterDescription("method", "The method", "lambda") }),
+				Arrays.asList(new ParameterDescription [] { new SimpleParameterDescription("lambda", "The method", "lambda") }),
+				true
+			));
+		}
 		return descriptions;
 	}
 	
@@ -87,13 +98,26 @@ public class ScriptMethodProvider implements MethodProvider {
 			// leave the last part, it is the actual lambda operation
 			for (int i = 1; i < getParts().size() - 1; i++) {
 				Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
-				if (argumentOperation.getParts().size() > 1) {
+				if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.NAMING && argumentOperation.getParts().get(1).getContent().equals(":")) {
+					String parameterName = argumentOperation.getParts().get(0).getContent().toString();
+					// here we could either store the operation and re-evaluate it for every lambda instance
+					// or we evaluate it once and store the result
+					// because all the values you can use must already exist in the lambda scope, it can be done now
+					// the only downside could be if the computation was heavy
+					Object value = argumentOperation.getParts().get(2).getType() == QueryPart.Type.OPERATION 
+						? ((Operation<ExecutionContext>) argumentOperation.getParts().get(2).getContent()).evaluate(context)
+						: argumentOperation.getParts().get(2).getContent();
+					inputParameters.add(new SimpleParameterDescription(parameterName.trim(), null, "object").setDefaultValue(value));
+				}
+				else if (argumentOperation.getParts().size() > 1) {
 					throw new EvaluationException("The parameter " + i + " has too many parts");
 				}
 				else if (argumentOperation.getParts().isEmpty()) {
 					throw new EvaluationException("No parameters for: " + i);
 				}
-				inputParameters.add(new SimpleParameterDescription(argumentOperation.getParts().get(0).getContent().toString().trim(), null, "object"));
+				else {
+					inputParameters.add(new SimpleParameterDescription(argumentOperation.getParts().get(0).getContent().toString().trim(), null, "object"));
+				}
 			}
 			ScriptRuntime runtime = ScriptRuntime.getRuntime();
 			String fullName = ScriptUtils.getFullName(runtime.getScript());
