@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 
 import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
+import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 
 @MethodProviderClass(namespace = "string")
@@ -155,7 +156,7 @@ public class StringMethods {
 	}
 	
 	@GlueMethod(description = "Combines the given strings into a single string adding the seperator in between each string. For example join(',', 'a', 'b') returns 'a,b'")
-	public static String join(@GlueParam(name = "separator") String separator, @GlueParam(name = "strings") String...strings) {
+	public static String join(@GlueParam(name = "separator") String separator, @GlueParam(name = "strings") Object...strings) {
 		if (strings == null || strings.length == 0) {
 			return null;
 		}
@@ -167,7 +168,7 @@ public class StringMethods {
 			if (!builder.toString().isEmpty()) {
 				builder.append(separator);
 			}
-			builder.append(strings[i]);
+			builder.append(ConverterFactory.getInstance().getConverter().convert(strings[i], String.class));
 		}
 		return builder.toString();
 	}
