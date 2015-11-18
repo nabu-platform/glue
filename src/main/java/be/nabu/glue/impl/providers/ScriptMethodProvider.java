@@ -16,7 +16,6 @@ import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.api.ScriptRepository;
-import be.nabu.glue.impl.ForkedExecutionContext;
 import be.nabu.glue.impl.LambdaImpl;
 import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.impl.SimpleParameterDescription;
@@ -108,7 +107,7 @@ public class ScriptMethodProvider implements MethodProvider {
 			HashMap<String, Object> enclosedContext = new HashMap<String, Object>(context.getPipeline());
 			return new LambdaImpl(new SimpleMethodDescription(runtime.getScript().getNamespace(), runtime.getScript().getName() + "$" + counter, "Lambda " + counter, inputParameters, 
 					Arrays.asList(new ParameterDescription [] { new SimpleParameterDescription("return", null, "object") })), 
-					new LambdaExecutionOperation(inputParameters, lambdaOperation, enclosedContext), enclosedContext);
+					lambdaOperation, enclosedContext);
 		}
 
 		@Override
@@ -117,46 +116,6 @@ public class ScriptMethodProvider implements MethodProvider {
 		}
 	}
 
-	/**
-	 * All lambda operations are wrapped in this operation which does the input variable mapping
-	 */
-	public static class LambdaExecutionOperation extends BaseMethodOperation<ExecutionContext> {
-
-		private List<ParameterDescription> parameters;
-		private Operation<ExecutionContext> operation;
-		private Map<String, Object> enclosedContext;
-
-		public LambdaExecutionOperation(List<ParameterDescription> parameters, Operation<ExecutionContext> operation, Map<String, Object> enclosedContext) {
-			this.parameters = parameters;
-			this.operation = operation;
-			this.enclosedContext = enclosedContext;
-		}
-		
-		@Override
-		public Object evaluate(ExecutionContext context) throws EvaluationException {
-			ForkedExecutionContext forkedContext = new ForkedExecutionContext(context, true);
-			forkedContext.getPipeline().putAll(enclosedContext);
-			if (getParts().size() - 1 > parameters.size()) {
-				throw new EvaluationException("Too many parameters for lambda");
-			}
-			for (int i = 1; i < getParts().size(); i++) {
-				Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
-				Object value = argumentOperation.evaluate(context);
-				forkedContext.getPipeline().put(parameters.get(i - 1).getName(), value);
-			}
-			ScriptRuntime.getRuntime().setExecutionContext(forkedContext);
-			Object result = operation.evaluate(forkedContext);
-			ScriptRuntime.getRuntime().setExecutionContext(context);
-			return result;
-		}
-
-		@Override
-		public void finish() throws ParseException {
-			// do nothing
-		}
-		
-	}
-	
 	public static class ScriptOperation extends BaseMethodOperation<ExecutionContext> {
 
 		private Script script;

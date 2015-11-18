@@ -34,4 +34,8 @@ public class LambdaImpl implements EnclosedLambda {
 		return context;
 	}
 
+	@Override
+	public String toString() {
+		return this.operation.toString();
+	}
 }

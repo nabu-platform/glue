@@ -1,23 +1,33 @@
 package be.nabu.glue.impl;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import be.nabu.glue.ScriptRuntime;
+import be.nabu.glue.api.EnclosedLambda;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.Lambda;
 import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.MethodProvider;
+import be.nabu.glue.api.ParameterDescription;
+import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.api.Operation;
+import be.nabu.libs.evaluator.base.BaseMethodOperation;
 
 public class LambdaMethodProvider implements MethodProvider {
 
 	@Override
 	public Operation<ExecutionContext> resolve(String name) {
 		Map<String, Lambda> lambdasInScope = getLambdasInScope();
-		return lambdasInScope.containsKey(name) ? lambdasInScope.get(name).getOperation() : null;
+		if (lambdasInScope.containsKey(name)) {
+			Lambda lambda = lambdasInScope.get(name);
+			return new LambdaExecutionOperation(lambda.getDescription().getParameters(), lambda.getOperation(), 
+				lambda instanceof EnclosedLambda ? ((EnclosedLambda) lambda).getEnclosedContext() : new HashMap<String, Object>());
+		}
+		return null;
 	}
 
 	@Override
@@ -44,6 +54,47 @@ public class LambdaMethodProvider implements MethodProvider {
 			}
 		}
 		return methods;
+	}
+	
+	/**
+	 * All lambda operations are wrapped in this operation which does the input variable mapping
+	 */
+	public static class LambdaExecutionOperation extends BaseMethodOperation<ExecutionContext> {
+
+		private List<ParameterDescription> parameters;
+		private Operation<ExecutionContext> operation;
+		private Map<String, Object> enclosedContext;
+
+		public LambdaExecutionOperation(List<ParameterDescription> parameters, Operation<ExecutionContext> operation, Map<String, Object> enclosedContext) {
+			this.parameters = parameters;
+			this.operation = operation;
+			this.enclosedContext = enclosedContext;
+		}
+		
+		@SuppressWarnings("unchecked")
+		@Override
+		public Object evaluate(ExecutionContext context) throws EvaluationException {
+			ForkedExecutionContext forkedContext = new ForkedExecutionContext(context, true);
+			forkedContext.getPipeline().putAll(enclosedContext);
+			if (getParts().size() - 1 > parameters.size()) {
+				throw new EvaluationException("Too many parameters for lambda");
+			}
+			for (int i = 1; i < getParts().size(); i++) {
+				Operation<ExecutionContext> argumentOperation = ((Operation<ExecutionContext>) getParts().get(i).getContent());
+				Object value = argumentOperation.evaluate(context);
+				forkedContext.getPipeline().put(parameters.get(i - 1).getName(), value);
+			}
+			ScriptRuntime.getRuntime().setExecutionContext(forkedContext);
+			Object result = operation.evaluate(forkedContext);
+			ScriptRuntime.getRuntime().setExecutionContext(context);
+			return result;
+		}
+
+		@Override
+		public void finish() throws ParseException {
+			// do nothing
+		}
+		
 	}
 	
 }
