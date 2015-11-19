@@ -14,8 +14,11 @@ import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.api.DescribedOperation;
 import be.nabu.libs.evaluator.EvaluationException;
+import be.nabu.libs.evaluator.QueryPart;
+import be.nabu.libs.evaluator.QueryPart.Type;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
+import be.nabu.libs.evaluator.impl.NativeOperation;
 
 public class LambdaMethodProvider implements MethodProvider {
 
@@ -101,6 +104,18 @@ public class LambdaMethodProvider implements MethodProvider {
 		@Override
 		public MethodDescription getMethodDescription() {
 			return description;
+		}
+		
+		@SuppressWarnings("rawtypes")
+		public synchronized Object evaluateWithParameters(ExecutionContext context, Object...parameters) throws EvaluationException {
+			getParts().clear();
+			add(new QueryPart(Type.STRING, "anonymous"));
+			for (int i = 0; i < description.getParameters().size(); i++) {
+				NativeOperation<?> operation = new NativeOperation();
+				operation.add(new QueryPart(Type.UNKNOWN, parameters.length < i ? null : parameters[i]));
+				add(new QueryPart(Type.OPERATION, operation));
+			}
+			return evaluate(context);
 		}
 		
 	}
