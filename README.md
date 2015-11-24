@@ -23,13 +23,13 @@ Glue can scale to many requirements, for example:
 
 ## Advanced Features
 
-A number of advanced features have been introduced that are not unique to glue:
+A number of optional advanced features have been introduced that are not unique to glue:
 
 - **Named Parameters**: both anonymous and named parameters are allowed
 - **Operator Overloading**: for example we added easy date management using: `date = now() + "1month"`
 - **Virtual File System**: the file methods (read, write,...) actually work on a virtual file system allowing you to plug in transparent support for other protocols
 - **Lambdas**: lambdas that fully enclose their originating scope are functional
-- **Lazy Lists**: the haskell-esque lazy lists are available (currently in an external plugin)
+- **Lazy Lists**: the haskell-esque lazy lists [are available](https://github.com/nablex/glue-series)
 
 There are some advanced features that are somewhat unique to glue:
 
@@ -51,7 +51,7 @@ To run glue scripts there are a few default options:
 
 - a commandline client
 - an interactive shell
-- a batch runner
+- a batch runner (can be run from e.g. Jenkins)
 - a custom IDE
 
 # Hello World!
