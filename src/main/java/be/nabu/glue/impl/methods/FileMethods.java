@@ -10,9 +10,12 @@ import java.net.Proxy;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -73,12 +76,11 @@ public class FileMethods {
 					proxy = new Proxy(type != null && type.equalsIgnoreCase("SOCKS") ? Proxy.Type.SOCKS : Proxy.Type.HTTP, new InetSocketAddress(host, port == null ? 8080 : new Integer(port)));
 				}
 			}
-			if (proxy == null) {
-				return url.openStream();
+			URLConnection connection = proxy == null ? url.openConnection() : url.openConnection(proxy);
+			if (url.getUserInfo() != null) {
+				connection.addRequestProperty("Authorization", "Basic " + javax.xml.bind.DatatypeConverter.printBase64Binary(url.getUserInfo().getBytes()));
 			}
-			else {
-				return url.openConnection(proxy).getInputStream();
-			}
+			return connection.getInputStream();
 		}
 		else if (!(resource instanceof ReadableResource)) {
 			throw new IOException("Can not read from: " + fileName);
@@ -352,20 +354,36 @@ public class FileMethods {
 	}
 
 	@GlueMethod(description = "Retrieves a specific file from a zip", returns = "The content of the file in bytes")
-	public static byte [] unzip(@GlueParam(name = "zipContent", description = "The content of the zip file") Object content, @GlueParam(name = "fileName", description = "The filename to find") String fileName) throws IOException {
-		fileName = fileName.replaceAll("^[/]+", "");
-		ZipInputStream zip = new ZipInputStream(ScriptMethods.toStream(ScriptMethods.bytes(content)));
-		try {
-			ZipEntry entry = null;
-			while ((entry = zip.getNextEntry()) != null) {
-				if (entry.getName().replaceAll("^[/]+", "").equals(fileName)) {
-					return ScriptMethods.bytes(zip);
+	public static Object unzip(@GlueParam(name = "zipContent", description = "The content of the zip file") Object content, @GlueParam(name = "fileName", description = "The filename to find") String fileName) throws IOException {
+		if (fileName == null) {
+			Map<String, byte[]> entries = new HashMap<String, byte[]>();
+			ZipInputStream zip = new ZipInputStream(ScriptMethods.toStream(ScriptMethods.bytes(content)));
+			try {
+				ZipEntry entry = null;
+				while ((entry = zip.getNextEntry()) != null) {
+					entries.put(entry.getName(), IOUtils.toBytes(IOUtils.wrap(zip)));
 				}
+				return entries;
 			}
-			return null;
+			finally {
+				zip.close();
+			}
 		}
-		finally {
-			zip.close();
+		else {
+			fileName = fileName.replaceAll("^[/]+", "");
+			ZipInputStream zip = new ZipInputStream(ScriptMethods.toStream(ScriptMethods.bytes(content)));
+			try {
+				ZipEntry entry = null;
+				while ((entry = zip.getNextEntry()) != null) {
+					if (entry.getName().replaceAll("^[/]+", "").equals(fileName)) {
+						return ScriptMethods.bytes(zip);
+					}
+				}
+				return null;
+			}
+			finally {
+				zip.close();
+			}
 		}
 	}
 	
