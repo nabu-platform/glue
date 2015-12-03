@@ -43,6 +43,12 @@ public class GlueParser implements Parser {
 	private Analyzer<ExecutionContext> analyzer;
 	private OperationProvider<ExecutionContext> operationProvider;
 	private ScriptRepository repository;
+	
+	/**
+	 * If explicit header is turned on, anything at the top of a script is by default bound to the first line of code _except_ if an explicit empty line is added to separate script headers from first line headers
+	 * If set to false (default), anything at the top of the script is by default bound to the script level and not the first line of code unless explicit empty line is used
+	 */
+	private boolean defaultHeaderToScript = Boolean.parseBoolean(System.getProperty("glue.defaultHeaderToScript", "false"));
 
 	public GlueParser(ScriptRepository repository, OperationProvider<ExecutionContext> operationProvider) {
 		this.repository = repository;
@@ -119,11 +125,19 @@ public class GlueParser implements Parser {
 					executorGroups.pop();
 				}
 				if (!codeHasBegun) {
-					executorGroups.push(new SequenceExecutor(null, new SimpleExecutorContext(lineNumber, null, lineComment.toString().isEmpty() ? null : lineComment.toString(), lineDescription.toString().isEmpty() ? null : lineDescription.toString(), null, annotations), null));
-					annotations.clear();
-					// clear the initial comment/description so it doesn't end up on the first line
-					lineComment = new StringBuilder();
-					lineDescription = new StringBuilder();
+					// if we always want to bind to the script or the line is empty (denoting an explicit script binding)
+					// bind it all at the script level
+					if (defaultHeaderToScript || line.trim().isEmpty()) {
+						executorGroups.push(new SequenceExecutor(null, new SimpleExecutorContext(lineNumber, null, lineComment.toString().isEmpty() ? null : lineComment.toString(), lineDescription.toString().isEmpty() ? null : lineDescription.toString(), null, annotations), null));
+						annotations.clear();
+						// clear the initial comment/description so it doesn't end up on the first line
+						lineComment = new StringBuilder();
+						lineDescription = new StringBuilder();
+					}
+					// leave it for the first line
+					else {
+						executorGroups.push(new SequenceExecutor(null, new SimpleExecutorContext(lineNumber, null, null, null, null, new HashMap<String, String>()), null));
+					}
 				}
 				codeHasBegun = true;
 				line = line.trim();

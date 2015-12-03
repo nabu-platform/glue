@@ -2,8 +2,10 @@ package be.nabu.glue.impl;
 
 import java.util.Date;
 
+import be.nabu.glue.api.Lambda;
 import be.nabu.glue.api.OptionalTypeProvider;
 import be.nabu.glue.api.OptionalTypeConverter;
+import be.nabu.glue.impl.providers.ScriptMethodProvider;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.converter.api.Converter;
 
@@ -30,6 +32,9 @@ public class DefaultOptionalTypeProvider implements OptionalTypeProvider {
 		}
 		else if (optionalType.equalsIgnoreCase("bytes")) {
 			targetClass = byte[].class;
+		}
+		else if (ScriptMethodProvider.ALLOW_LAMBDAS && optionalType.equalsIgnoreCase("lambda")) {
+			targetClass = Lambda.class;
 		}
 		return targetClass;
 	}
