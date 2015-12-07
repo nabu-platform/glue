@@ -10,6 +10,7 @@ import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import be.nabu.glue.DynamicScript;
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.VirtualScript;
 import be.nabu.glue.api.ExecutionContext;
@@ -423,10 +424,14 @@ public class GlueParser implements Parser {
 				String script = matcher.group().replaceAll(pattern.pattern(), "$1");
 				// remove empty lines at front, they might throw off the depthOffset!
 				script = script.replaceAll("(?s)^[\r\n]+", "");
-				ScriptRuntime fork = ScriptRuntime.getRuntime().fork(new VirtualScript(ScriptRuntime.getRuntime().getScript(), script));
+				ScriptRuntime fork = ScriptRuntime.getRuntime() != null
+					? ScriptRuntime.getRuntime().fork(new VirtualScript(ScriptRuntime.getRuntime().getScript(), script))
+					: new ScriptRuntime(new DynamicScript(repository, this, script), context, new HashMap<String, Object>());
 				StringWriter log = new StringWriter();
 				SimpleOutputFormatter buffer = new SimpleOutputFormatter(log, false);
-				buffer.setParent(ScriptRuntime.getRuntime().getFormatter());
+				if (ScriptRuntime.getRuntime() != null) {
+					buffer.setParent(ScriptRuntime.getRuntime().getFormatter());
+				}
 				fork.setFormatter(buffer);
 				fork.run();
 				if (fork.getException() != null) {
