@@ -52,16 +52,16 @@ public class EmbeddedGlueParser extends GlueParser {
 						continue;
 					}
 					int startIndex = 0;
-					for (int i = 0; i <= codeDepth; i++) {
+					for (int i = 0; i <= Math.min(codeDepth, line.length()); i++) {
 						if (line.charAt(i) == '\t' || line.charAt(i) == ' ') {
 							startIndex++;
 						}
 						else {
-							codeDepth = i;
+							codeDepth = startIndex;
 							break;
 						}
 					}
-					result.append(line.substring(startIndex) + "\n");
+					result.append(line.substring(codeDepth) + "\n");
 				}
 			}
 			lastIndex = matcher.end();

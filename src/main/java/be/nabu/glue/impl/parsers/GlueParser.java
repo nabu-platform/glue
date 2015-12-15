@@ -417,7 +417,7 @@ public class GlueParser implements Parser {
 	}
 	
 	private String substituteScripts(String value, ExecutionContext context, boolean allowNull) {
-		Pattern pattern = Pattern.compile("(?s)(?<!\\\\)\\$\\{\\{(.*?)\\}\\}");
+		Pattern pattern = Pattern.compile("(?s)(?<!\\\\)\\$\\{\\{[\\s]*(.*?)[\\s]*\\}\\}");
 		Matcher matcher = pattern.matcher(value);
 		try {
 			while (matcher.find()) {
