@@ -269,7 +269,7 @@ public class GlueParser implements Parser {
 					// you can use multiline if you use a depth greater than the one on this line and there is no comment on this line
 					String nextLine = null;
 					while (comment == null && (nextLine = readLine(pushback)) != null) {
-						if (getDepth(nextLine) > depth) {
+						if (getDepth(nextLine) > depth || nextLine.trim().isEmpty()) {
 							// a comment will stop the appending
 							index = -1;
 							while ((index = nextLine.indexOf('#', index)) >= 0) {
