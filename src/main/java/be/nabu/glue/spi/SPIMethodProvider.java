@@ -28,10 +28,11 @@ public class SPIMethodProvider implements MethodProvider {
 		if (methodProviders == null) {
 			synchronized(this) {
 				if (methodProviders == null) {
-					methodProviders = new ArrayList<MethodProvider>();
+					List<MethodProvider> methodProviders = new ArrayList<MethodProvider>();
 					for (MethodProvider provider : ServiceLoader.load(MethodProvider.class)) {
 						methodProviders.add(provider);
 					}
+					this.methodProviders = methodProviders;
 				}
 			}
 		}
