@@ -343,7 +343,7 @@ public class FileMethods {
 				throw new FileNotFoundException("Could not find file " + fileName);
 			}
 			if (content instanceof String) {
-				content = ScriptRuntime.getRuntime().getScript().getParser().substitute((String) content, ScriptRuntime.getRuntime().getExecutionContext(), false).getBytes();
+				content = ScriptRuntime.getRuntime().getSubstituter().substitute((String) content, ScriptRuntime.getRuntime().getExecutionContext(), false).getBytes();
 			}
 			ZipEntry entry = new ZipEntry(fileName);
 			zip.putNextEntry(entry);
