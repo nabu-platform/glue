@@ -48,7 +48,7 @@ public class StructureTypeProvider implements OptionalTypeProvider {
 		return null;
 	}
 
-	public static class StructureTypeConverter implements OptionalTypeConverter {
+	public class StructureTypeConverter implements OptionalTypeConverter {
 
 		private Script script;
 		private List<ParameterDescription> parameters;
@@ -126,6 +126,9 @@ public class StructureTypeProvider implements OptionalTypeProvider {
 		
 		@SuppressWarnings({ "rawtypes", "unchecked" })
 		private Map<String, Object> cast(Object original, List<ParameterDescription> parameters) throws EvaluationException {
+			if (original == null) {
+				return null;
+			}
 			ContextAccessor accessor = ContextAccessorFactory.getInstance().getAccessor();
 			Map<String, Object> castValues = new LinkedHashMap<String, Object>();
 			for (ParameterDescription parameter : parameters) {
@@ -157,6 +160,9 @@ public class StructureTypeProvider implements OptionalTypeProvider {
 				}
 				if (parameter.getType() != null) {
 					OptionalTypeConverter converter = OptionalTypeProviderFactory.getInstance().getProvider().getConverter(parameter.getType());
+					if (converter == null) {
+						converter = getConverter(parameter.getType());
+					}
 					if (converter == null) {
 						throw new EvaluationException("Can not cast to " + parameter.getType());
 					}
