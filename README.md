@@ -9,6 +9,7 @@ The syntax and execution logic is based mostly on java except for the "code bloc
 - **Easy to use**: focus on readability and ease of use by limiting the amount of concepts you need to grasp to make something work (e.g. namespaces are supported but not mandatory)
 - **Modular**: everything is a method and method resolving is fully dynamic, even the core methods can be removed if required. Apart from that pretty much everything is pluggable, the typing system, the syntax parser,...
 - **Hooks**: glue has a very extensive hook system allowing you to do pretty much anything at runtime. The loggers take advantage of this to format the output in different ways. The web framework also uses this hook system to optionally execute steps based on permission annotations.
+- **Immutability**: in the default glue packages all data is immutable 
 
 ## Scalability
 

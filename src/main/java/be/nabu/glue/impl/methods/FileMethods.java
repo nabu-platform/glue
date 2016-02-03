@@ -322,32 +322,44 @@ public class FileMethods {
 			if (fileName == null) {
 				continue;
 			}
-			Object content = null;
 			int index = fileName.indexOf('=');
 			if (index >= 0) {
 				String fileContent = fileName.substring(index + 1);
 				fileName = fileName.substring(0, index);
-				if (fileContent.matches("[\\w./-]+")) {
-					content = ScriptMethods.file(fileContent);
+				Object content = ScriptRuntime.getRuntime().getExecutionContext().getPipeline().get(fileContent);
+				if (content == null) {
+					Resource resolve = resolve(fileContent);
+					if (resolve == null) {
+						content = ScriptMethods.bytes(fileContent);
+						ZipEntry entry = new ZipEntry(fileName);
+						zip.putNextEntry(entry);
+						zip.write(ScriptMethods.bytes(content));
+					}
+					else {
+						ResourceUtils.zip(resolve, zip, false);
+					}
 				}
 				else {
-					content = fileContent;
+					ZipEntry entry = new ZipEntry(fileName);
+					zip.putNextEntry(entry);
+					zip.write(ScriptMethods.bytes(content));
 				}
 			}
 			else {
-				content = ScriptMethods.file(fileName);
-				// remove path (if any)
-				fileName = fileName.replaceAll(".*/", "");
+				Object content = ScriptRuntime.getRuntime().getExecutionContext().getPipeline().get(fileName);
+				if (content != null) {
+					ZipEntry entry = new ZipEntry(fileName);
+					zip.putNextEntry(entry);
+					zip.write(ScriptMethods.bytes(content));
+				}
+				else {
+					Resource resolve = resolve(fileName);
+					if (resolve == null) {
+						throw new IllegalArgumentException("Can not resolve content: " + fileName);
+					}
+					ResourceUtils.zip(resolve, zip, false);
+				}
 			}
-			if (content == null) {
-				throw new FileNotFoundException("Could not find file " + fileName);
-			}
-			if (content instanceof String) {
-				content = ScriptRuntime.getRuntime().getSubstituter().substitute((String) content, ScriptRuntime.getRuntime().getExecutionContext(), false).getBytes();
-			}
-			ZipEntry entry = new ZipEntry(fileName);
-			zip.putNextEntry(entry);
-			zip.write((byte[]) content);
 		}
 		zip.close();
 		return output.toByteArray();
