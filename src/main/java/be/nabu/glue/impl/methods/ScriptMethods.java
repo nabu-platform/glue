@@ -439,7 +439,7 @@ public class ScriptMethods {
 					object = data;
 				}
 			}
-			catch (IOException e) {
+			catch (Exception e) {
 				// ignore it
 			}
 		}

@@ -4,6 +4,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.ServiceLoader;
 
@@ -22,28 +24,38 @@ import be.nabu.libs.evaluator.impl.MethodOperation;
 
 public class StaticJavaMethodProvider implements MethodProvider {
 	
-	private Class<?> [] methodClasses;
+	private Collection<Class<?>> methodClasses;
 	private List<MethodDescription> descriptions;
 	
 	public StaticJavaMethodProvider() {
-		this(new Class[0]);
+		// auto construct
 	}
 	
 	public StaticJavaMethodProvider(Class<?>...methodClasses) {
-		this.methodClasses = methodClasses;
-		// if you passed in no method classes, use SPI to find factories
-		if (this.methodClasses.length == 0) {
-			List<Class<?>> allClasses = new ArrayList<Class<?>>();
-			for (StaticMethodFactory staticMethodFactory : ServiceLoader.load(StaticMethodFactory.class)) {
-				allClasses.addAll(staticMethodFactory.getStaticMethodClasses());
-			}
-			this.methodClasses = allClasses.toArray(new Class[0]);
+		if (methodClasses != null && methodClasses.length > 0) {
+			this.methodClasses = Arrays.asList(methodClasses);
 		}
+	}
+
+	Collection<Class<?>> getMethodClasses() {
+		// if you passed in no method classes, use SPI to find factories
+		if (methodClasses == null) {
+			synchronized(this) {
+				if (methodClasses == null) {
+					List<Class<?>> allClasses = new ArrayList<Class<?>>();
+					for (StaticMethodFactory staticMethodFactory : ServiceLoader.load(StaticMethodFactory.class)) {
+						allClasses.addAll(staticMethodFactory.getStaticMethodClasses());
+					}
+					this.methodClasses = allClasses;
+				}
+			}
+		}
+		return methodClasses;
 	}
 
 	@Override
 	public Operation<ExecutionContext> resolve(String name) {
-		MethodOperation<ExecutionContext> methodOperation = new MethodOperation<ExecutionContext>(methodClasses);
+		MethodOperation<ExecutionContext> methodOperation = new MethodOperation<ExecutionContext>(getMethodClasses());
 		try {
 			if (methodOperation.findMethod(name) != null) {
 				return methodOperation;
@@ -61,7 +73,7 @@ public class StaticJavaMethodProvider implements MethodProvider {
 			synchronized(this) {
 				if (descriptions == null) {
 					List<MethodDescription> descriptions = new ArrayList<MethodDescription>();
-					for (Class<?> methodClass : methodClasses) {
+					for (Class<?> methodClass : getMethodClasses()) {
 						for (Method method : methodClass.getDeclaredMethods()) {
 							if (Modifier.isStatic(method.getModifiers()) && Modifier.isPublic(method.getModifiers())) {
 								GlueMethod methodAnnotation = method.getAnnotation(GlueMethod.class);
