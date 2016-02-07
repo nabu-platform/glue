@@ -385,12 +385,33 @@ public class GlueParser implements Parser {
 	}
 
 	private String substituteOperations(String value, ExecutionContext context, boolean allowNull) {
-		Pattern pattern = Pattern.compile("(?<!\\\\)\\$\\{([^}]+)\\}");
+		Pattern pattern = Pattern.compile("(?<!\\\\)\\$\\{");
 		Matcher matcher = pattern.matcher(value);
 		try {
 			Converter converter = ConverterFactory.getInstance().getConverter();
+			String target = value;
 			while (matcher.find()) {
-				String query = matcher.group().replaceAll(pattern.pattern(), "$1");
+				int depth = 0;
+				String query = null;
+				// we start after the capturing group (we always capture ${ which as a length of 2)
+				int contentStart = matcher.start() + 2;
+				for (int i = contentStart; i < value.length(); i++) {
+					if (value.charAt(i) == '{') {
+						depth++;
+					}
+					else if (value.charAt(i) == '}') {
+						if (depth == 0) {
+							query = value.substring(contentStart, i);
+							break;
+						}
+						else {
+							depth--;
+						}
+					}
+				}
+				if (query == null) {
+					throw new IllegalArgumentException("The opening ${ is missing an end tag");
+				}
 				Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(query));
 				Object evaluatedResult = operation.evaluate(context);
 				if (!allowNull && evaluatedResult == null) {
@@ -400,13 +421,12 @@ public class GlueParser implements Parser {
 				if (result == null && evaluatedResult != null) {
 					throw new RuntimeException("Can not convert the result of the query to string: " + query);
 				}
-				// don't allow empty results, they are likely due to an oversight
-				// if you really need an empty string, you can still force it
 				if (result != null) {
-					value = value.replaceAll(Pattern.quote(matcher.group()), Matcher.quoteReplacement(result));
+					target = target.replaceAll(Pattern.quote("${" + query + "}"), Matcher.quoteReplacement(result));
 				}
 			}
-			return value.replaceAll("\\\\(\\$\\{[^}]+\\})", "$1");
+			// unescape explicitly escaped embeds
+			return target.replaceAll("\\\\(\\$\\{)", "$1");
 		}
 		catch (ParseException e) {
 			throw new IllegalArgumentException(e);
@@ -417,11 +437,32 @@ public class GlueParser implements Parser {
 	}
 	
 	private String substituteScripts(String value, ExecutionContext context, boolean allowNull) {
-		Pattern pattern = Pattern.compile("(?s)(?<!\\\\)\\$\\{\\{[\\s]*(.*?)[\\s]*\\}\\}");
+		Pattern pattern = Pattern.compile("(?s)(?<!\\\\)\\$\\{\\{[\\s]*");
 		Matcher matcher = pattern.matcher(value);
 		try {
 			while (matcher.find()) {
-				String script = matcher.group().replaceAll(pattern.pattern(), "$1");
+				int depth = 0;
+				String script = null;
+				// we start after the capturing group (we always capture ${{ which as a length of 3)
+				int contentStart = matcher.start() + 3;
+				for (int i = contentStart; i < value.length() - 1; i++) {
+					if (value.charAt(i) == '{') {
+						depth++;
+					}
+					else if (value.charAt(i) == '}') {
+						// we need a double } to end
+						if (depth == 0 && value.charAt(i + 1) == '}') {
+							script = value.substring(contentStart, i);
+							break;
+						}
+						else if (depth > 0) {
+							depth--;
+						}
+					}
+				}
+				if (script == null) {
+					throw new IllegalArgumentException("The opening ${{ is missing an end tag");
+				}
 				// remove empty lines at front, they might throw off the depthOffset!
 				script = script.replaceAll("(?s)^[\r\n]+", "");
 				ScriptRuntime fork = ScriptRuntime.getRuntime() != null
@@ -437,7 +478,7 @@ public class GlueParser implements Parser {
 				if (fork.getException() != null) {
 					throw new RuntimeException(fork.getException());
 				}
-				value = value.replaceAll(Pattern.quote(matcher.group()), Matcher.quoteReplacement(log.toString()));
+				value = value.replaceAll(Pattern.quote("${{" + script + "}}"), Matcher.quoteReplacement(log.toString()));
 			}
 			return value;
 		}
