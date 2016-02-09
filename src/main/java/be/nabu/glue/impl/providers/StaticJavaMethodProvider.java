@@ -96,7 +96,7 @@ public class StaticJavaMethodProvider implements MethodProvider {
 									if (parameterName == null) {
 										parameterName = "arg" + i;
 									}
-									boolean isVarargs = i == parameterTypes.length - 1 && parameter.isArray();
+									boolean isVarargs = i == parameterTypes.length - 1 && (parameter.isArray() || method.isVarArgs());
 									if (Enum.class.isAssignableFrom(parameter)) {
 										parameters.add(new SimpleParameterDescription(parameterName, parameterDescription, parameter.isArray() ? parameter.getComponentType().getName() : parameter.getName(), isVarargs, parameter.getEnumConstants())
 												.setDefaultValue(parameterDefaultValue)
