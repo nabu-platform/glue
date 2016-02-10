@@ -1,6 +1,8 @@
 package be.nabu.glue.impl;
 
+import java.net.URI;
 import java.util.Date;
+import java.util.UUID;
 
 import be.nabu.glue.api.Lambda;
 import be.nabu.glue.api.OptionalTypeProvider;
@@ -32,6 +34,12 @@ public class DefaultOptionalTypeProvider implements OptionalTypeProvider {
 		}
 		else if (optionalType.equalsIgnoreCase("bytes")) {
 			targetClass = byte[].class;
+		}
+		else if (optionalType.equalsIgnoreCase("uuid")) {
+			targetClass = UUID.class;
+		}
+		else if (optionalType.equalsIgnoreCase("uri")) {
+			targetClass = URI.class;
 		}
 		else if (ScriptMethodProvider.ALLOW_LAMBDAS && optionalType.equalsIgnoreCase("lambda")) {
 			targetClass = Lambda.class;
