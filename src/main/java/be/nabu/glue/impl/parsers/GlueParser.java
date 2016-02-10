@@ -478,7 +478,7 @@ public class GlueParser implements Parser {
 				if (fork.getException() != null) {
 					throw new RuntimeException(fork.getException());
 				}
-				value = value.replaceAll(Pattern.quote("${{" + script + "}}"), Matcher.quoteReplacement(log.toString()));
+				value = value.replaceAll("\\$\\{\\{[\\s]*" + Pattern.quote(script) + "[\\s]*\\}\\}", Matcher.quoteReplacement(log.toString()));
 			}
 			return value;
 		}
