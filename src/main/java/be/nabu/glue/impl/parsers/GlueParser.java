@@ -439,6 +439,7 @@ public class GlueParser implements Parser {
 	private String substituteScripts(String value, ExecutionContext context, boolean allowNull) {
 		Pattern pattern = Pattern.compile("(?s)(?<!\\\\)\\$\\{\\{[\\s]*");
 		Matcher matcher = pattern.matcher(value);
+		String target = value;
 		try {
 			while (matcher.find()) {
 				int depth = 0;
@@ -478,9 +479,9 @@ public class GlueParser implements Parser {
 				if (fork.getException() != null) {
 					throw new RuntimeException(fork.getException());
 				}
-				value = value.replaceAll("\\$\\{\\{[\\s]*" + Pattern.quote(script) + "[\\s]*\\}\\}", Matcher.quoteReplacement(log.toString()));
+				target = target.replaceAll("\\$\\{\\{[\\s]*" + Pattern.quote(script) + "[\\s]*\\}\\}", Matcher.quoteReplacement(log.toString()));
 			}
-			return value;
+			return target;
 		}
 		catch (ParseException e) {
 			throw new IllegalArgumentException(e);
