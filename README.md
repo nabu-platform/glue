@@ -879,3 +879,17 @@ test(lambda(x, y, x+y+fixed+dynamic(fixed)))
 ```
 
 Note that the lambda has access to the variables defined in the originating context and as such also any lambdas that were defined there.
+
+## Functions
+
+Note that glue also supports functions which are basically more complex lambda's, the syntax is:
+
+```python
+myFunc = sequence
+	input ?= null
+	echo(input)
+	
+myFunc("test")
+```
+
+Functions have (unlike the lambda's above) multiple return and allow arbitrarily complex statements. They are not globally named but are instead anonymously assigned to a variable that can be passed around.

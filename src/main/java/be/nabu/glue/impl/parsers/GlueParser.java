@@ -22,6 +22,7 @@ import be.nabu.glue.impl.SimpleExecutorContext;
 import be.nabu.glue.impl.executors.BreakExecutor;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.glue.impl.executors.ForEachExecutor;
+import be.nabu.glue.impl.executors.FunctionExecutor;
 import be.nabu.glue.impl.executors.SequenceExecutor;
 import be.nabu.glue.impl.executors.SwitchExecutor;
 import be.nabu.glue.impl.executors.WhileExecutor;
@@ -203,6 +204,21 @@ public class GlueParser implements Parser {
 					sequenceExecutor.setOperationProvider(operationProvider);
 					executorGroups.peek().getChildren().add(sequenceExecutor);
 					executorGroups.push(sequenceExecutor);
+				}
+				// a sequence assigned to a variable
+				else if (line.matches("^[a-zA-Z]+[\\w]*[\\s]*=[\\s]*sequence$")) {
+					index = line.indexOf('=');
+					variableName = line.substring(0, index).trim();
+					line = line.substring(index + 1).trim();
+					// if the variablename ends with a "?" you wrote something like "myfunc ?= sequence" which means only overwrite it if it doesn't exist yet
+					if (variableName.endsWith("?")) {
+						overwriteIfExists = false;
+						variableName = variableName.substring(0, variableName.length() - 1).trim();
+					}
+					FunctionExecutor functionExecutor = new FunctionExecutor(executorGroups.peek(), context, null, variableName, overwriteIfExists);
+					functionExecutor.setOperationProvider(operationProvider);
+					executorGroups.peek().getChildren().add(functionExecutor);
+					executorGroups.push(functionExecutor);
 				}
 				else if (line.matches("^while[\\s]*\\(.*\\)$")) {
 					line = line.replaceAll("^while[\\s]*\\((.*)\\)$", "$1");
