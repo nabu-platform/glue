@@ -1,7 +1,6 @@
 package be.nabu.glue.impl.methods;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -134,13 +133,13 @@ public class StringMethods {
 	}
 	
 	@GlueMethod(description = "Returns all the lines found in the given string(s). Supports all combinations of linefeed and carriage return.")
-	public static String [] lines(@GlueParam(name = "strings", description = "The string(s) to split into lines") String...original) {
+	public static Object [] lines(@GlueParam(name = "strings", description = "The string(s) to split into lines") String...original) {
 		return original == null || original.length == 0 ? null : split("[\\r\\n]+", original);
 	}
 	
 	@GlueMethod(description = "Splits the given string into columns, if you want more control over the separators, use split()")
-	public static String [] columns(@GlueParam(name = "string", description = "The string to split into columns") String original) {
-		return original == null ? null : split("[\t,;]+", original.trim());
+	public static Object [] columns(@GlueParam(name = "string", description = "The string to split into columns") String...original) {
+		return original == null ? null : split("[\t,;]+", (String[]) trim(original));
 	}
 	
 	@GlueMethod(description = "Removes any leading and trailing whitespace from the given string(s)")
@@ -174,14 +173,19 @@ public class StringMethods {
 	}
 	
 	@GlueMethod(description = "Splits the given string(s) into parts using the given regex")
-	public static String [] split(@GlueParam(name = "regex", description = "The regex to use to split the string(s)") String regex, @GlueParam(name = "strings", description = "The string(s) to split into parts") String...strings) {
-		List<String> results = new ArrayList<String>();
-		for (String string : strings) {
-			if (string == null) {
-				continue;
-			}
-			results.addAll(Arrays.asList(string.split(regex)));
+	public static Object [] split(@GlueParam(name = "regex", description = "The regex to use to split the string(s)") String regex, @GlueParam(name = "strings", description = "The string(s) to split into parts") String...strings) {
+		if (strings == null || strings.length == 0) {
+			return null;
 		}
-		return results.toArray(new String[0]);
+		else if (strings.length == 1) {
+			return strings[0].split(regex);
+		}
+		else {
+			String [][] result = new String[strings.length][];
+			for (int i = 0; i < strings.length; i++) {
+				result[i] = strings[i] == null ? null : strings[i].split(regex);
+			}
+			return result;
+		}
 	}
 }

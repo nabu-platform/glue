@@ -67,7 +67,7 @@ public class Shell {
 			GlueFormatter formatter = new GlueFormatter();
 			StringWriter writer = new StringWriter();
 			formatter.format(script.getRoot(), writer);
-			fullScript.addAll(Arrays.asList(StringMethods.lines(writer.toString())));
+			fullScript.addAll(Arrays.asList((String []) StringMethods.lines(writer.toString())));
 			runtime.getExecutionContext().getPipeline().put("$script", StringMethods.join(System.getProperty("line.separator"), fullScript.toArray(new String[0])));
 		}
 		

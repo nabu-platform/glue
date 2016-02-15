@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.ScriptUtils;
@@ -108,7 +109,31 @@ public class FunctionExecutor extends BaseExecutor implements AssignmentExecutor
 			catch (ExecutionException e) {
 				throw new EvaluationException(e);
 			}
-			return context;
+			Map<String, Object> resultMap = new HashMap<String, Object>();
+			buildReturn(resultMap, context, executor);
+			if (resultMap.isEmpty()) {
+				return context;
+			}
+			else if (resultMap.size() == 1) {
+				return resultMap.values().iterator().next();
+			}
+			else {
+				return resultMap;
+			}
+		}
+		
+		private void buildReturn(Map<String, Object> output, ExecutionContext result, Executor executor) {
+			if (executor instanceof AssignmentExecutor) {
+				if (executor.getContext() != null && executor.getContext().getAnnotations() != null && executor.getContext().getAnnotations().containsKey("return")) {
+					String variableName = ((AssignmentExecutor) executor).getVariableName();
+					output.put(variableName, result.getPipeline().get(variableName));
+				}
+			}
+			else if (executor instanceof ExecutorGroup) {
+				for (Executor child : ((ExecutorGroup) executor).getChildren()) {
+					buildReturn(output, result, child);
+				}
+			}
 		}
 	}
 

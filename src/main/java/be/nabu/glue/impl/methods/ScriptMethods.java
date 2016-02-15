@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -297,10 +298,10 @@ public class ScriptMethods {
 		return map;
 	}
 	
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static Map<String, Object>[] map(Object...objects) {
 		// this will merge arrays etc
-		objects = array(objects);
+//		objects = array(objects);
 		Set<String> keys = new LinkedHashSet<String>();
 		List<Map<String, Object>> maps = new ArrayList<Map<String, Object>>();
 		for (Object object : objects) {
@@ -314,21 +315,50 @@ public class ScriptMethods {
 				keys.addAll(((Map<String, Object>) object).keySet());
 				maps.add((Map<String, Object>) object);
 			}
-			else if (object instanceof Object[] || object instanceof Collection) {
+			else if (object instanceof Object[] || object instanceof Collection || object instanceof Iterable) {
 				if (keys.isEmpty()) {
 					throw new IllegalArgumentException("The map has no defined keys");
 				}
-				List<Object> elements = object instanceof Object[] ? Arrays.asList((Object[]) object) : new ArrayList<Object>((Collection<Object>) object);
-				// use linked hashmaps to retain key order
-				Map<String, Object> result = new LinkedHashMap<String, Object>();
-				if (elements.size() > keys.size()) {
-					throw new IllegalArgumentException("There are " + elements.size() + " objects but only " + keys.size() + " keys");
+				Iterable iterable;
+				if (object instanceof Iterable) {
+					iterable = (Iterable) object;
 				}
-				int i = 0;
-				for (String key : keys) {
-					result.put(key, elements.size() > i ? elements.get(i++) : null);
+				else if (object instanceof Object[]) {
+					iterable = Arrays.asList((Object[]) object);
 				}
-				maps.add(result);
+				else {
+					iterable = (Collection) object;
+				}
+				if (iterable.iterator().hasNext()) {
+					Object first = iterable.iterator().next();
+					// it's a matrix
+					if (first instanceof Object[] || first instanceof Collection) {
+						Iterator iterator = iterable.iterator();
+						while(iterator.hasNext()) {
+							Object record = iterator.next();
+							List<Object> fields = record instanceof Object[] ? Arrays.asList((Object[]) record) : new ArrayList<Object>((Collection<Object>) record);
+							// use linked hashmaps to retain key order
+							Map<String, Object> result = new LinkedHashMap<String, Object>();
+							if (fields.size() > keys.size()) {
+								throw new IllegalArgumentException("There are " + fields.size() + " objects but only " + keys.size() + " keys in: " + fields);
+							}
+							int i = 0;
+							for (String key : keys) {
+								result.put(key, fields.size() > i ? fields.get(i++) : null);
+							}
+							maps.add(result);
+						}
+					}
+					else {
+						Iterator iterator = iterable.iterator();
+						// use linked hashmaps to retain key order
+						Map<String, Object> result = new LinkedHashMap<String, Object>();
+						for (String key : keys) {
+							result.put(key, iterator.hasNext() ? iterator.next() : null);
+						}
+						maps.add(result);
+					}
+				}
 			}
 			else {
 				throw new IllegalArgumentException("Invalid object for a map: " + object);
@@ -404,6 +434,48 @@ public class ScriptMethods {
 			resources.add(resource);
 		}
 		return resources.toArray(new String[resources.size()]);
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public static Object template(String template, Object...values) throws EvaluationException {
+		if (values == null || values.length == 0) {
+			return ScriptRuntime.getRuntime().getSubstituter().substitute(template, ScriptRuntime.getRuntime().getExecutionContext(), true);
+		}
+		List<String> templated = new ArrayList<String>();
+		if (values.length == 1 && values[0] instanceof Iterable) {
+			if (!(values[0] instanceof Collection)) {
+				List<Object> objects = new ArrayList<Object>();
+				for (Object single : (Iterable) values[0]) {
+					objects.add(single);
+				}
+				values[0] = objects;
+			}
+			values = ((Collection) values[0]).toArray();
+		}
+		for (int i = 0; i < values.length; i++) {
+			Map<String, Object> pipeline = toPipeline(values[i]);
+			ForkedExecutionContext fork = new ForkedExecutionContext(ScriptRuntime.getRuntime().getExecutionContext(), pipeline);
+			templated.add(ScriptRuntime.getRuntime().getSubstituter().substitute(template, fork, true));
+		}
+		return templated.toArray(new String[0]);
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static Map<String, Object> toPipeline(Object value) throws EvaluationException {
+		Map<String, Object> pipeline = new HashMap<String, Object>();
+		pipeline.putAll(ScriptRuntime.getRuntime().getExecutionContext().getPipeline());
+		ContextAccessor accessor = ContextAccessorFactory.getInstance().getAccessor(value.getClass());
+		if (accessor instanceof ListableContextAccessor) {
+			Collection<String> list = ((ListableContextAccessor) accessor).list(value);
+			for (String key : list) {
+				Object single = accessor.get(value, key);
+				pipeline.put(key, single);
+			}
+		}
+		else {
+			throw new IllegalArgumentException("The object " + value + " is not context listable");
+		}
+		return pipeline;
 	}
 	
 	public static String string(Object object) throws IOException {
