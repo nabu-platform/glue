@@ -84,7 +84,12 @@ public class CustomDate implements Plus, Minus, Comparable<CustomDate> {
 
 	@Override
 	public Object minus(Object value) {
-		return increment(this, ConverterFactory.getInstance().getConverter().convert(value, String.class), Type.SUBSTRACT);
+		if (value instanceof CustomDate) {
+			return date.getTime() - ((CustomDate) value).date.getTime();
+		}
+		else {
+			return increment(this, ConverterFactory.getInstance().getConverter().convert(value, String.class), Type.SUBSTRACT);
+		}
 	}
 
 	@Override

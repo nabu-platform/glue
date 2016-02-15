@@ -336,6 +336,9 @@ public class ScriptMethods {
 						Iterator iterator = iterable.iterator();
 						while(iterator.hasNext()) {
 							Object record = iterator.next();
+							if (!(record instanceof Object[]) && !(record instanceof Collection)) {
+								throw new IllegalArgumentException("The record is not an array or collection: " + record);
+							}
 							List<Object> fields = record instanceof Object[] ? Arrays.asList((Object[]) record) : new ArrayList<Object>((Collection<Object>) record);
 							// use linked hashmaps to retain key order
 							Map<String, Object> result = new LinkedHashMap<String, Object>();

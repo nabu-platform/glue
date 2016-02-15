@@ -355,9 +355,14 @@ public class FileMethods {
 				else {
 					Resource resolve = resolve(fileName);
 					if (resolve == null) {
-						throw new IllegalArgumentException("Can not resolve content: " + fileName);
+						content = ScriptMethods.bytes(fileName);
+						ZipEntry entry = new ZipEntry(fileName);
+						zip.putNextEntry(entry);
+						zip.write(ScriptMethods.bytes(content));
 					}
-					ResourceUtils.zip(resolve, zip, false);
+					else {
+						ResourceUtils.zip(resolve, zip, false);
+					}
 				}
 			}
 		}
