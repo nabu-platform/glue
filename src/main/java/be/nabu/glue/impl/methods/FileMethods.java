@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URI;
@@ -218,30 +219,59 @@ public class FileMethods {
 	 * @param content
 	 * @throws IOException
 	 */
+	@SuppressWarnings("unchecked")
 	@GlueMethod(description = "Writes the content to the given file")
-	public static void write(@GlueParam(name = "fileName", description = "The file to write to") String fileName, @GlueParam(name = "content", description = "The content to write to the file") Object content) throws IOException {
+	public static void write(@GlueParam(name = "target", description = "The file to write to") Object target, @GlueParam(name = "content", description = "The content to write to the file") Object content) throws IOException {
 		if (content != null) {
 			InputStream input = ScriptMethods.toStream(content);
 			try {
-				Resource target = resolve(fileName);
-				if (target == null) {
-					target = ResourceUtils.touch(uri(fileName), null);
+				WritableContainer<ByteBuffer> output;
+				boolean autoClose = true;
+				if (target instanceof WritableContainer) {
+					output = (WritableContainer<ByteBuffer>) target;
+					autoClose = false;
 				}
-				if (!(target instanceof WritableResource)) {
-					throw new IOException("Can not write to: " + fileName);
+				else if (target instanceof String) {
+					Resource resource = resolve((String) target);
+					if (resource == null) {
+						resource = ResourceUtils.touch(uri((String) target), null);
+					}
+					if (!(resource instanceof WritableResource)) {
+						throw new IOException("Can not write to: " + resource);
+					}
+					output = ((WritableResource) resource).getWritable();
 				}
-				WritableContainer<ByteBuffer> output = ((WritableResource) target).getWritable();
+				else if (target instanceof OutputStream) {
+					output = IOUtils.wrap((OutputStream) target);
+					autoClose = false;
+				}
+				else {
+					throw new IllegalArgumentException("Can not write to target: " + target);
+				}
 				try {
 					IOUtils.copyBytes(IOUtils.wrap(input), output);
 				}
 				finally {
-					output.close();
+					if (autoClose) {
+						output.close();
+					}
 				}
 			}
 			finally {
 				input.close();
 			}
 		}
+	}
+	
+	public static WritableContainer<ByteBuffer> output(@GlueParam(name = "fileName") String fileName) throws IOException {
+		Resource target = resolve(fileName);
+		if (target == null) {
+			target = ResourceUtils.touch(uri(fileName), null);
+		}
+		if (!(target instanceof WritableResource)) {
+			throw new IOException("Can not write to: " + fileName);
+		}
+		return ((WritableResource) target).getWritable();
 	}
 	
 	public static boolean exists(String target) throws IOException {

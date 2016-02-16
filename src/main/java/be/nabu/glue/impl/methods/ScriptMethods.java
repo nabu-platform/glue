@@ -152,8 +152,13 @@ public class ScriptMethods {
 		return value == null ? defaultValue : value;
 	}
 	
-	public static void fail(String message) {
-		throw new ScriptRuntimeException(ScriptRuntime.getRuntime(), message);
+	public static void fail(Object message) {
+		if (message instanceof Throwable) {
+			throw new ScriptRuntimeException(ScriptRuntime.getRuntime(), (Throwable) message);
+		}
+		else {
+			throw new ScriptRuntimeException(ScriptRuntime.getRuntime(), (String) message);
+		}
 	}
 
 	public static Object [] flatten(int column, Object...objects) {
@@ -251,6 +256,9 @@ public class ScriptMethods {
 		}
 		else if (object instanceof Collection) {
 			return ((Collection<?>) object).size();
+		}
+		else if (object instanceof Map) {
+			return ((Map) object).size();
 		}
 		throw new IllegalArgumentException("Can not get the size of " + object);
 	}
@@ -408,15 +416,13 @@ public class ScriptMethods {
 	 * @return
 	 */
 	public static Object [] unique(Object...objects) {
-		List<Object> results = new ArrayList<Object>();
+		Set<Object> results = new LinkedHashSet<Object>();
 		Class<?> componentType = null;
-		for (Object object : array(objects)) {
+		for (Object object : objects) {
 			if (componentType == null && object != null) {
 				componentType = object.getClass();
 			}
-			if (!results.contains(object)) {
-				results.add(object);
-			}
+			results.add(object);
 		}
 		if (componentType == null) {
 			componentType = Object.class;
@@ -455,12 +461,14 @@ public class ScriptMethods {
 			}
 			values = ((Collection) values[0]).toArray();
 		}
+		ExecutionContext parentContext = ScriptRuntime.getRuntime().getExecutionContext();
 		for (int i = 0; i < values.length; i++) {
 			Map<String, Object> pipeline = toPipeline(values[i]);
-			ForkedExecutionContext fork = new ForkedExecutionContext(ScriptRuntime.getRuntime().getExecutionContext(), pipeline);
+			ForkedExecutionContext fork = new ForkedExecutionContext(parentContext, pipeline);
 			templated.add(ScriptRuntime.getRuntime().getSubstituter().substitute(template, fork, true));
 		}
-		return templated.toArray(new String[0]);
+		ScriptRuntime.getRuntime().setExecutionContext(parentContext);
+		return values.length == 1 ? templated.get(0) : templated.toArray(new String[0]);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

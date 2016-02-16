@@ -24,28 +24,57 @@ public class SequenceExecutor extends BaseExecutor implements ExecutorGroup {
 	@Override
 	public void execute(ExecutionContext context) throws ExecutionException {
 		String timeout = context.getExecutionEnvironment().getParameters().get("timeout");
-		for (Executor child : children) {
-			context.setCurrent(child);
-			if (context.isTrace() && context.getBreakpoints() != null && context.getBreakpoints().contains(child.getId())) {
-				synchronized(Thread.currentThread()) {
-					try {
-						Thread.sleep(timeout == null ? Long.MAX_VALUE : new Long(timeout));
-					}
-					catch (InterruptedException e) {
-						// continue;
+		try {
+			for (Executor child : children) {
+				if (child instanceof CatchExecutor) {
+					continue;
+				}
+				else if (child instanceof FinallyExecutor) {
+					continue;
+				}
+				context.setCurrent(child);
+				if (context.isTrace() && context.getBreakpoints() != null && context.getBreakpoints().contains(child.getId())) {
+					synchronized(Thread.currentThread()) {
+						try {
+							Thread.sleep(timeout == null ? Long.MAX_VALUE : new Long(timeout));
+						}
+						catch (InterruptedException e) {
+							// continue;
+						}
 					}
 				}
+				if (ScriptRuntime.getRuntime().isAborted()) {
+					break;
+				}
+				else if (context.getBreakCount() > 0) {
+					break;
+				}
+				else if (child.shouldExecute(context)) {
+					ScriptRuntime.getRuntime().getFormatter().before(child);
+					child.execute(context);
+					ScriptRuntime.getRuntime().getFormatter().after(child);
+				}
 			}
-			if (ScriptRuntime.getRuntime().isAborted()) {
-				break;
+		}
+		catch (Exception e) {
+			context.getPipeline().put("$exception", e);
+			boolean handled = false;
+			for (Executor child : children) {
+				if (child instanceof CatchExecutor) {
+					((CatchExecutor) child).execute(context);
+					handled = true;
+				}
 			}
-			else if (context.getBreakCount() > 0) {
-				break;
+			context.getPipeline().remove("$exception");
+			if (!handled) {
+				throw new ExecutionException(e);
 			}
-			else if (child.shouldExecute(context)) {
-				ScriptRuntime.getRuntime().getFormatter().before(child);
-				child.execute(context);
-				ScriptRuntime.getRuntime().getFormatter().after(child);
+		}
+		finally {
+			for (Executor child : children) {
+				if (child instanceof FinallyExecutor) {
+					((FinallyExecutor) child).execute(context);
+				}
 			}
 		}
 	}

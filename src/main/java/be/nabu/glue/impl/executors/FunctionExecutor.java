@@ -73,11 +73,13 @@ public class FunctionExecutor extends BaseExecutor implements AssignmentExecutor
 		try {
 			Object object = context.getPipeline().get(variableName);
 			if (overwriteIfExists || object == null) {
+				HashMap<String, Object> captured = new HashMap<String, Object>(context.getPipeline());
 				Lambda lambda = new LambdaImpl(
 					new SimpleMethodDescription(script.getNamespace(), script.getName(), getContext().getComment(), getInputs(), getOutputs()), 
 					new FunctionOperation(getSequence()), 
-					new HashMap<String, Object>(context.getPipeline())
+					captured
 				);
+				captured.put(variableName, lambda);
 				context.getPipeline().put(variableName, lambda);
 			}
 		}

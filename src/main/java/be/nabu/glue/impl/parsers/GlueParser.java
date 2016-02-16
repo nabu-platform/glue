@@ -20,7 +20,9 @@ import be.nabu.glue.api.ScriptRepository;
 import be.nabu.glue.impl.GlueQueryParser;
 import be.nabu.glue.impl.SimpleExecutorContext;
 import be.nabu.glue.impl.executors.BreakExecutor;
+import be.nabu.glue.impl.executors.CatchExecutor;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
+import be.nabu.glue.impl.executors.FinallyExecutor;
 import be.nabu.glue.impl.executors.ForEachExecutor;
 import be.nabu.glue.impl.executors.FunctionExecutor;
 import be.nabu.glue.impl.executors.SequenceExecutor;
@@ -198,6 +200,18 @@ public class GlueParser implements Parser {
 					sequenceExecutor.setOperationProvider(operationProvider);
 					executorGroups.peek().getChildren().add(sequenceExecutor);
 					executorGroups.push(sequenceExecutor);
+				}
+				else if (line.equals("catch")) {
+					CatchExecutor catchExecutor = new CatchExecutor(executorGroups.peek(), context, null);
+					catchExecutor.setOperationProvider(operationProvider);
+					executorGroups.peek().getChildren().add(catchExecutor);
+					executorGroups.push(catchExecutor);
+				}
+				else if (line.equals("finally")) {
+					FinallyExecutor finallyExecutor = new FinallyExecutor(executorGroups.peek(), context, null);
+					finallyExecutor.setOperationProvider(operationProvider);
+					executorGroups.peek().getChildren().add(finallyExecutor);
+					executorGroups.push(finallyExecutor);
 				}
 				else if (line.equals("sequence")) {
 					SequenceExecutor sequenceExecutor = new SequenceExecutor(executorGroups.peek(), context, null);
@@ -400,9 +414,10 @@ public class GlueParser implements Parser {
 		return value;
 	}
 
+	private Pattern operationsPattern = Pattern.compile("(?<!\\\\)\\$\\{");
+
 	private String substituteOperations(String value, ExecutionContext context, boolean allowNull) {
-		Pattern pattern = Pattern.compile("(?<!\\\\)\\$\\{");
-		Matcher matcher = pattern.matcher(value);
+		Matcher matcher = operationsPattern.matcher(value);
 		try {
 			Converter converter = ConverterFactory.getInstance().getConverter();
 			String target = value;
@@ -451,10 +466,11 @@ public class GlueParser implements Parser {
 			throw new RuntimeException(e);
 		}
 	}
+
+	private Pattern scriptPattern = Pattern.compile("(?s)(?<!\\\\)\\$\\{\\{[\\s]*");
 	
 	private String substituteScripts(String value, ExecutionContext context, boolean allowNull) {
-		Pattern pattern = Pattern.compile("(?s)(?<!\\\\)\\$\\{\\{[\\s]*");
-		Matcher matcher = pattern.matcher(value);
+		Matcher matcher = scriptPattern.matcher(value);
 		String target = value;
 		try {
 			while (matcher.find()) {
