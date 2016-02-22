@@ -297,11 +297,16 @@ public class FileMethods {
 	}
 
 	private static Resource resolve(String fileName) throws IOException {
-		URI uri = uri(fileName);
-		if (ResourceFactory.getInstance().getResolver(uri.getScheme()) == null) {
+		try {
+			URI uri = uri(fileName);
+			if (ResourceFactory.getInstance().getResolver(uri.getScheme()) == null) {
+				return null;
+			}
+			return ResourceFactory.getInstance().resolve(uri, null);
+		}
+		catch (RuntimeException e) {
 			return null;
 		}
-		return ResourceFactory.getInstance().resolve(uri, null);
 	}
 
 	public static URI uri(String fileName) throws IOException {
