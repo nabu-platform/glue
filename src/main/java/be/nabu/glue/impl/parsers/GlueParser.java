@@ -155,7 +155,7 @@ public class GlueParser implements Parser {
 				
 				// check if there is a comment on the line
 				int index = -1;
-				while ((index = line.indexOf('#', index)) >= 0) {
+				while ((index = getCommentIndex(line, index)) >= 0) {
 					// check for escape character
 					if (index > 0 && line.charAt(index - 1) == '\\') {
 						line = line.substring(0, index - 1) + line.substring(index);
@@ -302,7 +302,7 @@ public class GlueParser implements Parser {
 						if (getDepth(nextLine) > depth || nextLine.trim().isEmpty()) {
 							// a comment will stop the appending
 							index = -1;
-							while ((index = nextLine.indexOf('#', index)) >= 0) {
+							while ((index = getCommentIndex(nextLine, index)) >= 0) {
 								// check for escape character
 								if (index > 0 && nextLine.charAt(index - 1) == '\\') {
 									nextLine = nextLine.substring(0, index - 1) + nextLine.substring(index);
@@ -388,6 +388,21 @@ public class GlueParser implements Parser {
 			root = executorGroups.pop();
 		}
 		return root;
+	}
+	
+	private int getCommentIndex(String content, int currentIndex) {
+		boolean inString = false;
+		for (int i = 0; i < content.length(); i++) {
+			if (content.charAt(i) == '\'' || content.charAt(i) == '"') {
+				if (i == 0 || content.charAt(i - 1) != '\\') {
+					inString = !inString;
+				}
+			}
+			else if (content.charAt(i) == '#' && !inString && i > currentIndex) {
+				return i;
+			}
+		}
+		return -1;
 	}
 	
 	public Operation<ExecutionContext> analyze(String line) throws ParseException {
