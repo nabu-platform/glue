@@ -13,6 +13,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
@@ -21,6 +22,7 @@ import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.impl.methods.ScriptMethods;
 import be.nabu.glue.impl.methods.ShellMethods;
 import be.nabu.glue.impl.methods.StringMethods;
+import be.nabu.glue.impl.methods.SystemMethods.SystemProperty;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.converter.api.Converter;
 import be.nabu.libs.evaluator.EvaluationException;
@@ -35,7 +37,7 @@ public class SystemMethodProvider implements MethodProvider {
 
 	public static final String CLI_DIRECTORY = "cli.directory";
 
-	private static List<String> predefined = Arrays.asList("system.exec", "system.linux", "system.input");
+	private static List<String> predefined = Arrays.asList("system.exec", "system.linux", "system.input", "system.newProperty");
 	
 	@Override
 	public Operation<ExecutionContext> resolve(String name) {
@@ -74,6 +76,7 @@ public class SystemMethodProvider implements MethodProvider {
 				directory = getDirectory();
 			}
 			List<String> arguments = new ArrayList<String>();
+			List<SystemProperty> systemProperties = new ArrayList<SystemProperty>();
 			List<byte []> inputBytes = new ArrayList<byte[]>();
 			for (int i = 1; i < getParts().size(); i++) {
 				Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
@@ -96,16 +99,24 @@ public class SystemMethodProvider implements MethodProvider {
 				}
 				else {
 					Object evaluated = argumentOperation.evaluate(context);
-					String value = evaluated instanceof String[] 
-						? StringMethods.join(System.getProperty("line.separator", "\n"), (String[]) evaluated)
-						: converter.convert(evaluated, String.class);
-					if (evaluated != null && value == null) {
-						throw new EvaluationException("Can not convert " + evaluated + " to string");
+					if (evaluated instanceof SystemProperty) {
+						systemProperties.add((SystemProperty) evaluated);
 					}
-					else if (value == null) {
-						throw new EvaluationException("Null values are currently not allowed for CLI methods");
+					else if (evaluated instanceof SystemProperty[]) {
+						systemProperties.addAll(Arrays.asList((SystemProperty[]) evaluated));
 					}
-					arguments.add(value);
+					else {
+						String value = evaluated instanceof String[] 
+							? StringMethods.join(System.getProperty("line.separator", "\n"), (String[]) evaluated)
+							: converter.convert(evaluated, String.class);
+						if (evaluated != null && value == null) {
+							throw new EvaluationException("Can not convert " + evaluated + " to string");
+						}
+						else if (value == null) {
+							throw new EvaluationException("Null values are currently not allowed for CLI methods");
+						}
+						arguments.add(value);
+					}
 				}
 			}
 			if (command.equalsIgnoreCase("cd")) {
@@ -130,7 +141,7 @@ public class SystemMethodProvider implements MethodProvider {
 			else {
 				arguments.add(0, command);
 				try {
-					return exec(directory, arguments.toArray(new String[arguments.size()]), inputBytes).trim();
+					return exec(directory, arguments.toArray(new String[arguments.size()]), inputBytes, systemProperties).trim();
 				}
 				catch (IOException e) {
 					throw new EvaluationException(e);
@@ -154,7 +165,7 @@ public class SystemMethodProvider implements MethodProvider {
 		}
 	}
 	
-	private static String exec(String directory, String [] commands, List<byte[]> inputContents) throws IOException, InterruptedException {
+	private static String exec(String directory, String [] commands, List<byte[]> inputContents, List<SystemProperty> systemProperties) throws IOException, InterruptedException {
 		if (!directory.endsWith("/")) {
 			directory += "/";
 		}
@@ -165,7 +176,21 @@ public class SystemMethodProvider implements MethodProvider {
 		else if (!dir.isDirectory()) {
 			throw new IOException("The file is not a directory: " + directory);
 		}
-		Process process = Runtime.getRuntime().exec(commands, null, dir);
+		String [] env = null;
+		if (systemProperties != null && !systemProperties.isEmpty()) {
+			List<SystemProperty> allProperties = new ArrayList<SystemProperty>();
+			// get the current environment properties, if you pass in _any_ properties, it will not inherit the ones from the current environment
+			Map<String, String> systemEnv = System.getenv();
+			for (String key : systemEnv.keySet()) {
+				allProperties.add(new SystemProperty(key, systemEnv.get(key)));
+			}
+			allProperties.addAll(systemProperties);
+			env = new String[allProperties.size()];
+			for (int i = 0; i < allProperties.size(); i++) {
+				env[i] = allProperties.get(i).getKey() + "=" + allProperties.get(i).getValue();
+			}
+		}
+		Process process = Runtime.getRuntime().exec(commands, env, dir);
 		if (inputContents != null && !inputContents.isEmpty()) {
 			OutputStream output = new BufferedOutputStream(process.getOutputStream());
 			try {

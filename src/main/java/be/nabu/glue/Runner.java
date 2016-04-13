@@ -56,6 +56,7 @@ public class Runner {
 		MultipleRepository repository = new MultipleRepository(null);
 		for (String path : getArgument("path", System.getenv("PATH"), arguments).split(System.getProperty("path.separator", ":"))) {
 			URI uri = new URI(URIUtils.encodeURI("file:/" + path.replace("\\ ", " ").trim().replace('\\', '/')));
+System.out.println("THE URI: " + uri);
 			ResourceContainer<?> container = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(uri, null);
 			if (container == null) {
 				System.err.println("The directory " + uri + " does not exist");

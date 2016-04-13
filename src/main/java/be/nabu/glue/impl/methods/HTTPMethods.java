@@ -20,17 +20,19 @@ public class HTTPMethods {
 		}
 		HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
 		connection.setRequestMethod(method);
-		for (Object parameter : parameters) {
-			if (!(parameter instanceof List)) {
-				throw new IllegalArgumentException("The parameters must be tuples of key,value");
+		if (parameters != null) {
+			for (Object parameter : parameters) {
+				if (!(parameter instanceof List)) {
+					throw new IllegalArgumentException("The parameters must be tuples of key,value");
+				}
+				List<?> list = (List<?>) parameter;
+				if (!(list.size() == 2)) {
+					throw new IllegalArgumentException("The parameter " + parameter + " is of the incorrect format, it should be a tuple of key,value");
+				}
+				String key = ConverterFactory.getInstance().getConverter().convert(list.get(0), String.class);
+				String value = ConverterFactory.getInstance().getConverter().convert(list.get(1), String.class);
+				connection.setRequestProperty(key, value);
 			}
-			List<?> list = (List<?>) parameter;
-			if (!(list.size() == 2)) {
-				throw new IllegalArgumentException("The parameter " + parameter + " is of the incorrect format, it should be a tuple of key,value");
-			}
-			String key = ConverterFactory.getInstance().getConverter().convert(list.get(0), String.class);
-			String value = ConverterFactory.getInstance().getConverter().convert(list.get(1), String.class);
-			connection.setRequestProperty(key, value);
 		}
 		if (request != null && (method.equalsIgnoreCase("POST") || method.equalsIgnoreCase("PUT"))) {
 			connection.setDoOutput(true);

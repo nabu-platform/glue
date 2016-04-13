@@ -16,6 +16,10 @@ import be.nabu.utils.io.IOUtils;
 @MethodProviderClass(namespace = "system")
 public class SystemMethods {
 	
+	public static SystemProperty newProperty(String key, String value) {
+		return new SystemProperty(key, value);
+	}
+	
 	public static String exec(String directory, String...commands) throws IOException, InterruptedException {
 		// apparently if you do something like "mvn dependency:tree" in one string, it will fail but if you do "mvn" and "dependency:tree" it fails
 		// this is however annoying to enforce on the user, so do a preliminary split
@@ -55,5 +59,35 @@ public class SystemMethods {
 
 	public static boolean linux() {
 		return System.getProperty("os.name", "generic").contains("nux");
+	}
+	
+	public static class SystemProperty {
+		private String key, value;
+
+		
+		public SystemProperty() {
+			// auto construct
+		}
+		
+		public SystemProperty(String key, String value) {
+			this.key = key;
+			this.value = value;
+		}
+
+		public String getKey() {
+			return key;
+		}
+
+		public void setKey(String key) {
+			this.key = key;
+		}
+
+		public String getValue() {
+			return value;
+		}
+
+		public void setValue(String value) {
+			this.value = value;
+		}
 	}
 }
