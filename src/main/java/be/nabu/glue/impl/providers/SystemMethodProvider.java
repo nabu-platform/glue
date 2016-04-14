@@ -203,7 +203,20 @@ public class SystemMethodProvider implements MethodProvider {
 			}
 		}
 		process.waitFor();
-		InputStream input = new BufferedInputStream(process.getInputStream());
+		
+		String error;
+		InputStream input = process.getErrorStream();
+		try {
+			byte [] bytes = IOUtils.toBytes(IOUtils.wrap(input));
+			error = bytes == null ? null : new String(bytes);
+		}
+		finally {
+			input.close();
+		}
+		if (error != null && !error.isEmpty()) {
+			System.err.println(error);
+		}
+		input = new BufferedInputStream(process.getInputStream());
 		try {
 			byte [] bytes = IOUtils.toBytes(IOUtils.wrap(input));
 			return bytes == null ? null : new String(bytes);
