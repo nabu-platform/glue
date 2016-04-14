@@ -165,7 +165,7 @@ public class SystemMethodProvider implements MethodProvider {
 		}
 	}
 	
-	private static String exec(String directory, String [] commands, List<byte[]> inputContents, List<SystemProperty> systemProperties) throws IOException, InterruptedException {
+	public static String exec(String directory, String [] commands, List<byte[]> inputContents, List<SystemProperty> systemProperties) throws IOException, InterruptedException {
 		if (!directory.endsWith("/")) {
 			directory += "/";
 		}
