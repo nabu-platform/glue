@@ -497,15 +497,13 @@ public class ScriptMethods {
 		}
 		return pipeline;
 	}
-	
-	public static String string(Object object) throws IOException {
-		return string(object, true);
-	}
-	
 	/**
 	 * Will stringify the object
 	 */
-	public static String string(Object object, boolean substitute) throws IOException {
+	public static String string(Object object, Boolean substitute) throws IOException {
+		if (substitute == null) {
+			substitute = true;
+		}
 		if (object == null) {
 			return null;
 		}
@@ -570,11 +568,11 @@ public class ScriptMethods {
 		if (index > 0) {
 			String extension = name.substring(index + 1).toLowerCase();
 			byte [] bytes = bytes(name);
-			return extensions.contains(extension) ? string(bytes) : bytes;
+			return extensions.contains(extension) ? string(bytes, null) : bytes;
 		}
 		// assume a hidden text file
 		else if (index == 0) {
-			return string(name);
+			return string(name, null);
 		}
 		// assume binary blob
 		else {
