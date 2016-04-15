@@ -24,11 +24,13 @@ import java.util.UUID;
 
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.ScriptRuntimeException;
+import be.nabu.glue.ScriptUtils;
 import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutionException;
 import be.nabu.glue.api.ExecutorGroup;
+import be.nabu.glue.api.Script;
 import be.nabu.glue.impl.ForkedExecutionContext;
 import be.nabu.glue.impl.TransactionalCloseable;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
@@ -433,13 +435,20 @@ public class ScriptMethods {
 	/**
 	 * Loads a resource as inputstream
 	 */
-	public static InputStream resource(String name) throws IOException {
+	public static InputStream resource(@GlueParam(name = "name") String name, @GlueParam(name = "script") String script) throws IOException, ParseException {
+		if (script != null) {
+			return ScriptUtils.getRoot(ScriptRuntime.getRuntime().getScript().getRepository()).getScript(script).getResource(name);
+		}
 		return getInputStream(name);
 	}
 	
-	public static String [] resources() {
+	public static String [] resources(@GlueParam(name = "script") String scriptName) throws IOException, ParseException {
+		Script script = ScriptRuntime.getRuntime().getScript();
+		if (scriptName != null) {
+			script = ScriptUtils.getRoot(ScriptRuntime.getRuntime().getScript().getRepository()).getScript(scriptName);
+		}
 		List<String> resources = new ArrayList<String>();
-		for (String resource : ScriptRuntime.getRuntime().getScript()) {
+		for (String resource : script) {
 			resources.add(resource);
 		}
 		return resources.toArray(new String[resources.size()]);
