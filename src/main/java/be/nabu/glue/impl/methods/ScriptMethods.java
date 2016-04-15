@@ -260,7 +260,7 @@ public class ScriptMethods {
 			return ((Collection<?>) object).size();
 		}
 		else if (object instanceof Map) {
-			return ((Map) object).size();
+			return ((Map<?, ?>) object).size();
 		}
 		throw new IllegalArgumentException("Can not get the size of " + object);
 	}
