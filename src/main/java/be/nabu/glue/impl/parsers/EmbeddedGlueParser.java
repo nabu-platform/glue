@@ -36,10 +36,10 @@ public class EmbeddedGlueParser extends GlueParser {
 			if (matcher.start() > lastIndex + 1) {
 				// no code yet, add an initial echo()
 				// if there is data after this block, add an echo
-				result.append("\necho(\"");
+				result.append("\necho(template(\"");
 				result.append(encodeString(content.substring(lastIndex + 1, matcher.start()), 1));
 				// end whatever echo was echoing this
-				result.append("\")\n");
+				result.append("\"))\n");
 			}
 			String code = matcher.group().replaceAll("^[\\s]+\n", "");
 			// skip start and end ${{}}
@@ -69,10 +69,10 @@ public class EmbeddedGlueParser extends GlueParser {
 		if (lastIndex + 1 < content.length()) {
 			String rest = content.substring(lastIndex + 1);
 			if (!rest.trim().isEmpty()) {
-				result.append("\necho(\"");
+				result.append("\necho(template(\"");
 				result.append(encodeString(rest, 1));
 				// end whatever echo was echoing this
-				result.append("\")\n");
+				result.append("\"))\n");
 			}
 		}
 		return super.parse(new StringReader(result.toString()));
