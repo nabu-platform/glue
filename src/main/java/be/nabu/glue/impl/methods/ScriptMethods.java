@@ -723,13 +723,13 @@ public class ScriptMethods {
 	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static String [] keys(Object object) {
+	public static Object [] keys(Object object) {
 		if (object == null) {
 			return new String[0];
 		}
 		ContextAccessor accessor = ContextAccessorFactory.getInstance().getAccessor(object.getClass());
 		if (accessor instanceof ListableContextAccessor) {
-			return (String[]) ((ListableContextAccessor) accessor).list(object).toArray(new String[0]);
+			return ((ListableContextAccessor) accessor).list(object).toArray();
 		}
 		return new String[0];
 	}
