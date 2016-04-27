@@ -202,7 +202,12 @@ public class SystemMethodProvider implements MethodProvider {
 				output.close();
 			}
 		}
-		process.waitFor();
+		try {
+			process.waitFor();
+		}
+		catch (InterruptedException e) {
+			// do nothing
+		}
 		
 		String error;
 		InputStream input = process.getErrorStream();

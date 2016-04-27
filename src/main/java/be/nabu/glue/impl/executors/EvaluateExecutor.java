@@ -3,7 +3,9 @@ package be.nabu.glue.impl.executors;
 import java.io.Closeable;
 import java.lang.reflect.Array;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 
 import be.nabu.glue.OptionalTypeProviderFactory;
 import be.nabu.glue.ScriptRuntime;
@@ -66,6 +68,7 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 		return rewrittenOperation;
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	public void execute(ExecutionContext context) throws ExecutionException {
 		if (variableName == null || context.getPipeline().get(variableName) == null || overwriteIfExists || (variableName != null && autocastIfOptional && !overwriteIfExists && context.getPipeline().get(variableName) != null)) {
@@ -105,12 +108,20 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 				}
 				context.getPipeline().put(variableName, targetItems);
 			}
+			else if (context.getPipeline().get(variableName) instanceof Collection) {
+				Collection items = (Collection) context.getPipeline().get(variableName);
+				Collection targetItems = (Collection) new ArrayList(items.size());
+				for (Object item : items) {
+					targetItems.add(converter.convert(item));
+				}
+				context.getPipeline().put(variableName, targetItems);
+			}
 			else {
 				context.getPipeline().put(variableName, converter.convert(context.getPipeline().get(variableName)));
 			}
 		}
 		// make it an array if neccessary
-		if (isList && context.getPipeline().get(variableName) != null && !(context.getPipeline().get(variableName) instanceof Object[])) {
+		if (isList && context.getPipeline().get(variableName) != null && !(context.getPipeline().get(variableName) instanceof Object[]) && !(context.getPipeline().get(variableName) instanceof Collection)) {
 			context.getPipeline().put(variableName, ScriptMethods.array(context.getPipeline().get(variableName)));
 		}
 	}
