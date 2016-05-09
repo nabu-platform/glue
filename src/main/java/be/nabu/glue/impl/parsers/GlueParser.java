@@ -391,14 +391,19 @@ public class GlueParser implements Parser {
 	}
 	
 	private int getCommentIndex(String content, int currentIndex) {
-		boolean inString = false;
+		char stringChar = 0;
 		for (int i = 0; i < content.length(); i++) {
 			if (content.charAt(i) == '\'' || content.charAt(i) == '"') {
 				if (i == 0 || content.charAt(i - 1) != '\\') {
-					inString = !inString;
+					if (stringChar == content.charAt(i)) {
+						stringChar = 0;
+					}
+					else if (stringChar == 0) {
+						stringChar = content.charAt(i);
+					}
 				}
 			}
-			else if (content.charAt(i) == '#' && !inString && i > currentIndex) {
+			else if (content.charAt(i) == '#' && stringChar == 0 && i > currentIndex) {
 				return i;
 			}
 		}
