@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutorGroup;
+import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ScriptRepository;
 import be.nabu.libs.evaluator.api.OperationProvider;
 import be.nabu.utils.io.IOUtils;
@@ -86,4 +87,8 @@ public class EmbeddedGlueParser extends GlueParser {
 		return substring.replace("\"", "\\\"").replace("#", "\\#").replace("\n", "\n" + buffer);
 	}
 
+	@Override
+	public Parser getSubstitutionParser() {
+		return new GlueParser(getRepository(), getOperationProvider());
+	}
 }

@@ -489,6 +489,10 @@ public class GlueParser implements Parser {
 
 	private Pattern scriptPattern = Pattern.compile("(?s)(?<!\\\\)\\$\\{\\{[\\s]*");
 	
+	protected Parser getSubstitutionParser() {
+		return this;
+	}
+	
 	private String substituteScripts(String value, ExecutionContext context, boolean allowNull) {
 		Matcher matcher = scriptPattern.matcher(value);
 		String target = value;
@@ -519,8 +523,8 @@ public class GlueParser implements Parser {
 				// remove empty lines at front, they might throw off the depthOffset!
 				script = script.replaceAll("(?s)^[\r\n]+", "");
 				ScriptRuntime fork = ScriptRuntime.getRuntime() != null
-					? ScriptRuntime.getRuntime().fork(new VirtualScript(ScriptRuntime.getRuntime().getScript(), script))
-					: new ScriptRuntime(new DynamicScript(repository, this, script), context, new HashMap<String, Object>());
+					? ScriptRuntime.getRuntime().fork(new VirtualScript(ScriptRuntime.getRuntime().getScript(), script, getSubstitutionParser()))
+					: new ScriptRuntime(new DynamicScript(repository, getSubstitutionParser(), script), context, new HashMap<String, Object>());
 				StringWriter log = new StringWriter();
 				SimpleOutputFormatter buffer = new SimpleOutputFormatter(log, false);
 				if (ScriptRuntime.getRuntime() != null) {
