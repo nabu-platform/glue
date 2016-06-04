@@ -177,6 +177,8 @@ public class SystemMethodProvider implements MethodProvider {
 			throw new IOException("The file is not a directory: " + directory);
 		}
 		String [] env = null;
+		ProcessBuilder processBuilder = new ProcessBuilder(commands);
+		processBuilder.directory(dir);
 		if (systemProperties != null && !systemProperties.isEmpty()) {
 			List<SystemProperty> allProperties = new ArrayList<SystemProperty>();
 			// get the current environment properties, if you pass in _any_ properties, it will not inherit the ones from the current environment
@@ -188,9 +190,12 @@ public class SystemMethodProvider implements MethodProvider {
 			env = new String[allProperties.size()];
 			for (int i = 0; i < allProperties.size(); i++) {
 				env[i] = allProperties.get(i).getKey() + "=" + allProperties.get(i).getValue();
+				processBuilder.environment().put(allProperties.get(i).getKey(), allProperties.get(i).getValue());
 			}
 		}
-		Process process = Runtime.getRuntime().exec(commands, env, dir);
+		processBuilder.inheritIO();
+		Process process = processBuilder.start();
+//		Process process = Runtime.getRuntime().exec(commands, env, dir);
 		if (inputContents != null && !inputContents.isEmpty()) {
 			OutputStream output = new BufferedOutputStream(process.getOutputStream());
 			try {
