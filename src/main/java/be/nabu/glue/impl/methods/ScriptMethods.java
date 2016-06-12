@@ -25,6 +25,7 @@ import java.util.UUID;
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.ScriptRuntimeException;
 import be.nabu.glue.ScriptUtils;
+import be.nabu.glue.VirtualScript;
 import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.api.ExecutionContext;
@@ -68,16 +69,9 @@ public class ScriptMethods {
 			echo(messages);
 		}
 	}
-
+	
 	@SuppressWarnings("unchecked")
 	public static Object eval(String evaluation, Object context) throws IOException, ParseException, ExecutionException, EvaluationException {
-		ExecutorGroup parsed = ScriptRuntime.getRuntime().getScript().getParser().parse(new StringReader(evaluation));
-		if (parsed.getChildren().size() > 1) {
-			throw new ParseException("Only single lines of code are allowed for eval", 0);
-		}
-		if (!(parsed.getChildren().get(0) instanceof EvaluateExecutor)) {
-			throw new ParseException("Invalid evaluation string: " + evaluation, 0);
-		}
 		ExecutionContext executionContext;
 		if (context instanceof ExecutionContext) {
 			executionContext = (ExecutionContext) context;
@@ -88,7 +82,23 @@ public class ScriptMethods {
 		else {
 			throw new IllegalArgumentException("Eval can only be done on an execution context or a map, not: " + context);
 		}
-		return ((EvaluateExecutor) parsed.getChildren().get(0)).getOperation().evaluate(executionContext);
+		// if it's a multiline, execute as script
+		if (evaluation.contains("\n")) {
+			ScriptRuntime fork = ScriptRuntime.getRuntime().fork(new VirtualScript(ScriptRuntime.getRuntime().getScript(), evaluation), true);
+			fork.setExecutionContext(executionContext);
+			fork.run();
+			return fork.getExecutionContext();
+		}
+		else {
+			ExecutorGroup parsed = ScriptRuntime.getRuntime().getScript().getParser().parse(new StringReader(evaluation));
+			if (parsed.getChildren().size() > 1) {
+				throw new ParseException("Only single lines of code are allowed for eval", 0);
+			}
+			if (!(parsed.getChildren().get(0) instanceof EvaluateExecutor)) {
+				throw new ParseException("Invalid evaluation string: " + evaluation, 0);
+			}
+			return ((EvaluateExecutor) parsed.getChildren().get(0)).getOperation().evaluate(executionContext);
+		}
 	}
 	
 	public static Object eval(String evaluation) throws IOException, ParseException, ExecutionException, EvaluationException {
