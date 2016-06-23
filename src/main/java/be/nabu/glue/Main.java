@@ -164,83 +164,85 @@ public class Main {
 				System.out.println("\t* [number]: skip to this line");
 				System.out.println("\t* [script]:[number]: skip to this line in another script");
 				System.out.println("---------------------------------");
-			}
-			
-			Thread thread = new Thread(runtime);
-			thread.setDaemon(true);
-			thread.start();
-			while (thread.isAlive()) {
-				if (thread.getState() == State.TIMED_WAITING && !runtime.getExecutionContext().getBreakpoints().isEmpty()) {
-					System.out.print("\tCommand: ");
-					String response = readLine().trim();
-					if (response.length() == 1 && !response.matches("[0-9]")) {
-						if (response.charAt(0) == 'q') {
-							runtime.abort();
-							break;
-						}
-						else if (response.charAt(0) == 'c') {
-							String labelToCheck = getCurrent(runtime).getExecutionContext().getCurrent().getContext().getLabel();
-							System.out.println("Label " + labelToCheck + ": " + 
-									getCurrent(runtime).getExecutionContext().getLabelEvaluator().shouldExecute(labelToCheck, getCurrent(runtime).getExecutionContext().getExecutionEnvironment()));
-						}
-						else if (response.charAt(0) == 'v') {
-							System.out.println(getCurrent(runtime).getExecutionContext());
-						}
-						else if (response.charAt(0) == 'b') {
-							getCurrent(runtime).removeBreakpoint(getCurrent(runtime).getExecutionContext().getCurrent().getId());
-						}
-						else {
-							if (trace && response.charAt(0) == 's') {
-								getCurrent(runtime).getExecutionContext().setTrace(false);
+				Thread thread = new Thread(runtime);
+				thread.setDaemon(true);
+				thread.start();
+				while (thread.isAlive()) {
+					if (thread.getState() == State.TIMED_WAITING && !runtime.getExecutionContext().getBreakpoints().isEmpty()) {
+						System.out.print("\tCommand: ");
+						String response = readLine().trim();
+						if (response.length() == 1 && !response.matches("[0-9]")) {
+							if (response.charAt(0) == 'q') {
+								runtime.abort();
+								break;
 							}
-							// when tracing, set the next breakpoint
-							else if (trace && response.charAt(0) != 'r') {
-//								Executor next = getNextStep(runtime.getExecutionContext().getCurrent(), response.charAt(0) == 'i');
-								Executor next = getNextStep(runtime, response.charAt(0) == 'i');
-								getCurrent(runtime).getExecutionContext().addBreakpoint(next != null ? next.getId() : null);
+							else if (response.charAt(0) == 'c') {
+								String labelToCheck = getCurrent(runtime).getExecutionContext().getCurrent().getContext().getLabel();
+								System.out.println("Label " + labelToCheck + ": " + 
+										getCurrent(runtime).getExecutionContext().getLabelEvaluator().shouldExecute(labelToCheck, getCurrent(runtime).getExecutionContext().getExecutionEnvironment()));
 							}
-							thread.interrupt();
-							while (thread.getState() == State.TIMED_WAITING);
+							else if (response.charAt(0) == 'v') {
+								System.out.println(getCurrent(runtime).getExecutionContext());
+							}
+							else if (response.charAt(0) == 'b') {
+								getCurrent(runtime).removeBreakpoint(getCurrent(runtime).getExecutionContext().getCurrent().getId());
+							}
+							else {
+								if (trace && response.charAt(0) == 's') {
+									getCurrent(runtime).getExecutionContext().setTrace(false);
+								}
+								// when tracing, set the next breakpoint
+								else if (trace && response.charAt(0) != 'r') {
+	//								Executor next = getNextStep(runtime.getExecutionContext().getCurrent(), response.charAt(0) == 'i');
+									Executor next = getNextStep(runtime, response.charAt(0) == 'i');
+									getCurrent(runtime).getExecutionContext().addBreakpoint(next != null ? next.getId() : null);
+								}
+								thread.interrupt();
+								while (thread.getState() == State.TIMED_WAITING);
+							}
 						}
-					}
-					// you want a breakpoint in a specific script
-					else if (response.matches("[\\w.]+:[0-9]+")) {
-						String scriptName = response.replaceAll(":.*", "");
-						Script target = repository.getScript(scriptName);
-						if (target == null) {
-							System.err.println("Can not find target script: " + scriptName);
+						// you want a breakpoint in a specific script
+						else if (response.matches("[\\w.]+:[0-9]+")) {
+							String scriptName = response.replaceAll(":.*", "");
+							Script target = repository.getScript(scriptName);
+							if (target == null) {
+								System.err.println("Can not find target script: " + scriptName);
+							}
+							Executor next = getLine(target.getRoot(), new Integer(response.substring(scriptName.length() + 1)) - 1);
+							if (next == null) {
+								System.err.println("Can not find line number " + response + " in target script: " + scriptName);
+							}
+							else {
+								getCurrent(runtime).getExecutionContext().addBreakpoint(next.getId());
+								thread.interrupt();
+								while (thread.getState() == State.TIMED_WAITING);
+							}
 						}
-						Executor next = getLine(target.getRoot(), new Integer(response.substring(scriptName.length() + 1)) - 1);
-						if (next == null) {
-							System.err.println("Can not find line number " + response + " in target script: " + scriptName);
+						// switch to line number in this script
+						else if (response.matches("[0-9]+")) {
+							Executor next = getLine(script.getRoot(), new Integer(response) - 1);
+							if (next == null) {
+								System.err.println("Can not find line number " + response);
+							}
+							else {
+								getCurrent(runtime).getExecutionContext().addBreakpoint(next.getId());
+								thread.interrupt();
+								while (thread.getState() == State.TIMED_WAITING);
+							}
 						}
-						else {
-							getCurrent(runtime).getExecutionContext().addBreakpoint(next.getId());
-							thread.interrupt();
-							while (thread.getState() == State.TIMED_WAITING);
-						}
-					}
-					// switch to line number in this script
-					else if (response.matches("[0-9]+")) {
-						Executor next = getLine(script.getRoot(), new Integer(response) - 1);
-						if (next == null) {
-							System.err.println("Can not find line number " + response);
-						}
-						else {
-							getCurrent(runtime).getExecutionContext().addBreakpoint(next.getId());
-							thread.interrupt();
-							while (thread.getState() == State.TIMED_WAITING);
-						}
-					}
-					else if (response.length() > 1) {
-						try {
-							getCurrent(runtime).fork(new VirtualScript(getCurrent(runtime).getScript(), response.replace(';', '\n'))).run();
-						}
-						catch (Exception e) {
-							e.printStackTrace();
+						else if (response.length() > 1) {
+							try {
+								getCurrent(runtime).fork(new VirtualScript(getCurrent(runtime).getScript(), response.replace(';', '\n'))).run();
+							}
+							catch (Exception e) {
+								e.printStackTrace();
+							}
 						}
 					}
 				}
+			}
+			else {
+				runtime.run();
 			}
 			if (duration) {
 				System.out.println("Executed in " + (runtime.getDuration() / 1000d) + "s");
