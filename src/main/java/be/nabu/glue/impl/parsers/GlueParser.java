@@ -14,6 +14,7 @@ import be.nabu.glue.DynamicScript;
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.VirtualScript;
 import be.nabu.glue.api.ExecutionContext;
+import be.nabu.glue.api.Executor;
 import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ScriptRepository;
@@ -196,9 +197,58 @@ public class GlueParser implements Parser {
 				annotations.clear();
 				if (line.matches("^if[\\s]*\\(.*\\)$")) {
 					line = line.replaceAll("^if[\\s]*\\((.*)\\)$", "$1");
-					SequenceExecutor sequenceExecutor = new SequenceExecutor(executorGroups.peek(), context, analyzer.analyze(GlueQueryParser.getInstance().parse(line)));
+
+					// first we push a switch statement
+					variableName = "$value";
+					// an if is basically a switch without a variable in the declaration, each case is executed separately and matched against the value "true"
+					SwitchExecutor switchExecutor = new SwitchExecutor(executorGroups.peek(), context, null, variableName, null);
+					switchExecutor.setOperationProvider(operationProvider);
+					executorGroups.peek().getChildren().add(switchExecutor);
+					switchExecutor.setIf(true);
+					
+					// then immediately a case statement for the if itself
+					Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse("$value == (" + line + ")"));
+					SequenceExecutor sequenceExecutor = new SequenceExecutor(switchExecutor, context, operation);
 					sequenceExecutor.setOperationProvider(operationProvider);
-					executorGroups.peek().getChildren().add(sequenceExecutor);
+					switchExecutor.getChildren().add(sequenceExecutor);
+					executorGroups.push(sequenceExecutor);
+				}
+				else if (line.matches("^else if[\\s]*\\(.*\\)$")) {
+					line = line.replaceAll("^else if[\\s]*\\((.*)\\)$", "$1");
+					// the switch was never pushed to the stack, only the if or else if above this
+					// so get the last child of the current stack element, this has to be the switch
+					if (executorGroups.peek().getChildren().isEmpty()) {
+						throw new ParseException("An else if can only exist after an if", 0);
+					}
+					Executor executor = executorGroups.peek().getChildren().get(executorGroups.peek().getChildren().size() - 1);
+					if (!(executor instanceof SwitchExecutor)) {
+						throw new ParseException("An else if can only exist after an if", 0);
+					}
+					else if (!((SwitchExecutor) executor).isIf()) {
+						throw new ParseException("An else if can only exist after an if", 0);
+					}
+					Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse("$value == (" + line + ")"));
+					SequenceExecutor sequenceExecutor = new SequenceExecutor((ExecutorGroup) executor, context, operation);
+					sequenceExecutor.setOperationProvider(operationProvider);
+					((ExecutorGroup) executor).getChildren().add(sequenceExecutor);
+					executorGroups.push(sequenceExecutor);
+				}
+				else if (line.equals("else")) {
+					// the switch was never pushed to the stack, only the if or else if above this
+					// so get the last child of the current stack element, this has to be the switch
+					if (executorGroups.peek().getChildren().isEmpty()) {
+						throw new ParseException("An else if can only exist after an if", 0);
+					}
+					Executor executor = executorGroups.peek().getChildren().get(executorGroups.peek().getChildren().size() - 1);
+					if (!(executor instanceof SwitchExecutor)) {
+						throw new ParseException("An else if can only exist after an if", 0);
+					}
+					else if (!((SwitchExecutor) executor).isIf()) {
+						throw new ParseException("An else if can only exist after an if", 0);
+					}
+					SequenceExecutor sequenceExecutor = new SequenceExecutor((ExecutorGroup) executor, context, null);
+					sequenceExecutor.setOperationProvider(operationProvider);
+					((ExecutorGroup) executor).getChildren().add(sequenceExecutor);
 					executorGroups.push(sequenceExecutor);
 				}
 				else if (line.equals("catch")) {

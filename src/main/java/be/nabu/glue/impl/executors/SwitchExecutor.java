@@ -17,6 +17,7 @@ public class SwitchExecutor extends BaseExecutor implements ExecutorGroup {
 	private List<Executor> children = new ArrayList<Executor>();
 	private Operation<ExecutionContext> toMatch, rewritten;
 	private String variableName;
+	private boolean isIf;
 	
 	public SwitchExecutor(ExecutorGroup parent, ExecutorContext context, Operation<ExecutionContext> condition, String variableName, Operation<ExecutionContext> toMatch, Executor...children) {
 		super(parent, context, condition);
@@ -73,6 +74,14 @@ public class SwitchExecutor extends BaseExecutor implements ExecutorGroup {
 
 	public void setToMatch(Operation<ExecutionContext> toMatch) {
 		this.toMatch = toMatch;
+	}
+
+	public boolean isIf() {
+		return isIf;
+	}
+
+	public void setIf(boolean isIf) {
+		this.isIf = isIf;
 	}
 	
 }
