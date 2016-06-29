@@ -93,7 +93,7 @@ public class StringMethods {
 			@GlueParam(name = "string", description = "The original string") String string, 
 			@GlueParam(name = "start", description = "The start position") int start,
 			@GlueParam(name = "stop", description = "The stop position", defaultValue = "To the end of the string") Integer stop) {
-		return stop == null ? string.substring(start) : string.substring(start, stop);
+		return stop == null ? string.substring(start) : string.substring(start, Math.min(stop, string.length()));
 	}
 	
 	@GlueMethod(description = "Replaces the given regex with the replacement in the given string(s)")
