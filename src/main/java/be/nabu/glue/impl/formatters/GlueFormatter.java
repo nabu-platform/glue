@@ -168,7 +168,7 @@ public class GlueFormatter implements Formatter {
 					format(sequenceExecutor, writer, depth + 1);
 				}
 				else {
-					writer.append("sequence");
+					writer.append(sequenceExecutor.isIgnoreFailure() ? "try" : "sequence");
 					println(writer);
 					format(sequenceExecutor, writer, depth + 1);
 				}

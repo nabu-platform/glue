@@ -15,6 +15,7 @@ import be.nabu.libs.evaluator.api.Operation;
 public class SequenceExecutor extends BaseExecutor implements ExecutorGroup {
 
 	private List<Executor> children = new ArrayList<Executor>();
+	private boolean ignoreFailure = false;
 	
 	public SequenceExecutor(ExecutorGroup parent, ExecutorContext context, Operation<ExecutionContext> condition, Executor...children) {
 		super(parent, context, condition);
@@ -66,7 +67,7 @@ public class SequenceExecutor extends BaseExecutor implements ExecutorGroup {
 				}
 			}
 			context.getPipeline().remove("$exception");
-			if (!handled) {
+			if (!handled && !ignoreFailure) {
 				throw new ExecutionException(e);
 			}
 		}
@@ -77,6 +78,14 @@ public class SequenceExecutor extends BaseExecutor implements ExecutorGroup {
 				}
 			}
 		}
+	}
+
+	public boolean isIgnoreFailure() {
+		return ignoreFailure;
+	}
+
+	public void setIgnoreFailure(boolean ignoreFailure) {
+		this.ignoreFailure = ignoreFailure;
 	}
 
 	@Override

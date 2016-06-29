@@ -263,11 +263,13 @@ public class GlueParser implements Parser {
 					executorGroups.peek().getChildren().add(finallyExecutor);
 					executorGroups.push(finallyExecutor);
 				}
-				else if (line.equals("sequence")) {
+				else if (line.equals("sequence") || line.equals("try")) {
 					SequenceExecutor sequenceExecutor = new SequenceExecutor(executorGroups.peek(), context, null);
 					sequenceExecutor.setOperationProvider(operationProvider);
 					executorGroups.peek().getChildren().add(sequenceExecutor);
 					executorGroups.push(sequenceExecutor);
+					// if the sequence is a try, we ignore any failure (you can still add catch/finally as you could with a regular sequence)
+					sequenceExecutor.setIgnoreFailure(line.equals("try"));
 				}
 				// a sequence assigned to a variable
 				else if (line.matches("^[a-zA-Z]+[\\w]*[\\s]*=[\\s]*sequence$")) {
