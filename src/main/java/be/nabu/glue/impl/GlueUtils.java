@@ -1,0 +1,219 @@
+package be.nabu.glue.impl;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import be.nabu.libs.converter.ConverterFactory;
+
+public class GlueUtils {
+	
+private static Map<String, VersionRange> versions = new HashMap<String, VersionRange>();
+	
+	public static class VersionRange {
+		private Double min, max;
+
+		public VersionRange(Double min, Double max) {
+			this.min = min;
+			this.max = max;
+		}
+		public VersionRange() {
+			// auto construct
+		}
+		public Double getMin() {
+			return min;
+		}
+		public void setMin(Double min) {
+			this.min = min;
+		}
+		public Double getMax() {
+			return max;
+		}
+		public void setMax(Double max) {
+			this.max = max;
+		}
+		public boolean contains(Double version) {
+			// no version is always in range
+			if (version == null) {
+				return true;
+			}
+			else if (min != null && version < min) {
+				return false;
+			}
+			else if (max != null && version > max) {
+				return false;
+			}
+			return true;
+		}
+		public String toString() {
+			return min + "-" + max;
+		}
+	}
+	
+	public static VersionRange getVersion(String namespace, String name) {
+		String fullName = (namespace == null ? "" : namespace + ".") + name;
+		// first we try to get the version of the exact full name
+		VersionRange range = getVersion(fullName);
+		// if not found, we try to get the version of the namespace
+		if (range == null) {
+			range = getVersion(namespace);
+		}
+		// get a range for everything
+		if (range == null) {
+			range = getVersion(null);
+		}
+		return range;
+	}
+	
+	private static VersionRange getVersion(String fullName) {
+		if (!versions.containsKey(fullName)) {
+			synchronized(versions) {
+				if (!versions.containsKey(fullName)) {
+					String property = System.getProperty(fullName == null ? "version" : "version:" + fullName);
+					VersionRange range = null;
+					if (property != null) {
+						range = new VersionRange();
+						int index = property.indexOf('-');
+						// both min and max
+						if (index > 0) {
+							range.setMin(Double.parseDouble(property.substring(0, index)));
+							range.setMax(Double.parseDouble(property.substring(index + 1)));
+						}
+						// only a max
+						else if (index == 0) {
+							range.setMax(Double.parseDouble(property.substring(index + 1)));
+						}
+						// only a min
+						else {
+							range.setMin(Double.parseDouble(property));
+						}
+					}
+					versions.put(fullName, range);
+				}
+			}
+		}
+		return versions.get(fullName);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static <T> T convert(Object object, Class<T> targetClass) {
+		if (object == null) {
+			return null;
+		}
+		else if (targetClass.isAssignableFrom(object.getClass())) {
+			return (T) object;
+		}
+		Object converted = ConverterFactory.getInstance().getConverter().convert(object, targetClass);
+		if (converted == null) {
+			throw new ClassCastException("Can not convert to " + targetClass + ": " + object);
+		}
+		return (T) converted;
+	}
+	
+	public static Iterable<?> toSeries(Object...objects) {
+		if (objects == null || objects.length == 0) {
+			return new ArrayList<Object>();
+		}
+		else if (objects.length == 1 && objects[0] instanceof Iterable) {
+			return (Iterable<?>) objects[0];
+		}
+		else {
+			return Arrays.asList(objects);
+		}
+	}
+	
+	public static boolean isSeries(Object...objects) {
+		return objects != null && (objects.length > 1 || (objects.length == 1 && objects[0] instanceof Iterable));
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public static Object wrap(final ObjectHandler handler, final boolean handleNull, Object...original) {
+		if (original == null || original.length == 0) {
+			return null;
+		}
+		else if (original.length == 1 && !GlueUtils.isSeries(original)) {
+			return handler.handle(original[0]);
+		}
+		else {
+			final Iterable<?> iterable = GlueUtils.toSeries(original);
+			return new Iterable() {
+				@Override
+				public Iterator iterator() {
+					return new Iterator() {
+						private Iterator parent = iterable.iterator();
+						@Override
+						public boolean hasNext() {
+							return parent.hasNext();
+						}
+						@Override
+						public Object next() {
+							Object next = parent.next();
+							if (next == null && !handleNull) {
+								return null;
+							}
+							else {
+								return handler.handle(next);
+							}
+						}
+					};
+				}
+			};
+		}
+	}
+	
+	public static ObjectHandler cast(final ObjectHandler handler, final Class<?> targetClass) {
+		return new ObjectHandler() {
+			@Override
+			public Object handle(Object single) {
+				if (single != null && !targetClass.isAssignableFrom(single.getClass())) {
+					single = convert(single, targetClass);
+				}
+				return handler.handle(single);
+			}
+		};
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public static Object explode(final ObjectHandler handler, final boolean handleNull, Object...original) {
+		if (original == null || original.length == 0) {
+			return null;
+		}
+		else if (original.length == 1 && !GlueUtils.isSeries(original)) {
+			return handler.handle(original[0]);
+		}
+		else {
+			final Iterable<?> iterable = GlueUtils.toSeries(original);
+			return new Iterable() {
+				@Override
+				public Iterator iterator() {
+					return new Iterator() {
+						private Iterator parent = iterable.iterator();
+						private Iterator current = null;
+						@Override
+						public boolean hasNext() {
+							if (current == null || !current.hasNext()) {
+								if (parent.hasNext()) {
+									current = ((Iterable<?>) handler.handle(parent.next())).iterator();
+								}
+								else {
+									current = null;
+								}
+							}
+							return current != null && current.hasNext();
+						}
+						@Override
+						public Object next() {
+							return hasNext() ? current.next() : null;
+						}
+					};
+				}
+			};
+		}
+	}
+	
+	public static interface ObjectHandler {
+		public Object handle(Object single);
+	}
+}

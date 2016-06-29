@@ -16,16 +16,20 @@ import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.StaticMethodFactory;
+import be.nabu.glue.impl.GlueUtils;
 import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.impl.SimpleParameterDescription;
 import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.impl.MethodOperation;
+import be.nabu.libs.evaluator.impl.MethodOperation.MethodFilter;
 
 public class StaticJavaMethodProvider implements MethodProvider {
 	
 	private Collection<Class<?>> methodClasses;
 	private List<MethodDescription> descriptions;
+	private boolean includeDeprecated = Boolean.parseBoolean(System.getProperty("include.deprecated", "false"));
+	
 	
 	public StaticJavaMethodProvider() {
 		// auto construct
@@ -56,6 +60,17 @@ public class StaticJavaMethodProvider implements MethodProvider {
 	@Override
 	public Operation<ExecutionContext> resolve(String name) {
 		MethodOperation<ExecutionContext> methodOperation = new MethodOperation<ExecutionContext>(getMethodClasses());
+		methodOperation.setMethodFilter(new MethodFilter() {
+			@Override
+			public boolean isAllowed(Method method) {
+				GlueMethod methodAnnotation = method.getAnnotation(GlueMethod.class);
+				Double version = methodAnnotation == null ? null : methodAnnotation.version();
+				MethodProviderClass annotation = method.getDeclaringClass().getAnnotation(MethodProviderClass.class);
+				String namespace = annotation == null || annotation.namespace() == null || annotation.namespace().isEmpty() ? method.getDeclaringClass().getName() : annotation.namespace();
+				GlueUtils.VersionRange range = GlueUtils.getVersion(namespace, method.getName());
+				return range == null || range.contains(version);
+			}
+		});
 		try {
 			if (methodOperation.findMethod(name) != null) {
 				return methodOperation;
@@ -76,6 +91,11 @@ public class StaticJavaMethodProvider implements MethodProvider {
 					for (Class<?> methodClass : getMethodClasses()) {
 						for (Method method : methodClass.getDeclaredMethods()) {
 							if (Modifier.isStatic(method.getModifiers()) && Modifier.isPublic(method.getModifiers())) {
+								Deprecated deprecatedAnnotation = method.getAnnotation(Deprecated.class);
+								// ignore deprecated methods unless specifically requested
+								if (deprecatedAnnotation != null && !includeDeprecated) {
+									continue;
+								}
 								GlueMethod methodAnnotation = method.getAnnotation(GlueMethod.class);
 								List<ParameterDescription> parameters = new ArrayList<ParameterDescription>();
 								Annotation[][] parameterAnnotations = method.getParameterAnnotations();
@@ -116,13 +136,20 @@ public class StaticJavaMethodProvider implements MethodProvider {
 								}
 								MethodProviderClass annotation = method.getDeclaringClass().getAnnotation(MethodProviderClass.class);
 								String namespace = annotation == null || annotation.namespace() == null || annotation.namespace().isEmpty() ? method.getDeclaringClass().getName() : annotation.namespace(); 
-								descriptions.add(new SimpleMethodDescription(
-										namespace, 
-										method.getName(), 
-										methodAnnotation == null ? null : methodAnnotation.description(), 
-												parameters, 
-												returnValues)
-										);
+
+								Double version = methodAnnotation == null ? null : methodAnnotation.version();
+								GlueUtils.VersionRange range = GlueUtils.getVersion(namespace, method.getName());
+								if (range == null || range.contains(version)) {
+									descriptions.add(new SimpleMethodDescription(
+											namespace, 
+											method.getName(), 
+											methodAnnotation == null ? null : methodAnnotation.description(), 
+													parameters, 
+													returnValues,
+													false,
+													version)
+											);
+								}
 							}
 						}
 					}

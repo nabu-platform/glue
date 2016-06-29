@@ -13,7 +13,7 @@ import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 @MethodProviderClass(namespace = "string")
 public class StringMethods {
 	
-	@GlueMethod(description = "Adds the given pad to the given string(s) on the right until they reach the required length", returns = "The padded string(s)")
+	@GlueMethod(description = "Adds the given pad to the given string(s) on the right until they reach the required length", returns = "The padded string(s)", version = 1)
 	public static Object padRight(
 			@GlueParam(name = "pad", description = "The string used to pad") String pad, 
 			@GlueParam(name = "length", description = "The length of the resulting string") int length, 
@@ -21,7 +21,7 @@ public class StringMethods {
 		return pad(pad, length, true, original);
 	}
 	
-	@GlueMethod(description = "Adds the given pad to the given string(s) on the left until they reach the required length", returns = "The padded string(s)")
+	@GlueMethod(description = "Adds the given pad to the given string(s) on the left until they reach the required length", returns = "The padded string(s)", version = 1)
 	public static Object padLeft(
 			@GlueParam(name = "pad", description = "The string used to pad") String pad, 
 			@GlueParam(name = "length", description = "The length of the resulting string") int length, 
@@ -29,7 +29,7 @@ public class StringMethods {
 		return pad(pad, length, false, original);
 	}
 
-	@GlueMethod(description = "Pads string(s) to a given length using the given pad")
+	@GlueMethod(description = "Pads string(s) to a given length using the given pad", version = 1)
 	public static Object pad(
 			@GlueParam(name = "pad", description = "The string to pad with") String pad, 
 			@GlueParam(name = "length", description = "The length the resulting string(s) should be") int length, 
@@ -62,7 +62,7 @@ public class StringMethods {
 		return result.length == 1 ? result[0] : result; 
 	}
 
-	@GlueMethod(description = "Uppercases the string(s)")
+	@GlueMethod(description = "Uppercases the string(s)", version = 1)
 	public static Object upper(@GlueParam(name = "strings", description = "One or more strings") Object...original) {
 		if (original == null || original.length == 0) {
 			return original;
@@ -75,7 +75,7 @@ public class StringMethods {
 		return result.length == 1 ? result[0] : result;
 	}
 
-	@GlueMethod(description = "Lowercases the string(s)")
+	@GlueMethod(description = "Lowercases the string(s)", version = 1)
 	public static Object lower(@GlueParam(name = "strings", description = "One or more strings") Object...original) {
 		if (original == null || original.length == 0) {
 			return original;
@@ -88,7 +88,7 @@ public class StringMethods {
 		return result.length == 1 ? result[0] : result;
 	}
 	
-	@GlueMethod(description = "Retrieves a substring of the given string")
+	@GlueMethod(description = "Retrieves a substring of the given string", version = 1)
 	public static String substring(
 			@GlueParam(name = "string", description = "The original string") String string, 
 			@GlueParam(name = "start", description = "The start position") int start,
@@ -96,7 +96,7 @@ public class StringMethods {
 		return stop == null ? string.substring(start) : string.substring(start, Math.min(stop, string.length()));
 	}
 	
-	@GlueMethod(description = "Replaces the given regex with the replacement in the given string(s)")
+	@GlueMethod(description = "Replaces the given regex with the replacement in the given string(s)", version = 1)
 	public static Object replace(
 			@GlueParam(name = "regex", description = "The regex to match") String regex, 
 			@GlueParam(name = "replacement", description = "The replacement to replace it with") String replacement, 
@@ -111,7 +111,7 @@ public class StringMethods {
 		return result.length == 1 ? result[0] : result;
 	}
 	
-	@GlueMethod(description = "Finds all the results matching the regex in the given string(s)")
+	@GlueMethod(description = "Finds all the results matching the regex in the given string(s)", version = 1)
 	public static String [] find(@GlueParam(name = "regex", description = "The regex to match") String regex, @GlueParam(name = "strings", description = "The string(s) to perform the find on") String...original) {
 		List<String> matches = new ArrayList<String>();
 		Pattern pattern = Pattern.compile(regex);
@@ -132,17 +132,17 @@ public class StringMethods {
 		return matches.toArray(new String[0]);
 	}
 	
-	@GlueMethod(description = "Returns all the lines found in the given string(s). Supports all combinations of linefeed and carriage return.")
+	@GlueMethod(description = "Returns all the lines found in the given string(s). Supports all combinations of linefeed and carriage return.", version = 1)
 	public static Object [] lines(@GlueParam(name = "strings", description = "The string(s) to split into lines") String...original) {
 		return original == null || original.length == 0 ? null : split("[\\r\\n]+", original);
 	}
 	
-	@GlueMethod(description = "Splits the given string into columns, if you want more control over the separators, use split()")
+	@GlueMethod(description = "Splits the given string into columns, if you want more control over the separators, use split()", version = 1)
 	public static Object [] columns(@GlueParam(name = "string", description = "The string to split into columns") String...original) {
 		return original == null ? null : split("[\t,;]+", (String[]) trim(original));
 	}
 	
-	@GlueMethod(description = "Removes any leading and trailing whitespace from the given string(s)")
+	@GlueMethod(description = "Removes any leading and trailing whitespace from the given string(s)", version = 1)
 	public static Object trim(@GlueParam(name = "strings", description = "One or more strings") String...strings) {
 		if (strings == null) {
 			return null;
@@ -154,7 +154,7 @@ public class StringMethods {
 		return result.length == 1 ? result[0] : result;
 	}
 	
-	@GlueMethod(description = "Combines the given strings into a single string adding the seperator in between each string. For example join(',', 'a', 'b') returns 'a,b'")
+	@GlueMethod(description = "Combines the given strings into a single string adding the seperator in between each string. For example join(',', 'a', 'b') returns 'a,b'", version = 1)
 	public static String join(@GlueParam(name = "separator") String separator, @GlueParam(name = "strings") Object...strings) {
 		if (strings == null || strings.length == 0) {
 			return null;
@@ -172,7 +172,7 @@ public class StringMethods {
 		return builder.toString();
 	}
 	
-	@GlueMethod(description = "Splits the given string(s) into parts using the given regex")
+	@GlueMethod(description = "Splits the given string(s) into parts using the given regex", version = 1)
 	public static Object [] split(@GlueParam(name = "regex", description = "The regex to use to split the string(s)") String regex, @GlueParam(name = "strings", description = "The string(s) to split into parts") String...strings) {
 		if (strings == null || strings.length == 0) {
 			return null;

@@ -54,6 +54,14 @@ public class Main {
 		boolean duration = new Boolean(getArgument("duration", "false", arguments));
 		boolean printReport = new Boolean(getArgument("report", "false", arguments));
 		boolean useMarkdown = new Boolean(getArgument("markdown", "false", arguments));
+		
+		// currently we default to version 2
+		String allVersion = getArgument("version", "1", arguments);
+		
+		if (System.getProperty("version") == null) {
+			System.setProperty("version", allVersion);
+		}
+		
 //		debug |= trace;
 		MultipleRepository repository = buildRepository(charset, arguments);
 		repository.add(new TargetedScriptRepository(repository, new URI("classpath:/shell"), null, new GlueParserProvider(), charset, "glue"));
