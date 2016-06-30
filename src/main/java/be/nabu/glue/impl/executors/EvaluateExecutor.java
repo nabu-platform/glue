@@ -17,6 +17,7 @@ import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.api.OptionalTypeConverter;
 import be.nabu.glue.api.OptionalTypeProvider;
 import be.nabu.glue.api.ScriptRepository;
+import be.nabu.glue.impl.GlueUtils;
 import be.nabu.glue.impl.MultipleOptionalTypeProvider;
 import be.nabu.glue.impl.StructureTypeProvider;
 import be.nabu.glue.impl.TransactionalCloseable;
@@ -120,9 +121,12 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 				context.getPipeline().put(variableName, converter.convert(context.getPipeline().get(variableName)));
 			}
 		}
-		// make it an array if neccessary
-		if (isList && context.getPipeline().get(variableName) != null && !(context.getPipeline().get(variableName) instanceof Object[]) && !(context.getPipeline().get(variableName) instanceof Collection)) {
-			context.getPipeline().put(variableName, ScriptMethods.array(context.getPipeline().get(variableName)));
+		// this is only valid pre-version 2
+		if (GlueUtils.getVersion().contains(1.0)) {
+			// make it an array if neccessary
+			if (isList && context.getPipeline().get(variableName) != null && !(context.getPipeline().get(variableName) instanceof Object[]) && !(context.getPipeline().get(variableName) instanceof Collection)) {
+				context.getPipeline().put(variableName, ScriptMethods.array(context.getPipeline().get(variableName)));
+			}
 		}
 	}
 

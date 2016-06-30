@@ -11,7 +11,7 @@ import be.nabu.libs.converter.ConverterFactory;
 
 public class GlueUtils {
 	
-private static Map<String, VersionRange> versions = new HashMap<String, VersionRange>();
+	private static Map<String, VersionRange> versions = new HashMap<String, VersionRange>();
 
 	private static boolean parallel = Boolean.parseBoolean(System.getProperty("glue.parallel", "true"));
 
@@ -92,7 +92,7 @@ private static Map<String, VersionRange> versions = new HashMap<String, VersionR
 			return true;
 		}
 		public String toString() {
-			return min + "-" + max;
+			return (min == null ? "*" : min) + "-" + (max == null ? "*" : max);
 		}
 	}
 	
@@ -109,6 +109,11 @@ private static Map<String, VersionRange> versions = new HashMap<String, VersionR
 			range = getVersion(null);
 		}
 		return range;
+	}
+	
+	public static VersionRange getVersion() {
+		VersionRange range = getVersion(null);
+		return range == null ? new VersionRange() : range;
 	}
 	
 	private static VersionRange getVersion(String fullName) {
