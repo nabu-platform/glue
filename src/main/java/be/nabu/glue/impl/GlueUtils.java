@@ -11,7 +11,13 @@ import be.nabu.libs.converter.ConverterFactory;
 public class GlueUtils {
 	
 private static Map<String, VersionRange> versions = new HashMap<String, VersionRange>();
-	
+
+	private static boolean parallel = Boolean.parseBoolean(System.getProperty("glue.parallel", "true"));
+
+	public static boolean useParallelism() {
+		return parallel;
+	}
+
 	public static class VersionRange {
 		private Double min, max;
 
@@ -35,8 +41,8 @@ private static Map<String, VersionRange> versions = new HashMap<String, VersionR
 			this.max = max;
 		}
 		public boolean contains(Double version) {
-			// no version is always in range
-			if (version == null) {
+			// no version is always in range, as is a negative version
+			if (version == null || version < 0) {
 				return true;
 			}
 			else if (min != null && version < min) {

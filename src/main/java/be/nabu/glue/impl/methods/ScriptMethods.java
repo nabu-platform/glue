@@ -52,10 +52,12 @@ public class ScriptMethods {
 	/**
 	 * All the objects passed into this method are logged one after another to the runtime's output
 	 */
+	@GlueMethod(version = 1)
 	public static void echo(Object...messages) {
 		ScriptRuntime.getRuntime().getFormatter().print(messages);
 	}
 	
+	@GlueMethod(version = 1)
 	public static void console(Object...messages) {
 		if (messages != null && messages.length > 0) {
 			for (Object message : messages) {
@@ -64,6 +66,7 @@ public class ScriptMethods {
 		}
 	}
 	
+	@GlueMethod(version = 1)
 	public static void debug(Object...messages) {
 		if (ScriptRuntime.getRuntime().getExecutionContext().isDebug()) {
 			echo(messages);
@@ -173,6 +176,7 @@ public class ScriptMethods {
 		}
 	}
 
+	@GlueMethod(version = 1)
 	public static Object [] flatten(int column, Object...objects) {
 		List<Object> flattened = new ArrayList<Object>();
 		for (Object object : objects) {
@@ -182,11 +186,13 @@ public class ScriptMethods {
 		return flattened.toArray();
 	}
 	
+	@GlueMethod(version = 1)
 	public static Object [] slice(@GlueParam(name = "start", defaultValue = "0") Integer start, @GlueParam(name = "stop", defaultValue = "End of the list") Integer stop, @GlueParam(name = "objects") Object...objects) {
 		Object[] array = array(objects);
 		return array(Arrays.asList(array).subList(start == null ? 0 : start, stop == null ? array.length : Math.min(stop, array.length)).toArray());
 	}
 	
+	@GlueMethod(version = 1)
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static Object [] sort(@GlueParam(name = "objects") Object...objects) {
 		List<? extends Comparable> list = new ArrayList(Arrays.asList(array(objects)));
@@ -194,6 +200,7 @@ public class ScriptMethods {
 		return array(list.toArray());
 	}
 	
+	@GlueMethod(version = 1)
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static Object [] reverse(@GlueParam(name = "objects") Object...objects) {
 		List<? extends Comparable> list = new ArrayList(Arrays.asList(array(objects)));
@@ -204,6 +211,7 @@ public class ScriptMethods {
 	/**
 	 * Creates an array of objects. If the objects themselves contain arrays, they are merged
 	 */
+	@GlueMethod(version = 1)
 	public static Object[] array(Object...objects) {
 		if (objects == null) {
 			return new Object[0];
@@ -275,6 +283,7 @@ public class ScriptMethods {
 		throw new IllegalArgumentException("Can not get the size of " + object);
 	}
 	
+	@GlueMethod(version = 1)
 	public static Collection<?> tuple(Object...objects) {
 		return Arrays.asList(objects);
 	}
@@ -396,10 +405,12 @@ public class ScriptMethods {
 		return formatted != null && formatted ? uuid : uuid.replace("-", "");
 	}
 
+	@GlueMethod(version = 1)
 	public static Object first(Object...array) {
 		return array == null || array.length == 0 ? null : array[0];
 	}
 	
+	@GlueMethod(version = 1)
 	public static Object index(int index, Object...array) {
 		if (array == null || array.length == 0) {
 			return null;
@@ -412,6 +423,7 @@ public class ScriptMethods {
 		}
 	}
 	
+	@GlueMethod(version = 1)
 	public static Object last(Object...array) {
 		if (array.length == 1 && array[0] instanceof ExecutionContext) {
 			List<Object> arrayList = new ArrayList<Object>(((ExecutionContext) array[0]).getPipeline().values());
@@ -427,6 +439,7 @@ public class ScriptMethods {
 	 * @param objects
 	 * @return
 	 */
+	@GlueMethod(version = 1)
 	public static Object [] unique(Object...objects) {
 		Set<Object> results = new LinkedHashSet<Object>();
 		Class<?> componentType = null;
@@ -465,6 +478,7 @@ public class ScriptMethods {
 	}
 	
 	@SuppressWarnings("rawtypes")
+	@GlueMethod(version = 1)
 	public static Object template(String template, Object...values) throws EvaluationException {
 		if (values == null || values.length == 0) {
 			return ScriptRuntime.getRuntime().getSubstituter().substitute(template, ScriptRuntime.getRuntime().getExecutionContext(), true);
@@ -510,6 +524,7 @@ public class ScriptMethods {
 	/**
 	 * Will stringify the object
 	 */
+	@GlueMethod(version = 1)
 	public static String string(Object object, Boolean substitute) throws IOException {
 		if (substitute == null) {
 			substitute = true;
@@ -524,10 +539,12 @@ public class ScriptMethods {
 			: result;
 	}
 	
+	@GlueMethod(version = 1)
 	public static String bytesToString(byte [] bytes, String encoding) throws UnsupportedEncodingException {
 		return new String(bytes, encoding);
 	}
 	
+	@GlueMethod(version = 1)
 	public static byte [] bytes(Object object) throws IOException {
 		if (object == null) {
 			return null;
@@ -546,6 +563,7 @@ public class ScriptMethods {
 		return toBytesAndClose(toStream(object));
 	}
 	
+	@GlueMethod(version = 1)
 	public static boolean contains(Object object, Object...array) {
 		if (object instanceof String && array != null && array.length == 1 && array[0] instanceof String) {
 			return ((String) array[0]).contains((String) object);
@@ -617,11 +635,13 @@ public class ScriptMethods {
 		}
 	}
 	
+	@GlueMethod(version = 1)
 	public static Object value(Object existing, Object defaultValue) {
 		return existing == null ? defaultValue : existing;
 	}
 	
 	@SuppressWarnings("unchecked")
+	@GlueMethod(version = 1)
 	public static Object valueOf(String enumName, String value) throws ClassNotFoundException {
 		Class<? extends Enum<?>> enumeration = (Class<? extends Enum<?>>) Thread.currentThread().getContextClassLoader().loadClass(enumName);
 		if (!enumeration.isEnum()) {
@@ -642,8 +662,7 @@ public class ScriptMethods {
 		ScriptRuntime.getRuntime().removeTransactionable(new TransactionalCloseable(closeable));
 	}
 	
-	
-	@GlueMethod(description = "Allows you to retain only a certain part of the given string(s) based on the given regex")
+	@GlueMethod(description = "Allows you to retain only a certain part of the given string(s) based on the given regex", version = 1)
 	public static Object retain(@GlueParam(name = "needle", description = "The regex to match") Object needle, @GlueParam(name = "haystack", description = "The string(s) to filter") Object...haystack) {
 		List<Object> result = new ArrayList<Object>();
 		if (haystack != null && haystack.length > 0) {
@@ -687,7 +706,7 @@ public class ScriptMethods {
 		return needles;
 	}
 	
-	@GlueMethod(description = "Removes the string(s) matching the given regex")
+	@GlueMethod(description = "Removes the string(s) matching the given regex", version = 1)
 	public static Object remove(@GlueParam(name = "needle", description = "The regex to match in order to remove the string(s)") Object needle, @GlueParam(name = "haystack", description = "The string(s) to filter") Object...haystack) {
 		List<Object> result = new ArrayList<Object>();
 		if (haystack != null && haystack.length > 0) {
