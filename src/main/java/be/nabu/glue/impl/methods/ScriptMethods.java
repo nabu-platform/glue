@@ -33,6 +33,7 @@ import be.nabu.glue.api.ExecutionException;
 import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.impl.ForkedExecutionContext;
+import be.nabu.glue.impl.GlueUtils;
 import be.nabu.glue.impl.TransactionalCloseable;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.libs.converter.ConverterFactory;
@@ -261,6 +262,7 @@ public class ScriptMethods {
 		return componentTypeAccurate ? results.toArray((Object[]) Array.newInstance(componentType, results.size())) : results.toArray();
 	}
 	
+	@SuppressWarnings({ "rawtypes", "unused" })
 	public static int size(Object object) {
 		if (object == null) {
 			return 0;
@@ -279,6 +281,13 @@ public class ScriptMethods {
 		}
 		else if (object instanceof Map) {
 			return ((Map<?, ?>) object).size();
+		}
+		else if (object instanceof Iterable) {
+			int counter = 0;
+			for (Object child : (Iterable) object) {
+				counter++;
+			}
+			return counter;
 		}
 		throw new IllegalArgumentException("Can not get the size of " + object);
 	}
@@ -350,7 +359,7 @@ public class ScriptMethods {
 				}
 				Iterable iterable;
 				if (object instanceof Iterable) {
-					iterable = (Iterable) object;
+					iterable = GlueUtils.resolve((Iterable) object);
 				}
 				else if (object instanceof Object[]) {
 					iterable = Arrays.asList((Object[]) object);
@@ -487,7 +496,7 @@ public class ScriptMethods {
 		if (values.length == 1 && values[0] instanceof Iterable) {
 			if (!(values[0] instanceof Collection)) {
 				List<Object> objects = new ArrayList<Object>();
-				for (Object single : (Iterable) values[0]) {
+				for (Object single : GlueUtils.resolve((Iterable) values[0])) {
 					objects.add(single);
 				}
 				values[0] = objects;

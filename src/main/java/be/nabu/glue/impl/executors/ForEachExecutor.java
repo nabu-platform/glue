@@ -12,6 +12,7 @@ import be.nabu.glue.api.ExecutionException;
 import be.nabu.glue.api.Executor;
 import be.nabu.glue.api.ExecutorContext;
 import be.nabu.glue.api.ExecutorGroup;
+import be.nabu.glue.impl.GlueUtils;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.api.Operation;
 
@@ -49,7 +50,7 @@ public class ForEachExecutor extends SequenceExecutor {
 			if (original != null) {
 				Iterable elements;
 				if (original instanceof Iterable) {
-					elements = (Iterable) original;
+					elements = GlueUtils.resolve((Iterable) original);
 				}
 				else if (original instanceof Collection) {
 					elements = new ArrayList((Collection) original);

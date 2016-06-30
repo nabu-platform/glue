@@ -2,6 +2,7 @@ package be.nabu.glue.impl.methods.v2;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -29,11 +30,67 @@ public class SeriesMethods {
 	public static Iterable<?> series(@GlueParam(name = "content", description = "The objects to put in the series") Object...objects) {
 		return objects == null ? new ArrayList<Object>() : Arrays.asList(objects);
 	}
+		
+	@SuppressWarnings("rawtypes")
+	@GlueMethod(returns = "series", description = "Find elements in the series that match the lambda expression", version = 2)
+	public static Object filter(final Lambda lambda, Object...objects) {
+		final Iterable<?> series = GlueUtils.toSeries(objects);
+		return new Iterable() {
+			@Override
+			public Iterator iterator() {
+				return new Iterator() {
+					private Iterator parent = series.iterator();
+					private ScriptRuntime runtime = ScriptRuntime.getRuntime();
+					private Object next = null;
+					private boolean hasNext = false;
+					@Override
+					public boolean hasNext() {
+						if (!hasNext) {
+							if (parent.hasNext()) {
+								while (parent.hasNext() && !hasNext) {
+									Object nextFromParent = parent.next();
+									Boolean calculated = (Boolean) calculate(lambda, runtime, Arrays.asList(nextFromParent));
+									if (calculated != null && calculated) {
+										next = nextFromParent;
+										hasNext = true;
+									}
+								}
+								return hasNext;
+							}
+							else {
+								return false;
+							}
+						}
+						else {
+							return true;
+						}
+					}
+					@Override
+					public Object next() {
+						if (hasNext()) {
+							hasNext = false;
+							return next;
+						}
+						return null;
+					}
+				};
+			}
+		};
+	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	@GlueMethod(returns = "series", description = "This method reverses a series, note that the series will have to be resolved to reverse it", version = 2)
+	@GlueMethod(returns = "series", description = "This method reverses a series", version = 2)
 	public static List<?> reverse(Object...objects) {
-		List<?> list = new ArrayList(resolve(GlueUtils.toSeries(objects)));
+		Iterable<?> series = GlueUtils.toSeries(objects);
+		List list = new ArrayList();
+		if (series instanceof Collection) {
+			list.addAll((Collection) series);
+		}
+		else {
+			for (Object object : series) {
+				list.add(object);
+			}
+		}
 		Collections.reverse(list);
 		return list;
 	}
@@ -41,75 +98,101 @@ public class SeriesMethods {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@GlueMethod(returns = "series", description = "This method resolves a potentially lazy series", version = 2)
 	public static List<?> resolve(Iterable<?> iterable) {
-		if (iterable instanceof List) {
-			return (List<?>) iterable;
-		}
-		else {
-			List<Object> objects = new ArrayList<Object>();
-			ForkJoinPool pool = null;
-			final ScriptRuntime runtime = ScriptRuntime.getRuntime();
-			for (final Object single : iterable) {
-				if (single instanceof Callable) {
-					if (GlueUtils.useParallelism()) {
-						if (pool == null) {
-							pool = new ForkJoinPool();
-						}
-						objects.add(pool.submit(new Callable() {
-							@Override
-							public Object call() throws Exception {
-								runtime.fork(false).registerInThread();
-								return ((Callable) single).call();
-							}
-						}));
+		List<Object> objects = new ArrayList<Object>();
+		ForkJoinPool pool = null;
+		final ScriptRuntime runtime = ScriptRuntime.getRuntime();
+		for (final Object single : iterable) {
+			if (single instanceof Callable) {
+				if (GlueUtils.useParallelism()) {
+					if (pool == null) {
+						pool = new ForkJoinPool();
 					}
-					else {
-						try {
-							objects.add(((Callable) single).call());
+					objects.add(pool.submit(new Callable() {
+						@Override
+						public Object call() throws Exception {
+							runtime.fork(false).registerInThread();
+							return ((Callable) single).call();
 						}
-						catch (Exception e) {
-							throw new RuntimeException("An error occurred when executing the task", e);
-						}		
-					}
+					}));
 				}
 				else {
-					objects.add(single);
+					try {
+						objects.add(((Callable) single).call());
+					}
+					catch (Exception e) {
+						throw new RuntimeException("An error occurred when executing the task", e);
+					}		
 				}
 			}
-			if (pool != null) {
-				pool.shutdown();
-				try {
-					pool.awaitTermination(365, TimeUnit.DAYS);
-				}
-				catch (InterruptedException e) {
-					throw new RuntimeException("Could not finish computation", e);
-				}
-				for (int i = 0; i < objects.size(); i++) {
-					if (objects.get(i) instanceof ForkJoinTask) {
-						try {
-							objects.set(i, ((ForkJoinTask) objects.get(i)).get());
-						}
-						catch (Exception e) {
-							throw new RuntimeException("Could not compile results", e);
-						}
+			else {
+				objects.add(single);
+			}
+		}
+		if (pool != null) {
+			pool.shutdown();
+			try {
+				pool.awaitTermination(365, TimeUnit.DAYS);
+			}
+			catch (InterruptedException e) {
+				throw new RuntimeException("Could not finish computation", e);
+			}
+			for (int i = 0; i < objects.size(); i++) {
+				if (objects.get(i) instanceof ForkJoinTask) {
+					try {
+						objects.set(i, ((ForkJoinTask) objects.get(i)).get());
+					}
+					catch (Exception e) {
+						throw new RuntimeException("Could not compile results", e);
 					}
 				}
 			}
-			return objects;
 		}
+		return objects;
 	}
 	
-	@GlueMethod(description = "Checks if a series is resolved", version = 2)
-	public static boolean resolved(Iterable<?> iterable) {
-		return iterable instanceof List;
+	@SuppressWarnings("rawtypes")
+	@GlueMethod(description = "Merges the given series into a single series", version = 2)
+	public static Object merge(final Object...original) {
+		if (original == null || original.length == 0) {
+			return null;
+		}
+		return new Iterable() {
+			@Override
+			public Iterator iterator() {
+				return new Iterator() {
+					private List<Iterator> iterators = new ArrayList<Iterator>(); {
+						for (Object iterable : original) {
+							iterators.add(((Iterable) iterable).iterator());
+						}
+					}
+					private int current = 0;
+					@Override
+					public boolean hasNext() {
+						while(current < iterators.size() && !iterators.get(current).hasNext()) {
+							current++;
+						}
+						return current < iterators.size();
+					}
+					@Override
+					public Object next() {
+						return hasNext() ? iterators.get(current).next() : null;
+					}
+				};
+			}
+		};
 	}
-	
+
 	@GlueMethod(description = "Gets the last entry in a series", version = 2)
 	public static Object last(Object...original) {
 		if (original == null || original.length == 0) {
 			return null;
 		}
-		List<?> series = resolve(GlueUtils.toSeries(original));
-		return series.get(series.size() - 1);
+		Iterable<?> series = GlueUtils.toSeries(original);
+		Object result = null;
+		for (Object object : series) {
+			result = object;
+		}
+		return GlueUtils.resolveSingle(result);
 	}
 	
 	@GlueMethod(description = "Gets the first entry in a series", version = 2)
@@ -119,7 +202,30 @@ public class SeriesMethods {
 		}
 		Iterable<?> series = GlueUtils.toSeries(original);
 		Iterator<?> iterator = series.iterator();
-		return iterator.hasNext() ? iterator.next() : null;
+		return iterator.hasNext() ? GlueUtils.resolveSingle(iterator.next()) : null;
+	}
+	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static Object calculate(Lambda lambda, ScriptRuntime runtime, List parameters) {
+		// resolve any parameters that themselves are lazy
+		for (int i = 0; i < parameters.size(); i++) {
+			if (parameters.get(i) instanceof Callable) {
+				try {
+					parameters.set(i, ((Callable) parameters.get(i)).call());
+				}
+				catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+		LambdaExecutionOperation lambdaOperation = new LambdaExecutionOperation(lambda.getDescription(), lambda.getOperation(), 
+			lambda instanceof EnclosedLambda ? ((EnclosedLambda) lambda).getEnclosedContext() : new HashMap<String, Object>());
+		try {
+			return lambdaOperation.evaluateWithParameters(runtime.getExecutionContext(), parameters.toArray());
+		}
+		catch (EvaluationException e) {
+			throw new RuntimeException(e);
+		}
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -139,17 +245,6 @@ public class SeriesMethods {
 			throw new IllegalArgumentException("The lambda does not have enough parameters to process the series: expecting " + iterables.size() + ", received " + lambda.getDescription().getParameters().size());
 		}
 		return new Iterable() {
-			private Object calculate(ScriptRuntime runtime, List parameters) {
-				LambdaExecutionOperation lambdaOperation = new LambdaExecutionOperation(lambda.getDescription(), lambda.getOperation(), 
-					lambda instanceof EnclosedLambda ? ((EnclosedLambda) lambda).getEnclosedContext() : new HashMap<String, Object>());
-				try {
-					return lambdaOperation.evaluateWithParameters(runtime.getExecutionContext(), parameters.toArray());
-				}
-				catch (EvaluationException e) {
-					throw new RuntimeException(e);
-				}
-			}
-			
 			@Override
 			public Iterator iterator() {
 				return new Iterator() {
@@ -179,7 +274,7 @@ public class SeriesMethods {
 							return new Callable() {
 								@Override
 								public Object call() throws Exception {
-									return calculate(runtime, parameters);
+									return calculate(lambda, runtime, parameters);
 								}
 							};
 						}
@@ -203,7 +298,7 @@ public class SeriesMethods {
 			return null;
 		}
 		final Iterable<?> iterable = GlueUtils.toSeries(original);
-		if (resolved(iterable)) {
+		if (iterable instanceof List) {
 			List list = (List) iterable;
 			return list.subList((int) Math.min(offset, list.size() - 1), list.size());
 		}
@@ -246,7 +341,7 @@ public class SeriesMethods {
 			return null;
 		}
 		final Iterable<?> iterable = GlueUtils.toSeries(original);
-		if (resolved(iterable)) {
+		if (iterable instanceof List) {
 			List list = (List) iterable;
 			return list.subList(0, (int) Math.min(limit, list.size()));
 		}

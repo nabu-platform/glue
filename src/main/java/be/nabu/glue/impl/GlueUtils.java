@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import be.nabu.libs.converter.ConverterFactory;
 
@@ -16,6 +17,43 @@ private static Map<String, VersionRange> versions = new HashMap<String, VersionR
 
 	public static boolean useParallelism() {
 		return parallel;
+	}
+	
+	public static Object resolveSingle(Object object) {
+		try {
+			return object instanceof Callable ? ((Callable<?>) object).call() : object;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public static Iterable resolve(final Iterable iterable) {
+		return iterable instanceof CallResolvingIterable ? iterable : new CallResolvingIterable(iterable);
+	}
+	
+	@SuppressWarnings("rawtypes")
+	private static final class CallResolvingIterable implements Iterable {
+		private final Iterable iterable;
+
+		private CallResolvingIterable(Iterable iterable) {
+			this.iterable = iterable;
+		}
+		@Override
+		public Iterator iterator() {
+			return new Iterator() {
+				private Iterator iterator = iterable.iterator();
+				@Override
+				public boolean hasNext() {
+					return iterator.hasNext();
+				}
+				@Override
+				public Object next() {
+					return resolveSingle(iterator.next());
+				}
+			};
+		}
 	}
 
 	public static class VersionRange {
@@ -155,13 +193,26 @@ private static Map<String, VersionRange> versions = new HashMap<String, VersionR
 						}
 						@Override
 						public Object next() {
-							Object next = parent.next();
-							if (next == null && !handleNull) {
-								return null;
-							}
-							else {
-								return handler.handle(next);
-							}
+							return new Callable() {
+								@Override
+								public Object call() throws Exception {
+									Object next = parent.next();
+									if (next == null && !handleNull) {
+										return null;
+									}
+									else {
+										if (next instanceof Callable) {
+											try {
+												next = ((Callable) next).call();
+											}
+											catch (Exception e) {
+												throw new RuntimeException(e);
+											}
+										}
+									}
+									return handler.handle(next);
+								}
+							};
 						}
 					};
 				}
@@ -199,12 +250,27 @@ private static Map<String, VersionRange> versions = new HashMap<String, VersionR
 						private Iterator current = null;
 						@Override
 						public boolean hasNext() {
-							if (current == null || !current.hasNext()) {
+							while (current == null || !current.hasNext()) {
 								if (parent.hasNext()) {
-									current = ((Iterable<?>) handler.handle(parent.next())).iterator();
+									Object next = parent.next();
+									if (next != null || handleNull) {
+										if (next instanceof Callable) {
+											try {
+												next = ((Callable) next).call();
+											}
+											catch (Exception e) {
+												throw new RuntimeException(e);
+											}
+										}
+										current = ((Iterable<?>) handler.handle(next)).iterator();
+									}
+									else {
+										current = null;
+									}
 								}
 								else {
 									current = null;
+									break;
 								}
 							}
 							return current != null && current.hasNext();
