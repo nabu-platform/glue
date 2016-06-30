@@ -50,7 +50,7 @@ public class GlueUtils {
 				}
 				@Override
 				public Object next() {
-					return resolveSingle(iterator.next());
+					return hasNext() ? resolveSingle(iterator.next()) : null;
 				}
 			};
 		}
@@ -198,24 +198,14 @@ public class GlueUtils {
 						}
 						@Override
 						public Object next() {
+							final Object next = parent.next();
 							return new Callable() {
 								@Override
 								public Object call() throws Exception {
-									Object next = parent.next();
 									if (next == null && !handleNull) {
 										return null;
 									}
-									else {
-										if (next instanceof Callable) {
-											try {
-												next = ((Callable) next).call();
-											}
-											catch (Exception e) {
-												throw new RuntimeException(e);
-											}
-										}
-									}
-									return handler.handle(next);
+									return handler.handle(GlueUtils.resolveSingle(next));
 								}
 							};
 						}
