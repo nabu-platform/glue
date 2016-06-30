@@ -229,8 +229,8 @@ public class SeriesMethods {
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	@GlueMethod(description = "Folds the given series", version = 2)
-	public static Iterable<?> fold(@GlueParam(name = "lambda") final Lambda lambda, @GlueParam(name = "content") Object...original) {
+	@GlueMethod(description = "Creates a derived series based on the given one(s)", version = 2)
+	public static Iterable<?> derive(@GlueParam(name = "lambda") final Lambda lambda, @GlueParam(name = "content") Object...original) {
 		if (original == null || original.length == 0) {
 			return null;
 		}
