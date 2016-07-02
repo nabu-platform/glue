@@ -117,6 +117,28 @@ public class SeriesMethods {
 		};
 	}
 	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static long position(final Lambda lambda, Object...objects) {
+		Iterable<?> series = GlueUtils.toSeries(objects);
+		ScriptRuntime runtime = ScriptRuntime.getRuntime();
+		boolean includeIndex = lambda.getDescription().getParameters().size() == 2;
+		long index = 0;
+		for (Object object : series) {
+			object = GlueUtils.resolveSingle(object);
+			List parameters = new ArrayList();
+			parameters.add(object);
+			if (includeIndex) {
+				parameters.add(index);
+			}
+			Boolean calculate = (Boolean) calculate(lambda, runtime, parameters);
+			if (calculate != null && calculate) {
+				return index;
+			}
+			index++;
+		}
+		return -1;
+	}
+	
 	@SuppressWarnings("rawtypes")
 	@GlueMethod(returns = "series", description = "Find elements in the series that match the lambda expression", version = 2)
 	public static Object filter(final Lambda lambda, Object...objects) {
