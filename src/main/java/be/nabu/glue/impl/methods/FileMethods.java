@@ -155,6 +155,7 @@ public class FileMethods {
 	 * @param overwriteIfExists
 	 * @throws IOException
 	 */
+	@GlueMethod(version = 1)
 	public static void merge(String fromDirectory, String toDirectory, boolean recursive, boolean overwriteIfExists) throws IOException {
 		Resource from = resolve(fromDirectory);
 		Resource to = resolve(toDirectory);

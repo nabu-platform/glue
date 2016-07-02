@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import be.nabu.libs.converter.ConverterFactory;
+import be.nabu.libs.converter.api.Converter;
 
 public class GlueUtils {
 	
@@ -154,11 +155,16 @@ public class GlueUtils {
 		else if (targetClass.isAssignableFrom(object.getClass())) {
 			return (T) object;
 		}
-		Object converted = ConverterFactory.getInstance().getConverter().convert(object, targetClass);
-		if (converted == null) {
-			throw new ClassCastException("Can not convert to " + targetClass + ": " + object);
+		Converter converter = ConverterFactory.getInstance().getConverter();
+		if (!converter.canConvert(object.getClass(), targetClass)) {
+			if (targetClass.equals(String.class)) {
+				return (T) object.toString();
+			}
+			else {
+				throw new ClassCastException("Can not convert to " + targetClass + ": " + object);
+			}
 		}
-		return (T) converted;
+		return (T) converter.convert(object, targetClass);
 	}
 	
 	public static Iterable<?> toSeries(Object...objects) {

@@ -1,9 +1,11 @@
 package be.nabu.glue.impl.methods.v2;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -30,7 +32,83 @@ public class SeriesMethods {
 	public static Iterable<?> series(@GlueParam(name = "content", description = "The objects to put in the series") Object...objects) {
 		return objects == null ? new ArrayList<Object>() : Arrays.asList(objects);
 	}
-		
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@GlueMethod(version = 2)
+	public static Map group(Lambda lambda, Object...objects) throws EvaluationException {
+		if (objects == null || objects.length == 0) {
+			return null;
+		}
+		Map map = new HashMap();
+		if (lambda.getDescription().getParameters().size() != 1) {
+			throw new IllegalArgumentException("The lambda does not have enough parameters to process the element");
+		}
+		Iterable<?> series = GlueUtils.toSeries(objects);
+		for (Object object : resolve(series)) {
+			LambdaExecutionOperation lambdaOperation = new LambdaExecutionOperation(lambda.getDescription(), lambda.getOperation(), 
+				lambda instanceof EnclosedLambda ? ((EnclosedLambda) lambda).getEnclosedContext() : new HashMap<String, Object>());
+			Object key = lambdaOperation.evaluateWithParameters(ScriptRuntime.getRuntime().getExecutionContext(), object);
+			// it is possible to belong to multiple groups, hence the key can either be a single key or a list of keys
+			if (!(key instanceof Iterable)) {
+				key = Arrays.asList(key);
+			}
+			for (Object single : (Iterable) key) {
+				if (!map.containsKey(single)) {
+					map.put(single, new ArrayList());
+				}
+				((List) map.get(single)).add(object);
+			}
+		}
+		return map;
+	}	
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@GlueMethod(version = 2)
+	public static Iterable<?> sort(final Lambda lambda, Object...objects) {
+		final Iterable<?> series = GlueUtils.toSeries(objects);
+		List<?> resolved = resolve(series);
+		final ScriptRuntime runtime = ScriptRuntime.getRuntime();
+		Collections.sort(resolved, new Comparator() {
+			@Override
+			public int compare(Object o1, Object o2) {
+				List parameters = new ArrayList();
+				parameters.add(o1);
+				parameters.add(o2);
+				return (int) calculate(lambda, runtime, parameters);
+			}
+		});
+		return resolved;
+	}
+	
+	@SuppressWarnings("rawtypes")
+	@GlueMethod(version = 2)
+	public static Iterable<?> repeat(Object...objects) {
+		final Iterable<?> series = GlueUtils.toSeries(objects);
+		return new Iterable() {
+			@Override
+			public Iterator iterator() {
+				return new Iterator() {
+					private Iterator iterator = series.iterator();
+
+					@Override
+					public boolean hasNext() {
+						if (!iterator.hasNext()) {
+							iterator = series.iterator();
+						}
+						return iterator.hasNext();
+					}
+					@Override
+					public Object next() {
+						if (hasNext()) {
+							return iterator.next();
+						}
+						return null;
+					}
+				};
+			}
+		};
+	}
+	
 	@SuppressWarnings("rawtypes")
 	@GlueMethod(returns = "series", description = "Find elements in the series that match the lambda expression", version = 2)
 	public static Object filter(final Lambda lambda, Object...objects) {
@@ -162,6 +240,9 @@ public class SeriesMethods {
 				return new Iterator() {
 					private List<Iterator> iterators = new ArrayList<Iterator>(); {
 						for (Object iterable : original) {
+							if (!(iterable instanceof Iterable)) {
+								iterable = Arrays.asList(iterable);
+							}
 							iterators.add(((Iterable) iterable).iterator());
 						}
 					}
@@ -291,6 +372,30 @@ public class SeriesMethods {
 		};
 	}
 	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static Iterable<?> offsetFromBack(final long offset, final Iterable<?> iterable) {
+		return new Iterable() {
+			@Override
+			public Iterator iterator() {
+				return new Iterator() {
+					private Iterator parent = iterable.iterator();
+					private ArrayDeque queue = new ArrayDeque();
+					@Override
+					public boolean hasNext() {
+						while (queue.size() < offset && parent.hasNext()) {
+							queue.add(parent.next());
+						}
+						return parent.hasNext();
+					}
+					@Override
+					public Object next() {
+						return hasNext() ? queue.poll() : null;
+					}
+				};
+			}
+		};
+	}
+	
 	@SuppressWarnings("rawtypes")
 	@GlueMethod(description = "Adds an offset to the series", version = 2)
 	public static Iterable<?> offset(@GlueParam(name = "limit") final long offset, @GlueParam(name = "content") Object...original) {
@@ -298,9 +403,17 @@ public class SeriesMethods {
 			return null;
 		}
 		final Iterable<?> iterable = GlueUtils.toSeries(original);
+		if (offset  == 0) {
+			return iterable;
+		}
 		if (iterable instanceof List) {
 			List list = (List) iterable;
-			return list.subList((int) Math.min(offset, list.size() - 1), list.size());
+			return offset < 0
+				? list.subList(0, (int) (list.size() + offset))
+				: list.subList((int) Math.min(offset, list.size() - 1), list.size());
+		}
+		else if (offset < 0) {
+			return offsetFromBack(Math.abs(offset), iterable);
 		}
 		else {
 			return new Iterable() {
@@ -370,37 +483,4 @@ public class SeriesMethods {
 		}
 	}
 	
-	@GlueMethod(version = 2)
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static Map hash(Lambda lambda, Object...original) throws EvaluationException {
-		if (original == null || original.length == 0) {
-			return null;
-		}
-		final Iterable<?> iterable = GlueUtils.toSeries(original);
-		Map map = new HashMap();
-		if (lambda.getDescription().getParameters().size() != 1) {
-			throw new IllegalArgumentException("The lambda does not have enough parameters to process the hash value");
-		}
-		for (Object object : iterable) {
-			LambdaExecutionOperation lambdaOperation = new LambdaExecutionOperation(lambda.getDescription(), lambda.getOperation(), 
-				lambda instanceof EnclosedLambda ? ((EnclosedLambda) lambda).getEnclosedContext() : new HashMap<String, Object>());
-			Object key = lambdaOperation.evaluateWithParameters(ScriptRuntime.getRuntime().getExecutionContext(), object);
-			for (Object single : key instanceof Object[] ? (Object[]) key : new Object[] { key }) {
-				Object current = map.get(single);
-				if (current instanceof List) {
-					((List) current).add(object);
-				}
-				else if (current != null) {
-					List list = new ArrayList();
-					list.add(current);
-					list.add(object);
-					map.put(single, list);
-				}
-				else {
-					map.put(single, object);
-				}
-			}
-		}
-		return map;
-	}
 }
