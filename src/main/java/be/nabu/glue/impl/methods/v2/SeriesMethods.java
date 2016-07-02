@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -31,6 +32,13 @@ public class SeriesMethods {
 	@GlueMethod(returns = "series", description = "This method creates a series out of a number of objects", version = 2)
 	public static Iterable<?> series(@GlueParam(name = "content", description = "The objects to put in the series") Object...objects) {
 		return objects == null ? new ArrayList<Object>() : Arrays.asList(objects);
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@GlueMethod(version = 2)
+	public static Object unique(Object...objects) {
+		Iterable<?> series = GlueUtils.toSeries(objects);
+		return new LinkedHashSet(resolve(series));
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
