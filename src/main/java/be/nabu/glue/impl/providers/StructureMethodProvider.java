@@ -6,15 +6,19 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
+import be.nabu.glue.api.Lambda;
 import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.impl.ForkedExecutionContext;
+import be.nabu.glue.impl.GlueUtils;
 import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.impl.SimpleParameterDescription;
 import be.nabu.libs.evaluator.ContextAccessorFactory;
 import be.nabu.libs.evaluator.EvaluationException;
+import be.nabu.libs.evaluator.QueryPart;
 import be.nabu.libs.evaluator.QueryPart.Type;
 import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 import be.nabu.libs.evaluator.api.ContextAccessor;
@@ -22,7 +26,6 @@ import be.nabu.libs.evaluator.api.ListableContextAccessor;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
-import be.nabu.libs.evaluator.QueryPart;
 
 @MethodProviderClass(namespace = "script")
 public class StructureMethodProvider implements MethodProvider {
@@ -59,7 +62,14 @@ public class StructureMethodProvider implements MethodProvider {
 			for (int i = 1; i < getParts().size(); i++) {
 				Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
 				if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.NAMING && argumentOperation.getParts().get(1).getContent().equals(":")) {
-					String parameterName = argumentOperation.getParts().get(0).getContent().toString();
+					String parameterName;
+					if (argumentOperation.getParts().get(0).getContent() instanceof Operation && ((Operation) argumentOperation.getParts().get(0).getContent()).getType() == OperationType.METHOD) {
+						Object evaluated = ((Operation) argumentOperation.getParts().get(0).getContent()).evaluate(context);
+						parameterName = evaluated instanceof Lambda ? GlueUtils.calculate((Lambda) evaluated, ScriptRuntime.getRuntime(), new ArrayList()).toString() : evaluated.toString();
+					}
+					else {
+						parameterName = argumentOperation.getParts().get(0).getContent().toString();
+					}
 					Object value = argumentOperation.getParts().get(2).getType() == QueryPart.Type.OPERATION 
 						? ((Operation<ExecutionContext>) argumentOperation.getParts().get(2).getContent()).evaluate(context)
 						: argumentOperation.getParts().get(2).getContent();

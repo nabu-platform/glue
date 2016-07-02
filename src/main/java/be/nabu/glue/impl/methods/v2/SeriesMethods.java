@@ -82,7 +82,7 @@ public class SeriesMethods {
 				List parameters = new ArrayList();
 				parameters.add(o1);
 				parameters.add(o2);
-				return (int) calculate(lambda, runtime, parameters);
+				return (int) GlueUtils.calculate(lambda, runtime, parameters);
 			}
 		});
 		return resolved;
@@ -130,7 +130,7 @@ public class SeriesMethods {
 			if (includeIndex) {
 				parameters.add(index);
 			}
-			Boolean calculate = (Boolean) calculate(lambda, runtime, parameters);
+			Boolean calculate = (Boolean) GlueUtils.calculate(lambda, runtime, parameters);
 			if (calculate != null && calculate) {
 				return index;
 			}
@@ -157,7 +157,7 @@ public class SeriesMethods {
 							if (parent.hasNext()) {
 								while (parent.hasNext() && !hasNext) {
 									Object nextFromParent = parent.next();
-									Boolean calculated = (Boolean) calculate(lambda, runtime, Arrays.asList(nextFromParent));
+									Boolean calculated = (Boolean) GlueUtils.calculate(lambda, runtime, Arrays.asList(nextFromParent));
 									if (calculated != null && calculated) {
 										next = nextFromParent;
 										hasNext = true;
@@ -316,29 +316,6 @@ public class SeriesMethods {
 		return iterator.hasNext() ? GlueUtils.resolveSingle(iterator.next()) : null;
 	}
 	
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private static Object calculate(Lambda lambda, ScriptRuntime runtime, List parameters) {
-		// resolve any parameters that themselves are lazy
-		for (int i = 0; i < parameters.size(); i++) {
-			if (parameters.get(i) instanceof Callable) {
-				try {
-					parameters.set(i, ((Callable) parameters.get(i)).call());
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			}
-		}
-		LambdaExecutionOperation lambdaOperation = new LambdaExecutionOperation(lambda.getDescription(), lambda.getOperation(), 
-			lambda instanceof EnclosedLambda ? ((EnclosedLambda) lambda).getEnclosedContext() : new HashMap<String, Object>());
-		try {
-			return lambdaOperation.evaluateWithParameters(runtime.getExecutionContext(), parameters.toArray());
-		}
-		catch (EvaluationException e) {
-			throw new RuntimeException(e);
-		}
-	}
-	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@GlueMethod(description = "Creates a derived series based on the given one(s)", version = 2)
 	public static Iterable<?> derive(@GlueParam(name = "lambda") final Lambda lambda, @GlueParam(name = "content") Object...original) {
@@ -385,7 +362,7 @@ public class SeriesMethods {
 							return new Callable() {
 								@Override
 								public Object call() throws Exception {
-									return calculate(lambda, runtime, parameters);
+									return GlueUtils.calculate(lambda, runtime, parameters);
 								}
 							};
 						}

@@ -4,11 +4,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import be.nabu.glue.ScriptRuntime;
+import be.nabu.glue.api.EnclosedLambda;
+import be.nabu.glue.api.Lambda;
+import be.nabu.glue.impl.LambdaMethodProvider.LambdaExecutionOperation;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.converter.api.Converter;
+import be.nabu.libs.evaluator.EvaluationException;
 
 public class GlueUtils {
 	
@@ -288,5 +294,28 @@ public class GlueUtils {
 	
 	public static interface ObjectHandler {
 		public Object handle(Object single);
+	}
+	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static Object calculate(Lambda lambda, ScriptRuntime runtime, List parameters) {
+		// resolve any parameters that themselves are lazy
+		for (int i = 0; i < parameters.size(); i++) {
+			if (parameters.get(i) instanceof Callable) {
+				try {
+					parameters.set(i, ((Callable) parameters.get(i)).call());
+				}
+				catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+		LambdaExecutionOperation lambdaOperation = new LambdaExecutionOperation(lambda.getDescription(), lambda.getOperation(), 
+			lambda instanceof EnclosedLambda ? ((EnclosedLambda) lambda).getEnclosedContext() : new HashMap<String, Object>());
+		try {
+			return lambdaOperation.evaluateWithParameters(runtime.getExecutionContext(), parameters.toArray());
+		}
+		catch (EvaluationException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }
