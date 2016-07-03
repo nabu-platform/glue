@@ -19,7 +19,7 @@ public class StringMethods {
 	public static Object padRight(
 			@GlueParam(name = "pad", description = "The string used to pad") String pad, 
 			@GlueParam(name = "length", description = "The length of the resulting string") int length, 
-			@GlueParam(name = "content", description = "The string(s) to be padded") Object...original) {
+			@GlueParam(name = "string", description = "The string(s) to be padded") Object...original) {
 		return pad(pad, length, true, original);
 	}
 	
@@ -27,7 +27,7 @@ public class StringMethods {
 	public static Object padLeft(
 			@GlueParam(name = "pad", description = "The string used to pad") String pad, 
 			@GlueParam(name = "length", description = "The length of the resulting string") int length, 
-			@GlueParam(name = "content", description = "The string(s) to be padded") Object...original) {
+			@GlueParam(name = "string", description = "The string(s) to be padded") Object...original) {
 		return pad(pad, length, false, original);
 	}
 
@@ -40,7 +40,7 @@ public class StringMethods {
 		}
 		String value = (String) original;
 		while (value.length() < length) {
-			int padLength = Math.min(pad.length(), value.length() - length);
+			int padLength = Math.min(pad.length(), length - value.length());
 			if (padLength < pad.length()) {
 				if (leftAlign) {
 					pad = pad.substring(0, padLength);
@@ -60,11 +60,11 @@ public class StringMethods {
 	}
 	
 	@GlueMethod(description = "Pads string(s) to a given length using the given pad", version = 2)
-	public static Object pad(
+	private static Object pad(
 			@GlueParam(name = "pad", description = "The string to pad with") final String pad, 
 			@GlueParam(name = "length", description = "The length the resulting string(s) should be") final int length, 
 			@GlueParam(name = "leftAlign", description = "Whether to left align the original string(s)") final boolean leftAlign, 
-			@GlueParam(name = "content", description = "The string(s) to pad") Object...original) {
+			@GlueParam(name = "string", description = "The string(s) to pad") Object...original) {
 		return GlueUtils.wrap(GlueUtils.cast(new ObjectHandler() {
 			@Override
 			public Object handle(Object single) {
@@ -74,7 +74,7 @@ public class StringMethods {
 	}
 
 	@GlueMethod(description = "Uppercases the string(s)", version = 2)
-	public static Object upper(@GlueParam(name = "content", description = "One or more strings") Object...original) {
+	public static Object upper(@GlueParam(name = "string", description = "One or more strings") Object...original) {
 		return GlueUtils.wrap(GlueUtils.cast(new ObjectHandler() {
 			@Override
 			public Object handle(Object single) {
@@ -84,7 +84,7 @@ public class StringMethods {
 	}
 
 	@GlueMethod(description = "Lowercases the string(s)", version = 2)
-	public static Object lower(@GlueParam(name = "content", description = "One or more strings") Object...original) {
+	public static Object lower(@GlueParam(name = "string", description = "One or more strings") Object...original) {
 		return GlueUtils.wrap(GlueUtils.cast(new ObjectHandler() {
 			@Override
 			public Object handle(Object single) {
@@ -97,7 +97,7 @@ public class StringMethods {
 	public static Object substring(
 			@GlueParam(name = "start", description = "The start position") final Integer start,
 			@GlueParam(name = "stop", description = "The stop position", defaultValue = "To the end of the string") final Integer stop,
-			@GlueParam(name = "content", description = "One or more strings") Object...original) {
+			@GlueParam(name = "string", description = "One or more strings") Object...original) {
 		return GlueUtils.wrap(GlueUtils.cast(new ObjectHandler() {
 			@Override
 			public Object handle(Object single) {
@@ -121,7 +121,7 @@ public class StringMethods {
 	public static Object replace(
 			@GlueParam(name = "regex", description = "The regex to match") final String regex, 
 			@GlueParam(name = "replacement", description = "The replacement to replace it with") final String replacement, 
-			@GlueParam(name = "content", description = "The string(s) to perform the replacement on") Object...original) {
+			@GlueParam(name = "string", description = "The string(s) to perform the replacement on") Object...original) {
 		return GlueUtils.wrap(GlueUtils.cast(new ObjectHandler() {
 			@Override
 			public Object handle(Object single) {
@@ -131,7 +131,7 @@ public class StringMethods {
 	}
 	
 	@GlueMethod(description = "Finds all the results matching the regex in the given string(s)", version = 2)
-	public static Object find(@GlueParam(name = "regex", description = "The regex to match") String regex, @GlueParam(name = "content", description = "The string(s) to perform the find on") Object...original) {
+	public static Object find(@GlueParam(name = "regex", description = "The regex to match") String regex, @GlueParam(name = "string", description = "The string(s) to perform the find on") Object...original) {
 		final Pattern pattern = Pattern.compile(regex);
 		return GlueUtils.explode(GlueUtils.cast(new ObjectHandler() {
 			@Override
@@ -152,7 +152,7 @@ public class StringMethods {
 	}
 	
 	@GlueMethod(description = "Returns all the lines found in the given string(s). Supports all combinations of linefeed and carriage return.", version = 2)
-	public static Object lines(@GlueParam(name = "content", description = "The string(s) to split into lines") Object...original) {
+	public static Object lines(@GlueParam(name = "string", description = "The string(s) to split into lines") Object...original) {
 		return GlueUtils.explode(GlueUtils.cast(new ObjectHandler() {
 			@Override
 			public Object handle(Object single) {
@@ -162,7 +162,7 @@ public class StringMethods {
 	}
 	
 	@GlueMethod(description = "Splits the given string into columns, if you want more control over the separators, use split()", version = 2)
-	public static Object columns(@GlueParam(name = "content", description = "The string to split into columns") Object...original) {
+	public static Object columns(@GlueParam(name = "string", description = "The string to split into columns") Object...original) {
 		return GlueUtils.wrap(GlueUtils.cast(new ObjectHandler() {
 			@Override
 			public Object handle(Object single) {
@@ -172,7 +172,7 @@ public class StringMethods {
 	}
 	
 	@GlueMethod(description = "Removes any leading and trailing whitespace from the given string(s)", version = 2)
-	public static Object trim(@GlueParam(name = "content", description = "One or more strings") Object...original) {
+	public static Object trim(@GlueParam(name = "string", description = "One or more strings") Object...original) {
 		return GlueUtils.wrap(GlueUtils.cast(new ObjectHandler() {
 			@Override
 			public Object handle(Object single) {
@@ -182,7 +182,7 @@ public class StringMethods {
 	}
 	
 	@GlueMethod(description = "Combines the given strings into a single string adding the seperator in between each string. For example join(',', 'a', 'b') returns 'a,b'", version = 2)
-	public static String join(@GlueParam(name = "separator") String separator, @GlueParam(name = "content") Object...original) {
+	public static String join(@GlueParam(name = "separator") String separator, @GlueParam(name = "string") Object...original) {
 		if (original == null || original.length == 0) {
 			return null;
 		}
@@ -202,7 +202,7 @@ public class StringMethods {
 	}
 	
 	@GlueMethod(description = "Splits the given string(s) into parts using the given regex", version = 2)
-	public static Object split(@GlueParam(name = "regex", description = "The regex to use to split the string(s)") final String regex, @GlueParam(name = "content", description = "The string(s) to split into parts") Object...original) {
+	public static Object split(@GlueParam(name = "regex", description = "The regex to use to split the string(s)") final String regex, @GlueParam(name = "string", description = "The string(s) to split into parts") Object...original) {
 		return GlueUtils.explode(GlueUtils.cast(new ObjectHandler() {
 			@Override
 			public Object handle(Object single) {

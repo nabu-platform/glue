@@ -39,7 +39,7 @@ public class DateMethods {
 	}
 	
 	@Deprecated // check date()
-	@GlueMethod(description = "Generates a date object that points to the current time")
+	@GlueMethod(description = "Generates a date object that points to the current time", version = 1)
 	public static CustomDate now() {
 		return new CustomDate();
 	}
@@ -47,7 +47,7 @@ public class DateMethods {
 	/**
 	 * This method tries to deduce the format from the value
 	 */
-	@GlueMethod(description = "Tries to automatically parse the given value into a correct date object")
+	@GlueMethod(description = "Tries to automatically parse the given value into a correct date object", version = 1)
 	public static CustomDate date(@GlueParam(name = "date", description = "The value pointing to the date you want to parse", defaultValue = "The current date") String value) throws ParseException {
 		if (value == null) {
 			return new CustomDate();
@@ -62,7 +62,7 @@ public class DateMethods {
 		}
 	}
 	
-	@GlueMethod(description = "Formats the given date to the given format")
+	@GlueMethod(description = "Formats the given date to the given format", version = 1)
 	public static String format(
 			@GlueParam(name = "date", description = "The date that you want to format", defaultValue = "The current date") CustomDate date, 
 			@GlueParam(name = "format", description = "The format you want to use", defaultValue = "The XML Schema dateTime format") String format, 
@@ -76,7 +76,7 @@ public class DateMethods {
 		return formatter.format(date == null ? new Date() : date.getDate());	
 	}
 	
-	@GlueMethod(description = "Parses a string into a date using the given format")
+	@GlueMethod(description = "Parses a string into a date using the given format", version = 1)
 	public static CustomDate parse(
 			@GlueParam(name = "date", description = "The date that you want to format") String date, 
 			@GlueParam(name = "format", description = "The format you want to use", defaultValue = "The XML Schema dateTime format") String format, 
@@ -93,7 +93,7 @@ public class DateMethods {
 		return new CustomDate(formatter.parse(date));
 	}
 	
-	@GlueMethod(description = "Generates a range of dates between the from and to the date (both inclusive) using the given increment")
+	@GlueMethod(description = "Generates a range of dates between the from and to the date (both inclusive) using the given increment", version = 1)
 	public static CustomDate [] range(
 			@GlueParam(name = "from", description = "The date to start from", defaultValue = "The current time") CustomDate from, 
 			@GlueParam(name = "to", description = "The end date of the range", defaultValue = "The current time") CustomDate to, 
@@ -115,7 +115,7 @@ public class DateMethods {
 		return dates.toArray(new CustomDate[dates.size()]);
 	}
 
-	@GlueMethod(description = "Increments the given date with the given amount")
+	@GlueMethod(description = "Increments the given date with the given amount", version = 1)
 	public static CustomDate increment(
 			@GlueParam(name = "amount", description = "The amount to increment", defaultValue = "1") Integer amount, 
 			@GlueParam(name = "type", description = "The type of increase, e.g. 'day'", defaultValue = "day") String type, 
@@ -132,7 +132,7 @@ public class DateMethods {
 		return CustomDate.increment(date, "" + Math.abs(amount) + type, amount < 0 ? Type.SUBSTRACT : Type.ADD);
 	}
 	
-	@GlueMethod(description = "Decrements the given date with the given amount")
+	@GlueMethod(description = "Decrements the given date with the given amount", version = 1)
 	public static CustomDate decrement(
 			@GlueParam(name = "amount", description = "The amount to decrement", defaultValue = "-1") Integer amount,
 			@GlueParam(name = "type", description = "The type of decrease, e.g. 'day'", defaultValue = "day") String type, 
@@ -149,7 +149,7 @@ public class DateMethods {
 		return CustomDate.increment(date, "" + Math.abs(amount) + type, amount < 0 ? Type.ADD : Type.SUBSTRACT);
 	}
 	
-	@GlueMethod(description = "Generates a numeric timestamp for the given date")
+	@GlueMethod(description = "Generates a numeric timestamp for the given date", version = 1)
 	public static long timestamp(@GlueParam(name = "date", description = "The date to generate the timestamp for", defaultValue = "The current date") CustomDate date) {
 		return date == null ? new Date().getTime() : date.getDate().getTime();
 	}

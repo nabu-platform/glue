@@ -4,9 +4,11 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import be.nabu.glue.ScriptRuntime;
+import be.nabu.glue.api.EnclosedLambda;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.Lambda;
 import be.nabu.glue.api.MethodDescription;
@@ -14,6 +16,7 @@ import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.impl.ForkedExecutionContext;
 import be.nabu.glue.impl.GlueUtils;
+import be.nabu.glue.impl.LambdaImpl;
 import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.impl.SimpleParameterDescription;
 import be.nabu.libs.evaluator.ContextAccessorFactory;
@@ -85,6 +88,18 @@ public class StructureMethodProvider implements MethodProvider {
 						for (String variable : ((ListableContextAccessor<Object>) accessor).list(value)) {
 							forkedContext.getPipeline().put(variable, accessor.get(value, variable));
 						}
+					}
+				}
+			}
+			// here we rewrite the lambda's in the new structure to make sure they have the correct scope
+			for (String key : forkedContext.getPipeline().keySet()) {
+				if (forkedContext.getPipeline().get(key) instanceof EnclosedLambda) {
+					EnclosedLambda currentLambda = (EnclosedLambda) forkedContext.getPipeline().get(key);
+					LinkedHashMap<String, Object> newContext = new LinkedHashMap<String, Object>(currentLambda.getEnclosedContext());
+					newContext.putAll(forkedContext.getPipeline());
+					if (!currentLambda.getEnclosedContext().equals(newContext)) {
+						EnclosedLambda newLambda = new LambdaImpl(currentLambda.getDescription(), currentLambda.getOperation(), newContext);
+						forkedContext.getPipeline().put(key, newLambda);
 					}
 				}
 			}
