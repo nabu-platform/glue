@@ -2,6 +2,7 @@ package be.nabu.glue.impl.methods.v2;
 
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.annotations.GlueMethod;
+import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.impl.GlueUtils;
 import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 
@@ -13,6 +14,9 @@ public class ScriptMethods {
 		for (Object object : original) {
 			if (object instanceof Iterable) {
 				object = SeriesMethods.resolve((Iterable<?>) object);
+			}
+			else if (object instanceof ExecutionContext) {
+				object = ((ExecutionContext) object).getPipeline();
 			}
 			ScriptRuntime.getRuntime().getFormatter().print(GlueUtils.convert(object, String.class));
 		}

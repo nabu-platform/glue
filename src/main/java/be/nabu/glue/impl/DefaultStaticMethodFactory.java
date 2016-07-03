@@ -32,6 +32,7 @@ public class DefaultStaticMethodFactory implements StaticMethodFactory {
 		classes.add(be.nabu.glue.impl.methods.v2.StringMethods.class);
 		classes.add(be.nabu.glue.impl.methods.v2.ScriptMethods.class);
 		classes.add(be.nabu.glue.impl.methods.v2.SeriesMethods.class);
+		classes.add(be.nabu.glue.impl.methods.v2.DateMethods.class);
 		return classes;
 	}
 }
