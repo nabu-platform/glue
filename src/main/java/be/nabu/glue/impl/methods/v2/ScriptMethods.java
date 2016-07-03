@@ -10,14 +10,20 @@ public class ScriptMethods {
 
 	@GlueMethod(description = "Write content to the standard output", version = 2)
 	public static void echo(Object...original) {
-		for (Object object : GlueUtils.toSeries(original)) {
+		for (Object object : original) {
+			if (object instanceof Iterable) {
+				object = SeriesMethods.resolve((Iterable<?>) object);
+			}
 			ScriptRuntime.getRuntime().getFormatter().print(GlueUtils.convert(object, String.class));
 		}
 	}
 	
 	@GlueMethod(description = "Write content to the console", version = 2)
 	public static void console(Object...original) {
-		for (Object object : GlueUtils.toSeries(original)) {
+		for (Object object : original) {
+			if (object instanceof Iterable) {
+				object = SeriesMethods.resolve((Iterable<?>) object);
+			}
 			System.out.println(GlueUtils.convert(object, String.class));
 		}
 	}

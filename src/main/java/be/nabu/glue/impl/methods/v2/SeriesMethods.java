@@ -490,4 +490,100 @@ public class SeriesMethods {
 		}
 	}
 	
+	@SuppressWarnings("rawtypes")
+	public static Iterable<?> to(final Lambda lambda, Object...original) {
+		final Iterable<?> iterable = GlueUtils.toSeries(original);
+		return new Iterable() {
+			@Override
+			public Iterator iterator() {
+				return new Iterator() {
+
+					private Object next;
+					private boolean isDone, hasNext;
+					private Iterator parent = iterable.iterator();
+					private ScriptRuntime runtime = ScriptRuntime.getRuntime();
+					
+					@SuppressWarnings("unchecked")
+					@Override
+					public boolean hasNext() {
+						if (!isDone && !hasNext && parent.hasNext()) {
+							Object parentNext = parent.next();
+							List parameters = new ArrayList();
+							parameters.add(parentNext);
+							Boolean accepted = (Boolean) GlueUtils.calculate(lambda, runtime, parameters);
+							if (accepted) {
+								next = parentNext;
+								hasNext = true;
+							}
+							else {
+								isDone = true;
+								hasNext = false;
+							}
+						}
+						return hasNext;
+					}
+
+					@Override
+					public Object next() {
+						if (hasNext()) {
+							hasNext = false;
+							return next;
+						}
+						return null;
+					}
+					
+				};
+			}
+		};
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public static Iterable<?> from(final Lambda lambda, Object...original) {
+		final Iterable<?> iterable = GlueUtils.toSeries(original);
+		return new Iterable() {
+			@Override
+			public Iterator iterator() {
+				return new Iterator() {
+
+					private boolean isActive, isFirst;
+					private Object first;
+					private Iterator parent = iterable.iterator();
+					private ScriptRuntime runtime = ScriptRuntime.getRuntime();
+					
+					@SuppressWarnings("unchecked")
+					@Override
+					public boolean hasNext() {
+						while(!isActive && parent.hasNext()) {
+							Object parentNext = parent.next();
+							List parameters = new ArrayList();
+							parameters.add(parentNext);
+							Boolean accepted = (Boolean) GlueUtils.calculate(lambda, runtime, parameters);
+							if (accepted) {
+								isActive = true;
+								isFirst = true;
+								first = parentNext;
+							}
+						}
+						return isActive;
+					}
+
+					@Override
+					public Object next() {
+						if (hasNext()) {
+							if (isFirst) {
+								isFirst = false;
+								return first;
+							}
+							else {
+								return parent.next();
+							}
+						}
+						return null;
+					}
+					
+				};
+			}
+		};
+	}
+	
 }
