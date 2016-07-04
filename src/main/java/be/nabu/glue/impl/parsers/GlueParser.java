@@ -350,6 +350,8 @@ public class GlueParser implements Parser {
 				else {
 					// you can use multiline if you use a depth greater than the one on this line and there is no comment on this line
 					String nextLine = null;
+					// the "line" variable keeps an exact copy of the line for later reconstruction whereas the "lineToBeProcessed" contains a copy where whitespace has been tweaked
+					String lineToBeProcessed = line;
 					while (comment == null && (nextLine = readLine(pushback)) != null) {
 						if (getDepth(nextLine) > depth || nextLine.trim().isEmpty()) {
 							// a comment will stop the appending
@@ -383,6 +385,8 @@ public class GlueParser implements Parser {
 							}
 							// append with spaces intact, this should not bother the query parser but may allow reconstruction of multilines later on
 							line += "\n" + nextLine;
+							// append with whitespace stripped out if possible
+							lineToBeProcessed += "\n" + nextLine.substring(Math.min(nextLine.length(), depth + 1));
 							// increase the position as well
 							currentPosition += 1 + nextLine.length();
 							context.setEndPosition(currentPosition);
@@ -397,6 +401,8 @@ public class GlueParser implements Parser {
 					context.setLine(line);
 					String type = null;
 					boolean mustBeArray = false;
+					// update the line to the one to be processed, this is retrofitted code
+					line = lineToBeProcessed;
 					// check if there is a variable assignment on the line
 					// the first regex checks only for the variable name while the second allows for an optional type
 					if (line.matches("(?s)^[\\w]+[\\s?]*=.*") || line.matches("(?s)^[\\w.]*([\\s]*\\[\\]|)[\\s]+[\\w]+[\\s?]*=.*")) {

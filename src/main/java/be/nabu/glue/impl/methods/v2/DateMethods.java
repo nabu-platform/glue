@@ -77,7 +77,7 @@ public class DateMethods {
 				formatter.setTimeZone(timezone == null ? TimeZone.getDefault() : timezone);
 				return formatter.format((Date) single);	
 			}
-		}, Date.class), false, original == null || original.length == 0 ? new Date() : original);
+		}, Date.class), false, original);
 	}
 	
 	@GlueMethod(description = "Parses a string into a date using the given format", version = 2)

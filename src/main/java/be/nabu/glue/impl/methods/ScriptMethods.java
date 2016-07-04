@@ -168,6 +168,7 @@ public class ScriptMethods {
 		return value == null ? defaultValue : value;
 	}
 	
+	@GlueMethod(version = 1)
 	public static void fail(Object message) {
 		if (message instanceof Throwable) {
 			throw new ScriptRuntimeException(ScriptRuntime.getRuntime(), (Throwable) message);

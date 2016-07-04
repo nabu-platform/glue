@@ -1,5 +1,7 @@
 package be.nabu.glue.impl;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URI;
 import java.util.Date;
 import java.util.UUID;
@@ -20,8 +22,14 @@ public class DefaultOptionalTypeProvider implements OptionalTypeProvider {
 		if (optionalType.equalsIgnoreCase("integer")) {
 			targetClass = Long.class;
 		}
+		else if (optionalType.equalsIgnoreCase("bigInteger")) {
+			targetClass = BigInteger.class;
+		}
 		else if (optionalType.equalsIgnoreCase("decimal")) {
 			targetClass = Double.class;
+		}
+		else if (optionalType.equalsIgnoreCase("bigDecimal")) {
+			targetClass = BigDecimal.class;
 		}
 		else if (optionalType.equalsIgnoreCase("date")) {
 			targetClass = Date.class;

@@ -43,6 +43,9 @@ public class ScriptMethodProvider implements MethodProvider {
 			if (ALLOW_LAMBDAS && ("lambda".equals(name) || "script.lambda".equals(name))) {
 				return new LambdaOperation();
 			}
+			else if ("throw".equals(name) || "script.throw".equals(name)) {
+				return new ThrowOperation();
+			}
 			else if (repository != null && repository.getScript(name) != null) {
 				return new ScriptOperation(repository.getScript(name));
 			}
@@ -82,6 +85,62 @@ public class ScriptMethodProvider implements MethodProvider {
 			));
 		}
 		return descriptions;
+	}
+	
+	public static class ParameterizedEvaluationException extends EvaluationException {
+		private static final long serialVersionUID = 1L;
+		private Object parameters;
+
+		public ParameterizedEvaluationException(Object parameters) {
+			this.parameters = parameters;
+		}
+
+		public ParameterizedEvaluationException(String message, Throwable cause, Object parameters) {
+			super(message, cause);
+			this.parameters = parameters;
+		}
+
+		public ParameterizedEvaluationException(String message, Object parameters) {
+			super(message);
+			this.parameters = parameters;
+		}
+
+		public ParameterizedEvaluationException(Throwable cause, Object parameters) {
+			super(cause);
+			this.parameters = parameters;
+		}
+
+		public Object getParameters() {
+			return parameters;
+		}
+	}
+	
+	public static class ThrowOperation extends BaseMethodOperation<ExecutionContext> {
+		@Override
+		public void finish() throws ParseException {
+			// do nothing
+		}
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		@Override
+		public Object evaluate(ExecutionContext context) throws EvaluationException {
+			// throw(message, parameters, chainedexception)
+			String message = null;
+			Throwable cause = null;
+			Object parameters = null;
+			for (int i = 1; i < getParts().size(); i++) {
+				Object evaluated = ((Operation) getParts().get(i).getContent()).evaluate(context);
+				if (evaluated instanceof Throwable) {
+					cause = (Throwable) evaluated;
+				}
+				else if (evaluated instanceof String) {
+					message = (String) evaluated;
+				}
+				else if (parameters == null) {
+					parameters = evaluated;
+				}
+			}
+			throw new ParameterizedEvaluationException(message, cause, parameters);
+		}
 	}
 	
 	/**
