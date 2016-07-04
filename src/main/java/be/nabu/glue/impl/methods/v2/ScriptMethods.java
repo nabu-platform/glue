@@ -1,10 +1,28 @@
 package be.nabu.glue.impl.methods.v2;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import be.nabu.glue.ScriptRuntime;
+import be.nabu.glue.ScriptUtils;
 import be.nabu.glue.annotations.GlueMethod;
+import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.api.ExecutionContext;
+import be.nabu.glue.api.Script;
+import be.nabu.glue.impl.ForkedExecutionContext;
 import be.nabu.glue.impl.GlueUtils;
+import be.nabu.glue.impl.GlueUtils.ObjectHandler;
+import be.nabu.libs.evaluator.ContextAccessorFactory;
+import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.annotations.MethodProviderClass;
+import be.nabu.libs.evaluator.api.ContextAccessor;
+import be.nabu.libs.evaluator.api.ListableContextAccessor;
 
 @MethodProviderClass(namespace = "script")
 public class ScriptMethods {
@@ -50,5 +68,87 @@ public class ScriptMethods {
 			exception = exception.getCause();
 		}
 		return exception;
+	}
+	
+	@GlueMethod(description = "Return the resource as a stream", version = 2)
+	public static InputStream resource(@GlueParam(name = "name") String name, @GlueParam(name = "script", defaultValue = "The current script") String script) throws IOException, ParseException {
+		if (name == null) {
+			return null;
+		}
+		if (script != null) {
+			return ScriptUtils.getRoot(ScriptRuntime.getRuntime().getScript().getRepository()).getScript(script).getResource(name);
+		}
+		else {
+			return ScriptRuntime.getRuntime().getScript().getResource(name);
+		}
+	}
+	
+	@GlueMethod(description = "Returns a list of all the resources", version = 2)
+	public static List<String> resources(@GlueParam(name = "script", defaultValue = "The current script") String scriptName) throws IOException, ParseException {
+		Script script;
+		if (scriptName != null) {
+			script = ScriptUtils.getRoot(ScriptRuntime.getRuntime().getScript().getRepository()).getScript(scriptName);
+		}
+		else {
+			script = ScriptRuntime.getRuntime().getScript();
+		}
+		List<String> resources = new ArrayList<String>();
+		if (script != null) {
+			for (String resource : script) {
+				resources.add(resource);
+			}
+		}
+		return resources;
+	}
+	
+	@GlueMethod(description = "Fill in the template with the given series of objects", version = 2)
+	public static Object template(final String template, Object...original) throws EvaluationException {
+		if (original == null || original.length == 0) {
+			return ScriptRuntime.getRuntime().getSubstituter().substitute(template, ScriptRuntime.getRuntime().getExecutionContext(), true);
+		}
+		return GlueUtils.wrap(new ObjectHandler() {
+			@SuppressWarnings("unchecked")
+			@Override
+			public Object handle(Object single) {
+				ExecutionContext parentContext = ScriptRuntime.getRuntime().getExecutionContext();
+				Map<String, Object> pipeline;
+				if (single instanceof Map) {
+					pipeline = (Map<String, Object>) single;
+				}
+				else if (single instanceof ExecutionContext) {
+					pipeline = ((ExecutionContext) single).getPipeline();
+				}
+				else {
+					try {
+						pipeline = toKeyValuePairs(single);
+					}
+					catch (EvaluationException e) {
+						throw new RuntimeException(e);
+					}
+				}
+				ForkedExecutionContext fork = new ForkedExecutionContext(parentContext, pipeline);
+				String result = ScriptRuntime.getRuntime().getSubstituter().substitute(template, fork, true);
+				ScriptRuntime.getRuntime().setExecutionContext(parentContext);
+				return result;
+			}
+		}, false, original);
+	}
+	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static Map<String, Object> toKeyValuePairs(Object value) throws EvaluationException {
+		Map<String, Object> pipeline = new HashMap<String, Object>();
+		pipeline.putAll(ScriptRuntime.getRuntime().getExecutionContext().getPipeline());
+		ContextAccessor accessor = ContextAccessorFactory.getInstance().getAccessor(value.getClass());
+		if (accessor instanceof ListableContextAccessor) {
+			Collection<String> list = ((ListableContextAccessor) accessor).list(value);
+			for (String key : list) {
+				Object single = accessor.get(value, key);
+				pipeline.put(key, single);
+			}
+		}
+		else {
+			throw new IllegalArgumentException("The object " + value + " is not context listable");
+		}
+		return pipeline;
 	}
 }

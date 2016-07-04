@@ -20,6 +20,8 @@ public class GlueUtils {
 	
 	private static Map<String, VersionRange> versions = new HashMap<String, VersionRange>();
 
+	public static final boolean USE_STREAMS = Boolean.parseBoolean(System.getProperty("glue.streams", "false"));
+	
 	private static boolean parallel = Boolean.parseBoolean(System.getProperty("glue.parallel", "true"));
 
 	public static boolean useParallelism() {

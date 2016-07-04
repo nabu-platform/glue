@@ -468,6 +468,7 @@ public class ScriptMethods {
 	/**
 	 * Loads a resource as inputstream
 	 */
+	@GlueMethod(version = 1)
 	public static InputStream resource(@GlueParam(name = "name") String name, @GlueParam(name = "script") String script) throws IOException, ParseException {
 		if (script != null) {
 			return ScriptUtils.getRoot(ScriptRuntime.getRuntime().getScript().getRepository()).getScript(script).getResource(name);
@@ -475,6 +476,7 @@ public class ScriptMethods {
 		return getInputStream(name);
 	}
 	
+	@GlueMethod(version = 1)
 	public static String [] resources(@GlueParam(name = "script") String scriptName) throws IOException, ParseException {
 		Script script = ScriptRuntime.getRuntime().getScript();
 		if (scriptName != null) {
