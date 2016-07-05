@@ -311,6 +311,21 @@ public class GlueUtils {
 				}
 			}
 		}
+		if (parameters.size() > lambda.getDescription().getParameters().size()) {
+			if (lambda.getDescription().getParameters().get(lambda.getDescription().getParameters().size() - 1).isVarargs()) {
+				List varargs = new ArrayList();
+				for (int i = lambda.getDescription().getParameters().size() - 1; i < parameters.size(); i++) {
+					varargs.add(parameters.get(i));
+				}
+				parameters.set(lambda.getDescription().getParameters().size() - 1, varargs.toArray());
+				for (int i = parameters.size() - 1; i > lambda.getDescription().getParameters().size(); i--) {
+					parameters.remove(i);
+				}
+			}
+			else {
+				throw new RuntimeException("Too many parameters for the lambda");
+			}
+		}
 		LambdaExecutionOperation lambdaOperation = new LambdaExecutionOperation(lambda.getDescription(), lambda.getOperation(), 
 			lambda instanceof EnclosedLambda ? ((EnclosedLambda) lambda).getEnclosedContext() : new HashMap<String, Object>());
 		try {
