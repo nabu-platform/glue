@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
@@ -183,26 +184,31 @@ public class SystemMethodProvider implements MethodProvider {
 			throw new IOException("The file is not a directory: " + directory);
 		}
 		String [] env = null;
+		ProcessBuilder processBuilder = new ProcessBuilder(commands);
+		processBuilder.directory(dir);
+		if (systemProperties != null && !systemProperties.isEmpty()) {
+			List<SystemProperty> allProperties = new ArrayList<SystemProperty>();
+			// get the current environment properties, if you pass in _any_ properties, it will not inherit the ones from the current environment
+			Map<String, String> systemEnv = System.getenv();
+			for (String key : systemEnv.keySet()) {
+				allProperties.add(new SystemProperty(key, systemEnv.get(key)));
+			}
+			allProperties.addAll(systemProperties);
+			env = new String[allProperties.size()];
+			for (int i = 0; i < allProperties.size(); i++) {
+				env[i] = allProperties.get(i).getKey() + "=" + allProperties.get(i).getValue();
+				processBuilder.environment().put(allProperties.get(i).getKey(), allProperties.get(i).getValue());
+			}
+		}
+		
 		Process process;
 		if (redirectIO) {
-			ProcessBuilder processBuilder = new ProcessBuilder(commands);
-			processBuilder.directory(dir);
-			if (systemProperties != null && !systemProperties.isEmpty()) {
-				List<SystemProperty> allProperties = new ArrayList<SystemProperty>();
-				// get the current environment properties, if you pass in _any_ properties, it will not inherit the ones from the current environment
-				Map<String, String> systemEnv = System.getenv();
-				for (String key : systemEnv.keySet()) {
-					allProperties.add(new SystemProperty(key, systemEnv.get(key)));
-				}
-				allProperties.addAll(systemProperties);
-				env = new String[allProperties.size()];
-				for (int i = 0; i < allProperties.size(); i++) {
-					env[i] = allProperties.get(i).getKey() + "=" + allProperties.get(i).getValue();
-					processBuilder.environment().put(allProperties.get(i).getKey(), allProperties.get(i).getValue());
-				}
-			}
-			processBuilder.inheritIO();
-			process = processBuilder.start();
+//			processBuilder.inheritIO();
+//			process = processBuilder.start();
+			ForkJoinPool pool = new ForkJoinPool();
+			process = Runtime.getRuntime().exec(commands, env, dir);
+			pool.submit(new CopyStream(process.getInputStream(), System.out));
+			pool.submit(new CopyStream(process.getErrorStream(), System.err));
 		}
 		else {
 			process = Runtime.getRuntime().exec(commands, env, dir);
@@ -225,25 +231,52 @@ public class SystemMethodProvider implements MethodProvider {
 			// do nothing
 		}
 		
-		String error;
-		InputStream input = process.getErrorStream();
-		try {
-			byte [] bytes = IOUtils.toBytes(IOUtils.wrap(input));
-			error = bytes == null ? null : new String(bytes);
+		if (redirectIO) {
+			return Integer.toString(process.exitValue());
 		}
-		finally {
-			input.close();
+		else {
+			String error;
+			InputStream input = process.getErrorStream();
+			try {
+				byte [] bytes = IOUtils.toBytes(IOUtils.wrap(input));
+				error = bytes == null ? null : new String(bytes);
+			}
+			finally {
+				input.close();
+			}
+			if (error != null && !error.isEmpty()) {
+				System.err.println(error);
+			}
+			input = new BufferedInputStream(process.getInputStream());
+			try {
+				byte [] bytes = IOUtils.toBytes(IOUtils.wrap(input));
+				return bytes == null ? null : new String(bytes);
+			}
+			finally {
+				input.close();
+			}
 		}
-		if (error != null && !error.isEmpty()) {
-			System.err.println(error);
+	}
+	
+	public static class CopyStream implements Runnable {
+		private InputStream input;
+		private OutputStream output;
+		public CopyStream(InputStream input, OutputStream output) {
+			this.input = input;
+			this.output = output;
 		}
-		input = new BufferedInputStream(process.getInputStream());
-		try {
-			byte [] bytes = IOUtils.toBytes(IOUtils.wrap(input));
-			return bytes == null ? null : new String(bytes);
-		}
-		finally {
-			input.close();
+		@Override
+		public void run() {
+			byte [] buffer = new byte[4096];
+			int read = 0;
+			try {
+				while((read = input.read(buffer)) > 0) {
+					output.write(buffer, 0, read);
+				}
+			}
+			catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 }
