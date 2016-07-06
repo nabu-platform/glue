@@ -20,6 +20,7 @@ import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.api.EnclosedLambda;
+import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.Lambda;
 import be.nabu.glue.impl.GlueUtils;
 import be.nabu.glue.impl.LambdaMethodProvider.LambdaExecutionOperation;
@@ -52,10 +53,11 @@ public class SeriesMethods {
 			throw new IllegalArgumentException("The lambda does not have enough parameters to process the element");
 		}
 		Iterable<?> series = GlueUtils.toSeries(objects);
+		ExecutionContext executionContext = ScriptRuntime.getRuntime().getExecutionContext();
 		for (Object object : resolve(series)) {
 			LambdaExecutionOperation lambdaOperation = new LambdaExecutionOperation(lambda.getDescription(), lambda.getOperation(), 
 				lambda instanceof EnclosedLambda ? ((EnclosedLambda) lambda).getEnclosedContext() : new HashMap<String, Object>());
-			Object key = lambdaOperation.evaluateWithParameters(ScriptRuntime.getRuntime().getExecutionContext(), object);
+			Object key = lambdaOperation.evaluateWithParameters(executionContext, object);
 			// it is possible to belong to multiple groups, hence the key can either be a single key or a list of keys
 			if (!(key instanceof Iterable)) {
 				key = Arrays.asList(key);
@@ -143,12 +145,12 @@ public class SeriesMethods {
 	@GlueMethod(returns = "series", description = "Find elements in the series that match the lambda expression", version = 2)
 	public static Object filter(final Lambda lambda, Object...objects) {
 		final Iterable<?> series = GlueUtils.toSeries(objects);
+		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
 		return new Iterable() {
 			@Override
 			public Iterator iterator() {
 				return new Iterator() {
 					private Iterator parent = series.iterator();
-					private ScriptRuntime runtime = ScriptRuntime.getRuntime();
 					private Object next = null;
 					private boolean hasNext = false;
 					@Override
@@ -208,7 +210,7 @@ public class SeriesMethods {
 	public static List<?> resolve(Iterable<?> iterable) {
 		List<Object> objects = new ArrayList<Object>();
 		ForkJoinPool pool = null;
-		final ScriptRuntime runtime = ScriptRuntime.getRuntime();
+		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
 		for (final Object single : iterable) {
 			if (single instanceof Callable) {
 				if (GlueUtils.useParallelism()) {
@@ -218,7 +220,7 @@ public class SeriesMethods {
 					objects.add(pool.submit(new Callable() {
 						@Override
 						public Object call() throws Exception {
-							runtime.fork(false).registerInThread();
+							runtime.registerInThread();
 							return ((Callable) single).call();
 						}
 					}));
@@ -332,16 +334,15 @@ public class SeriesMethods {
 		if (lambda.getDescription().getParameters().size() != iterables.size()) {
 			throw new IllegalArgumentException("The lambda does not have enough parameters to process the series: expecting " + iterables.size() + ", received " + lambda.getDescription().getParameters().size());
 		}
+		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
 		return new Iterable() {
 			@Override
 			public Iterator iterator() {
 				return new Iterator() {
-					ScriptRuntime runtime;
 					private List<Iterator> iterators = new ArrayList<Iterator>(); {
 						for (Object iterable : iterables) {
 							iterators.add(((Iterable) iterable).iterator());
 						}
-						runtime = ScriptRuntime.getRuntime();
 					}
 					@Override
 					public boolean hasNext() {
@@ -493,6 +494,7 @@ public class SeriesMethods {
 	@SuppressWarnings("rawtypes")
 	public static Iterable<?> to(final Lambda lambda, Object...original) {
 		final Iterable<?> iterable = GlueUtils.toSeries(original);
+		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
 		return new Iterable() {
 			@Override
 			public Iterator iterator() {
@@ -501,7 +503,6 @@ public class SeriesMethods {
 					private Object next;
 					private boolean isDone, hasNext;
 					private Iterator parent = iterable.iterator();
-					private ScriptRuntime runtime = ScriptRuntime.getRuntime();
 					
 					@SuppressWarnings("unchecked")
 					@Override
@@ -539,6 +540,7 @@ public class SeriesMethods {
 	
 	@SuppressWarnings("rawtypes")
 	public static Iterable<?> from(final Lambda lambda, Object...original) {
+		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
 		final Iterable<?> iterable = GlueUtils.toSeries(original);
 		return new Iterable() {
 			@Override
@@ -548,7 +550,6 @@ public class SeriesMethods {
 					private boolean isActive, isFirst;
 					private Object first;
 					private Iterator parent = iterable.iterator();
-					private ScriptRuntime runtime = ScriptRuntime.getRuntime();
 					
 					@SuppressWarnings("unchecked")
 					@Override

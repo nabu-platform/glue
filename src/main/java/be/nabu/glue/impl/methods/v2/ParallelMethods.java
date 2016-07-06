@@ -23,7 +23,7 @@ public class ParallelMethods {
 	@GlueMethod(description = "Runs the given lambda asynchronously. Any additional parameters are given to the lambda, if they are a future they are resolved first", version = 2)
 	public static Future run(final Lambda lambda, Object...objects) {
 		final List<?> resolved = SeriesMethods.resolve(GlueUtils.toSeries(objects));
-		final ScriptRuntime runtime = ScriptRuntime.getRuntime();
+		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
 		Callable callable = new Callable() {
 			@Override
 			public Object call() throws Exception {
