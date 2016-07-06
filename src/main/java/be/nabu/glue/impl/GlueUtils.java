@@ -95,7 +95,7 @@ public class GlueUtils {
 			else if (min != null && version < min) {
 				return false;
 			}
-			else if (max != null && version > max) {
+			else if (max != null && version >= max) {
 				return false;
 			}
 			return true;

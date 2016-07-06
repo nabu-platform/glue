@@ -56,7 +56,7 @@ public class Main {
 		boolean useMarkdown = new Boolean(getArgument("markdown", "false", arguments));
 		
 		// currently we default to version 2
-		String allVersion = getArgument("version", "1", arguments);
+		String allVersion = getArgument("version", "1-2", arguments);
 		
 		if (System.getProperty("version") == null) {
 			System.setProperty("version", allVersion);
