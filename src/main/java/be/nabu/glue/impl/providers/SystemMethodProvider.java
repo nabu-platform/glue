@@ -78,10 +78,11 @@ public class SystemMethodProvider implements MethodProvider {
 			List<String> arguments = new ArrayList<String>();
 			List<SystemProperty> systemProperties = new ArrayList<SystemProperty>();
 			List<byte []> inputBytes = new ArrayList<byte[]>();
+			boolean redirectIO = false;
 			for (int i = 1; i < getParts().size(); i++) {
 				Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
-				// if you have a greater then, you can redirect
-				if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.GREATER) {
+				// if you have a lesser then (e.g. 1<), you can redirect an input to it
+				if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.LESSER) {
 					Object evaluated = argumentOperation.getParts().get(2).getContent() instanceof Operation
 						? ((Operation<ExecutionContext>) argumentOperation.getParts().get(2).getContent()).evaluate(context)
 						: argumentOperation.getParts().get(2).getContent();
@@ -96,6 +97,11 @@ public class SystemMethodProvider implements MethodProvider {
 							throw new EvaluationException(e);
 						}
 					}
+				}
+				// if you have a greater then (e.g. 1>) you can redirect the output
+				else if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.GREATER) {
+					Object output = argumentOperation.getParts().get(2).getContent().toString();
+					redirectIO = "system".equals(output);
 				}
 				else {
 					Object evaluated = argumentOperation.evaluate(context);
@@ -141,7 +147,7 @@ public class SystemMethodProvider implements MethodProvider {
 			else {
 				arguments.add(0, command);
 				try {
-					return exec(directory, arguments.toArray(new String[arguments.size()]), inputBytes, systemProperties).trim();
+					return exec(directory, arguments.toArray(new String[arguments.size()]), inputBytes, systemProperties, redirectIO).trim();
 				}
 				catch (IOException e) {
 					throw new EvaluationException(e);
@@ -165,7 +171,7 @@ public class SystemMethodProvider implements MethodProvider {
 		}
 	}
 	
-	public static String exec(String directory, String [] commands, List<byte[]> inputContents, List<SystemProperty> systemProperties) throws IOException, InterruptedException {
+	public static String exec(String directory, String [] commands, List<byte[]> inputContents, List<SystemProperty> systemProperties, boolean redirectIO) throws IOException, InterruptedException {
 		if (!directory.endsWith("/")) {
 			directory += "/";
 		}
@@ -177,25 +183,30 @@ public class SystemMethodProvider implements MethodProvider {
 			throw new IOException("The file is not a directory: " + directory);
 		}
 		String [] env = null;
-		ProcessBuilder processBuilder = new ProcessBuilder(commands);
-		processBuilder.directory(dir);
-		if (systemProperties != null && !systemProperties.isEmpty()) {
-			List<SystemProperty> allProperties = new ArrayList<SystemProperty>();
-			// get the current environment properties, if you pass in _any_ properties, it will not inherit the ones from the current environment
-			Map<String, String> systemEnv = System.getenv();
-			for (String key : systemEnv.keySet()) {
-				allProperties.add(new SystemProperty(key, systemEnv.get(key)));
+		Process process;
+		if (redirectIO) {
+			ProcessBuilder processBuilder = new ProcessBuilder(commands);
+			processBuilder.directory(dir);
+			if (systemProperties != null && !systemProperties.isEmpty()) {
+				List<SystemProperty> allProperties = new ArrayList<SystemProperty>();
+				// get the current environment properties, if you pass in _any_ properties, it will not inherit the ones from the current environment
+				Map<String, String> systemEnv = System.getenv();
+				for (String key : systemEnv.keySet()) {
+					allProperties.add(new SystemProperty(key, systemEnv.get(key)));
+				}
+				allProperties.addAll(systemProperties);
+				env = new String[allProperties.size()];
+				for (int i = 0; i < allProperties.size(); i++) {
+					env[i] = allProperties.get(i).getKey() + "=" + allProperties.get(i).getValue();
+					processBuilder.environment().put(allProperties.get(i).getKey(), allProperties.get(i).getValue());
+				}
 			}
-			allProperties.addAll(systemProperties);
-			env = new String[allProperties.size()];
-			for (int i = 0; i < allProperties.size(); i++) {
-				env[i] = allProperties.get(i).getKey() + "=" + allProperties.get(i).getValue();
-				processBuilder.environment().put(allProperties.get(i).getKey(), allProperties.get(i).getValue());
-			}
+			processBuilder.inheritIO();
+			process = processBuilder.start();
 		}
-		processBuilder.inheritIO();
-		Process process = processBuilder.start();
-//		Process process = Runtime.getRuntime().exec(commands, env, dir);
+		else {
+			process = Runtime.getRuntime().exec(commands, env, dir);
+		}
 		if (inputContents != null && !inputContents.isEmpty()) {
 			OutputStream output = new BufferedOutputStream(process.getOutputStream());
 			try {
