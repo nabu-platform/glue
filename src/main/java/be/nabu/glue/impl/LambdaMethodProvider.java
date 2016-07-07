@@ -90,10 +90,14 @@ public class LambdaMethodProvider implements MethodProvider {
 				}
 				forkedContext.getPipeline().put(description.getParameters().get(i - 1).getName(), value);
 			}
+			ExecutionContext previousContext = ScriptRuntime.getRuntime().getExecutionContext();
 			ScriptRuntime.getRuntime().setExecutionContext(forkedContext);
-			Object result = operation.evaluate(forkedContext);
-			ScriptRuntime.getRuntime().setExecutionContext(context);
-			return result;
+			try {
+				return operation.evaluate(forkedContext); 
+			}
+			finally {
+				ScriptRuntime.getRuntime().setExecutionContext(previousContext);
+			}
 		}
 
 		@Override

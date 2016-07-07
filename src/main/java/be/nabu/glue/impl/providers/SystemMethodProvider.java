@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.ProcessBuilder.Redirect;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.ParseException;
@@ -14,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ForkJoinPool;
 
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.api.ExecutionContext;
@@ -204,11 +204,10 @@ public class SystemMethodProvider implements MethodProvider {
 		Process process;
 		if (redirectIO) {
 //			processBuilder.inheritIO();
-//			process = processBuilder.start();
-			ForkJoinPool pool = new ForkJoinPool();
-			process = Runtime.getRuntime().exec(commands, env, dir);
-			pool.submit(new CopyStream(process.getInputStream(), System.out));
-			pool.submit(new CopyStream(process.getErrorStream(), System.err));
+			processBuilder.redirectInput(inputContents != null && !inputContents.isEmpty() ? Redirect.PIPE : Redirect.INHERIT);
+			processBuilder.redirectError(Redirect.INHERIT);
+			processBuilder.redirectOutput(Redirect.INHERIT);
+			process = processBuilder.start();
 		}
 		else {
 			process = Runtime.getRuntime().exec(commands, env, dir);

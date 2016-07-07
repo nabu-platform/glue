@@ -25,6 +25,7 @@ public class GlueOperationProvider implements DynamicMethodOperationProvider {
 		this.methodProviders.addAll(Arrays.asList(methodProviders));
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	public Operation<ExecutionContext> newOperation(OperationType type) {
 		switch (type) {
