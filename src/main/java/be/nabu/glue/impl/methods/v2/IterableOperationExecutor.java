@@ -14,7 +14,7 @@ public class IterableOperationExecutor implements OperationExecutor {
 
 	@Override
 	public boolean support(Object leftOperand, QueryPart.Type operator, Object rightOperand) {
-		return leftOperand instanceof Iterable || rightOperand instanceof Iterable;
+		return (leftOperand instanceof Iterable || rightOperand instanceof Iterable) && operator != QueryPart.Type.IN && operator != QueryPart.Type.NOT_IN;
 	}
 
 	@SuppressWarnings("rawtypes")
