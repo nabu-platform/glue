@@ -492,7 +492,7 @@ public class SeriesMethods {
 	}
 	
 	@SuppressWarnings("rawtypes")
-	public static Iterable<?> to(final Lambda lambda, Object...original) {
+	public static Iterable<?> until(final Lambda lambda, Object...original) {
 		final Iterable<?> iterable = GlueUtils.toSeries(original);
 		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
 		return new Iterable() {
@@ -513,12 +513,12 @@ public class SeriesMethods {
 							parameters.add(parentNext);
 							Boolean accepted = (Boolean) GlueUtils.calculate(lambda, runtime, parameters);
 							if (accepted) {
-								next = parentNext;
-								hasNext = true;
-							}
-							else {
 								isDone = true;
 								hasNext = false;
+							}
+							else {
+								next = parentNext;
+								hasNext = true;
 							}
 						}
 						return hasNext;
