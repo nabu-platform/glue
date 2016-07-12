@@ -26,6 +26,7 @@ import be.nabu.glue.api.Script;
 import be.nabu.glue.api.ScriptRepository;
 import be.nabu.glue.impl.LambdaImpl;
 import be.nabu.glue.impl.SimpleMethodDescription;
+import be.nabu.glue.impl.SimpleParameterDescription;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
@@ -142,6 +143,9 @@ public class FunctionExecutor extends BaseExecutor implements AssignmentExecutor
 	private List<ParameterDescription> getInputs() throws ParseException, IOException {
 		if (inputs == null) {
 			inputs = ScriptUtils.getParameters(getSequence(), true, true);
+			if (!inputs.isEmpty() && inputs.get(inputs.size() - 1).isList() && inputs.get(inputs.size() - 1) instanceof SimpleParameterDescription) {
+				((SimpleParameterDescription) inputs.get(inputs.size() - 1)).setVarargs(true);
+			}
 		}
 		return inputs;
 	}
