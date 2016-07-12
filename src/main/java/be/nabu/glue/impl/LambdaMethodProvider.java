@@ -13,6 +13,7 @@ import be.nabu.glue.api.Lambda;
 import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.api.DescribedOperation;
+import be.nabu.glue.api.ParameterDescription;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.QueryPart;
 import be.nabu.libs.evaluator.QueryPart.Type;
@@ -74,12 +75,12 @@ public class LambdaMethodProvider implements MethodProvider {
 			this.enclosedContext = enclosedContext;
 		}
 		
-		@SuppressWarnings("unchecked")
+		@SuppressWarnings({ "unchecked", "rawtypes" })
 		@Override
 		public Object evaluate(ExecutionContext context) throws EvaluationException {
 			ForkedExecutionContext forkedContext = new ForkedExecutionContext(context, true);
 			forkedContext.getPipeline().putAll(enclosedContext);
-			if (getParts().size() - 1 > description.getParameters().size()) {
+			if (getParts().size() - 1 > description.getParameters().size() && (description.getParameters().isEmpty() || !description.getParameters().get(description.getParameters().size() - 1).isList())) {
 				throw new EvaluationException("Too many parameters for lambda");
 			}
 			for (int i = 1; i < getParts().size(); i++) {
@@ -88,7 +89,18 @@ public class LambdaMethodProvider implements MethodProvider {
 				if (value == null) {
 					value = description.getParameters().get(i - 1).getDefaultValue();
 				}
-				forkedContext.getPipeline().put(description.getParameters().get(i - 1).getName(), value);
+				ParameterDescription parameterDescription = description.getParameters().get(i > description.getParameters().size() ? description.getParameters().size() - 1 : i - 1);
+				if (i > description.getParameters().size()) {
+					List list = (List) forkedContext.getPipeline().get(parameterDescription.getName());
+					list.add(value);
+					value = list;
+				}
+				else if (parameterDescription.isList()) {
+					List list = new ArrayList();
+					list.add(value);
+					value = list;
+				}
+				forkedContext.getPipeline().put(parameterDescription.getName(), value);
 			}
 			ExecutionContext previousContext = ScriptRuntime.getRuntime().getExecutionContext();
 			ScriptRuntime.getRuntime().setExecutionContext(forkedContext);
@@ -111,15 +123,15 @@ public class LambdaMethodProvider implements MethodProvider {
 		}
 		
 		@SuppressWarnings("rawtypes")
-		public synchronized Object evaluateWithParameters(ExecutionContext context, Object...parameters) throws EvaluationException {
-			getParts().clear();
-			add(new QueryPart(Type.STRING, "anonymous"));
-			for (int i = 0; i < description.getParameters().size(); i++) {
+		public Object evaluateWithParameters(ExecutionContext context, Object...parameters) throws EvaluationException {
+			LambdaExecutionOperation lambda = new LambdaExecutionOperation(getMethodDescription(), operation, enclosedContext);
+			lambda.getParts().add(new QueryPart(Type.STRING, "anonymous"));
+			for (int i = 0; i < parameters.length; i++) {
 				NativeOperation<?> operation = new NativeOperation();
-				operation.add(new QueryPart(Type.UNKNOWN, parameters.length < i ? null : parameters[i]));
-				add(new QueryPart(Type.OPERATION, operation));
+				operation.add(new QueryPart(Type.UNKNOWN, parameters[i]));
+				lambda.getParts().add(new QueryPart(Type.OPERATION, operation));
 			}
-			return evaluate(context);
+			return lambda.evaluate(context);
 		}
 		
 	}

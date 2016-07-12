@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
 
 import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
@@ -231,6 +232,22 @@ public class MathMethods {
 			@Override
 			public Object handle(Object single) {
 				return Math.toRadians((Double) single);
+			}
+		}, Double.class), false, original);
+	}
+	
+	@GlueMethod(description = "Converts the degrees to radians", version = 2)
+	public static Object round(final Integer amountOfNumbers, Object...original) {
+		StringBuilder builder = new StringBuilder();
+		for (int i = 0; i < (amountOfNumbers == null ? 0 : amountOfNumbers); i++) {
+			builder.append("#");
+		}
+		final String format = "#" + (builder.toString().isEmpty() ? "" : "." + builder.toString());
+		return GlueUtils.wrap(GlueUtils.cast(new ObjectHandler() {
+			@Override
+			public Object handle(Object single) {
+				DecimalFormat formatter = new DecimalFormat(format);
+				return formatter.format((Double) single);
 			}
 		}, Double.class), false, original);
 	}

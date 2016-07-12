@@ -331,8 +331,8 @@ public class SeriesMethods {
 		else {
 			iterables.add(series(original));
 		}
-		if (lambda.getDescription().getParameters().size() != iterables.size()) {
-			throw new IllegalArgumentException("The lambda does not have enough parameters to process the series: expecting " + iterables.size() + ", received " + lambda.getDescription().getParameters().size());
+		if (lambda.getDescription().getParameters().size() > iterables.size() || (iterables.size() > lambda.getDescription().getParameters().size() && !lambda.getDescription().getParameters().get(lambda.getDescription().getParameters().size() - 1).isList())) {
+			throw new IllegalArgumentException("The lambda does not have enough parameters to process the series: expecting " + iterables.size() + " input parameters, has " + lambda.getDescription().getParameters().size());
 		}
 		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
 		return new Iterable() {
@@ -457,6 +457,7 @@ public class SeriesMethods {
 	}
 	
 	@SuppressWarnings("rawtypes")
+	@GlueMethod(description = "Limits the series to a certain amount", version = 2)
 	public static Iterable<?> limit(@GlueParam(name = "limit") final long limit, @GlueParam(name = "content") Object...original) {
 		if (original == null || original.length == 0) {
 			return null;
@@ -492,6 +493,7 @@ public class SeriesMethods {
 	}
 	
 	@SuppressWarnings("rawtypes")
+	@GlueMethod(description = "Stops a series when a certain condition is met", version = 2)
 	public static Iterable<?> until(final Lambda lambda, Object...original) {
 		final Iterable<?> iterable = GlueUtils.toSeries(original);
 		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
@@ -539,6 +541,7 @@ public class SeriesMethods {
 	}
 	
 	@SuppressWarnings("rawtypes")
+	@GlueMethod(description = "Starts a series when a certain condition is met", version = 2)
 	public static Iterable<?> from(final Lambda lambda, Object...original) {
 		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
 		final Iterable<?> iterable = GlueUtils.toSeries(original);
@@ -585,6 +588,12 @@ public class SeriesMethods {
 				};
 			}
 		};
+	}
+	
+	@GlueMethod(description = "Unwraps a series to pass along as arguments", version = 2)
+	public static Object unwrap(Object...original) {
+		List<?> resolve = resolve(GlueUtils.toSeries(original));
+		return resolve.toArray();
 	}
 	
 }
