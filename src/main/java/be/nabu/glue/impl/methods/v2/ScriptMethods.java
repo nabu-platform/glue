@@ -160,7 +160,7 @@ public class ScriptMethods {
 	
 	@SuppressWarnings("unchecked")
 	@GlueMethod(description = "Create a new lambda that creates a pipeline of the given lambdas", version = 2)
-	public static Lambda pipeline(Object...objects) {
+	public static Lambda compose(Object...objects) {
 		if (objects == null || objects.length == 0) {
 			return null;
 		}

@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -294,6 +295,64 @@ public class SeriesMethods {
 			}
 		};
 	}
+	
+	@GlueMethod(description = "Gets the amount of dimensions for a given series", version = 2)
+	@SuppressWarnings("rawtypes")
+	public static Integer dimensions(Iterable series) {
+		int dimensions = 0;
+		while (series != null) {
+			dimensions++;
+			Iterator iterator = series.iterator();
+			if (!iterator.hasNext()) {
+				break;
+			}
+			Object next = iterator.next();
+			if (next instanceof Iterable) {
+				series = (Iterable<?>) next;
+			}
+			else {
+				break;
+			}
+		}
+		return dimensions;
+	}
+	
+	@GlueMethod(description = "Gets the shape for a given series", version = 2)
+	@SuppressWarnings("rawtypes")
+	public static List<Integer> shape(Iterable series) {
+		List<Integer> shape = new ArrayList<Integer>();
+		while (series != null) {
+			Iterator iterator = series.iterator();
+			series = null;
+			int size = 0;
+			while (iterator.hasNext()) {
+				Object next = iterator.next();
+				if (size == 0 && next instanceof Iterable) {
+					series = (Iterable) next;
+				}
+				size++;
+			}
+			shape.add(size);
+		}
+		return shape;
+	}
+	
+//	private static List<ValueImpl> preprocess(List<Integer> shape, ValueImpl...values) {
+//		List<ValueImpl> processed = new ArrayList<ValueImpl>();
+//		for (ValueImpl value : values) {
+//			value.getColumn()
+//		}
+//	}
+//	
+//	public static Object mutate(Iterable series, ValueImpl...values) {
+//		List<Integer> shape = shape(series);
+//		List<ValueImpl> processed = preprocess(shape, values);
+//		for (ValueImpl value : processed) {
+//			if (value.row != null) {
+//				
+//			}
+//		}
+//	}
 
 	@GlueMethod(description = "Gets the last entry in a series", version = 2)
 	public static Object last(Object...original) {
@@ -594,6 +653,97 @@ public class SeriesMethods {
 	public static Object unwrap(Object...original) {
 		List<?> resolve = resolve(GlueUtils.toSeries(original));
 		return resolve.toArray();
+	}
+	
+	@SuppressWarnings("rawtypes")
+	@GlueMethod(description = "Explodes each argument in the series into a multiple new arguments for the new series", version = 2)
+	public static Object explode(final Lambda lambda, Object...original) {
+		if (original == null || original.length == 0) {
+			return null;
+		}
+		final Iterable<?> series = GlueUtils.toSeries(original);
+		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
+		return new Iterable() {
+			@Override
+			public Iterator iterator() {
+				return new Iterator() {
+					private Iterator iterator = series.iterator();
+					private Deque queue = new ArrayDeque();
+					@SuppressWarnings("unchecked")
+					@Override
+					public boolean hasNext() {
+						while(queue.isEmpty() && iterator.hasNext()) {
+							Object next = iterator.next();
+							Object calculate = GlueUtils.calculate(lambda, runtime, Arrays.asList(next));
+							if (!(calculate instanceof Iterable)) {
+								calculate = Arrays.asList(calculate);
+							}
+							for (Object single : (Iterable) calculate) {
+								queue.add(single);
+							}
+						}
+						return !queue.isEmpty();
+					}
+					@Override
+					public Object next() {
+						if (hasNext()) {
+							return queue.pop();
+						}
+						else {
+							return null;
+						}
+					}
+					@Override
+					public void remove() {
+						throw new UnsupportedOperationException();
+					}
+				};
+			}
+		};
+	}
+	
+	@GlueMethod(description = "Creates a dimensional value that can be used to manipulate series", version = 2)
+	public static Object value(@GlueParam(name = "value") Object value, @GlueParam(name = "row") Long row, @GlueParam(name = "column") Long column, @GlueParam(name = "page") Long...pages) {
+		return new ValueImpl(value, row, column, pages);
+	}
+	
+	public static class ValueImpl {
+		private Object value;
+		private Long row, column;
+		private Long [] pages;
+		public ValueImpl() {
+			// auto construct
+		}
+		public ValueImpl(Object value, Long row, Long column, Long...pages) {
+			this.value = value;
+			this.row = row;
+			this.column = column;
+			this.pages = pages;
+		}
+		public Object getValue() {
+			return value;
+		}
+		public void setValue(Object value) {
+			this.value = value;
+		}
+		public Long getRow() {
+			return row;
+		}
+		public void setRow(Long row) {
+			this.row = row;
+		}
+		public Long getColumn() {
+			return column;
+		}
+		public void setColumn(Long column) {
+			this.column = column;
+		}
+		public Long[] getPages() {
+			return pages;
+		}
+		public void setPages(Long[] pages) {
+			this.pages = pages;
+		}
 	}
 	
 }
