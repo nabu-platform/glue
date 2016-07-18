@@ -84,7 +84,8 @@ public class EmbeddedGlueParser extends GlueParser {
 		for (int i = 0; i < codeDepth; i++) {
 			buffer += "\t";
 		}
-		return substring.replace("\"", "\\\"").replace("#", "\\#").replace("\n", "\n" + buffer);
+		// the second replace makes sure if you had an escape ", it is properly done
+		return substring.replace("\"", "\\\"").replace("\\\\\"", "\" + \"\\\\\" + \"\\\"\" + \"").replace("#", "\\#").replace("\n", "\n" + buffer); // .
 	}
 
 	@Override
