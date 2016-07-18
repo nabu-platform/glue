@@ -25,7 +25,8 @@ public class LambdaOperationExecutor implements OperationExecutor {
 
 	@Override
 	public boolean support(Object leftOperand, Type operator, Object rightOperand) {
-		return leftOperand instanceof Lambda || rightOperand instanceof Lambda;
+		return (leftOperand instanceof Lambda || rightOperand instanceof Lambda) && operator != QueryPart.Type.IN && operator != QueryPart.Type.NOT_IN
+				&& operator != QueryPart.Type.EQUALS && operator != QueryPart.Type.NOT_EQUALS && operator != QueryPart.Type.NOT;
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
