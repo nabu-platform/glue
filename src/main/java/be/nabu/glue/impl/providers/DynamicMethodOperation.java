@@ -1,5 +1,6 @@
 package be.nabu.glue.impl.providers;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
@@ -13,6 +14,7 @@ import be.nabu.glue.api.Lambda;
 import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.impl.ForkedExecutionContext;
 import be.nabu.glue.impl.GlueUtils;
+import be.nabu.glue.impl.TransactionalCloseable;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.QueryPart;
 import be.nabu.libs.evaluator.api.Operation;
@@ -68,6 +70,9 @@ public class DynamicMethodOperation extends BaseOperation {
 	}
 	
 	private static Object postProcess(Object returnValue) {
+		// from version 2 onwards we immediately load all streams
+		// in the unlikely event that you open the stream only to stream it to somewhere else we can provide dedicated methods, in all other cases it will be loaded in memory anyway
+		// this way we at least have no leaks and the streams are not "read-once" until converted to bytes and autoconversion is easier
 		if (!GlueUtils.getVersion().contains(1.0)) {
 			if (returnValue instanceof InputStream) {
 				InputStream stream = (InputStream) returnValue;
@@ -83,6 +88,10 @@ public class DynamicMethodOperation extends BaseOperation {
 					throw new RuntimeException(e);
 				}
 			}
+		}
+		// in version 1 we have to make sure all closeables are added as transactionables
+		else if (returnValue instanceof Closeable) {
+			ScriptRuntime.getRuntime().addTransactionable(new TransactionalCloseable((Closeable) returnValue));
 		}
 		return returnValue;
 	}

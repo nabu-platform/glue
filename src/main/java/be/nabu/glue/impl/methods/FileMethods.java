@@ -1,5 +1,6 @@
 package be.nabu.glue.impl.methods;
 
+import java.awt.Desktop;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -442,5 +443,9 @@ public class FileMethods {
 	
 	public static byte [] gunzip(@GlueParam(name = "zipContent") Object content) throws IOException {
 		return ScriptMethods.bytes(new GZIPInputStream(ScriptMethods.toStream(ScriptMethods.bytes(content))));
+	}
+	
+	public static void open(String name) throws IOException {
+		Desktop.getDesktop().browse(uri(name));
 	}
 }
