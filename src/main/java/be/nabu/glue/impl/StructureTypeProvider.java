@@ -132,7 +132,7 @@ public class StructureTypeProvider implements OptionalTypeProvider {
 			for (Executor child : group.getChildren()) {
 				if (child instanceof AssignmentExecutor) {
 					AssignmentExecutor executor = (AssignmentExecutor) child;
-					if (executor.getVariableName() != null && !executor.isOverwriteIfExists()) {
+					if (executor.getVariableName() != null) { // && !executor.isOverwriteIfExists()
 						if (!inputExecutors.containsKey(executor.getVariableName())) {
 							inputExecutors.put(executor.getVariableName(), executor);
 						}
