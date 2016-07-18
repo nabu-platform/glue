@@ -2,6 +2,7 @@ package be.nabu.glue.impl;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,21 +15,31 @@ import be.nabu.glue.api.AssignmentExecutor;
 import be.nabu.glue.api.ExecutionException;
 import be.nabu.glue.api.Executor;
 import be.nabu.glue.api.ExecutorGroup;
+import be.nabu.glue.api.Lambda;
 import be.nabu.glue.api.OptionalTypeConverter;
 import be.nabu.glue.api.OptionalTypeProvider;
 import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.api.ScriptRepository;
+import be.nabu.glue.impl.executors.FunctionExecutor.FunctionOperation;
 import be.nabu.libs.evaluator.ContextAccessorFactory;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.api.ContextAccessor;
+import be.nabu.libs.evaluator.api.ListableContextAccessor;
 
 public class StructureTypeProvider implements OptionalTypeProvider {
 
+	public static final boolean INCLUDE_NON_SHARED_FIELDS = Boolean.parseBoolean(System.getProperty("glue.include_non_shared_fields", "true"));
 	private ScriptRepository repository;
+	private Map<String, Object> additionalContext;
 
 	public StructureTypeProvider(ScriptRepository repository) {
 		this.repository = repository;
+	}
+	
+	public StructureTypeProvider(ScriptRepository repository, Map<String, Object> additionalContext) {
+		this.repository = repository;
+		this.additionalContext = additionalContext;
 	}
 	
 	@Override
@@ -36,7 +47,22 @@ public class StructureTypeProvider implements OptionalTypeProvider {
 		try {
 			Script script = repository.getScript(type);
 			if (script != null) {
-				return new StructureTypeConverter(script);
+				return new StructureTypeConverter(ScriptUtils.getFullName(script), script.getRoot());
+			}
+			else {
+				Object object = null;
+				if (additionalContext != null) {
+					object = additionalContext.get(type);
+				}
+				if (object == null || !(object instanceof Lambda)) {
+					ScriptRuntime runtime = ScriptRuntime.getRuntime();
+					if (runtime != null) {
+						object = runtime.getExecutionContext().getPipeline().get(type);
+					}
+				}
+				if (object instanceof Lambda && ((Lambda) object).getOperation() instanceof FunctionOperation) {
+					return new StructureTypeConverter(type, (ExecutorGroup) ((FunctionOperation) ((Lambda) object).getOperation()).getExecutor());
+				}
 			}
 		}
 		catch (IOException e) {
@@ -50,14 +76,16 @@ public class StructureTypeProvider implements OptionalTypeProvider {
 
 	public class StructureTypeConverter implements OptionalTypeConverter {
 
-		private Script script;
 		private List<ParameterDescription> parameters;
 		private Map<String, AssignmentExecutor> inputExecutors;
 		
 		private boolean allowDefaultValueInitialization = Boolean.parseBoolean(System.getProperty("structure.allow.defaultValues", "true"));
+		private ExecutorGroup root;
+		private String name;
 
-		public StructureTypeConverter(Script script) {
-			this.script = script;
+		public StructureTypeConverter(String name, ExecutorGroup root) {
+			this.name = name;
+			this.root = root;
 		}
 		
 		@Override
@@ -66,13 +94,13 @@ public class StructureTypeProvider implements OptionalTypeProvider {
 				return cast(object, getParameters());
 			}
 			catch (EvaluationException e) {
-				throw new ClassCastException("Could not cast to " + script.getName() + ": " + e.getMessage());
+				throw new ClassCastException("Could not cast to " + name + ": " + e.getMessage());
 			}
 			catch (ParseException e) {
-				throw new ClassCastException("Could not cast to " + script.getName() + ": " + e.getMessage());
+				throw new ClassCastException("Could not cast to " + name + ": " + e.getMessage());
 			}
 			catch (IOException e) {
-				throw new ClassCastException("Could not cast to " + script.getName() + ": " + e.getMessage());
+				throw new ClassCastException("Could not cast to " + name + ": " + e.getMessage());
 			}
 		}
 		
@@ -80,7 +108,7 @@ public class StructureTypeProvider implements OptionalTypeProvider {
 			if (parameters == null) {
 				synchronized(this) {
 					if (parameters == null) {
-						parameters = ScriptUtils.getParameters(script.getRoot(), true, false);
+						parameters = ScriptUtils.getParameters(root, true, false);
 					}
 				}
 			}
@@ -92,15 +120,7 @@ public class StructureTypeProvider implements OptionalTypeProvider {
 				synchronized(this) {
 					if (inputExecutors == null) {
 						Map<String, AssignmentExecutor> inputExecutors = new HashMap<String, AssignmentExecutor>();
-						try {
-							scanInputExecutors(script.getRoot(), inputExecutors);
-						}
-						catch (IOException e) {
-							throw new RuntimeException(e);
-						}
-						catch (ParseException e) {
-							throw new RuntimeException(e);
-						}
+						scanInputExecutors(root, inputExecutors);
 						this.inputExecutors = inputExecutors;
 					}
 				}
@@ -129,7 +149,7 @@ public class StructureTypeProvider implements OptionalTypeProvider {
 			if (original == null) {
 				return null;
 			}
-			ContextAccessor accessor = ContextAccessorFactory.getInstance().getAccessor();
+			ContextAccessor accessor = ContextAccessorFactory.getInstance().getAccessor(original.getClass());
 			Map<String, Object> castValues = new LinkedHashMap<String, Object>();
 			for (ParameterDescription parameter : parameters) {
 				Object value;
@@ -141,6 +161,7 @@ public class StructureTypeProvider implements OptionalTypeProvider {
 						}
 						try {
 							ForkedExecutionContext context = new ForkedExecutionContext(ScriptRuntime.getRuntime().getExecutionContext(), true);
+							context.getPipeline().putAll(castValues);
 							assignmentExecutor.execute(context);
 							value = context.getPipeline().get(parameter.getName());
 							if (value == null) {
@@ -170,6 +191,14 @@ public class StructureTypeProvider implements OptionalTypeProvider {
 				}
 				else {
 					castValues.put(parameter.getName(), value);
+				}
+			}
+			if (INCLUDE_NON_SHARED_FIELDS && accessor instanceof ListableContextAccessor) {
+				Collection list = ((ListableContextAccessor) accessor).list(original);
+				for (String key : (Collection<String>) list) {
+					if (!castValues.containsKey(key)) {
+						castValues.put(key, accessor.get(original, key));
+					}
 				}
 			}
 			return castValues;

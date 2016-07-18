@@ -4,21 +4,27 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.ScriptUtils;
+import be.nabu.glue.api.EnclosedLambda;
 import be.nabu.glue.api.ExecutionContext;
+import be.nabu.glue.api.Lambda;
 import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.MethodProvider;
+import be.nabu.glue.api.OptionalTypeConverter;
 import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.api.ScriptRepository;
 import be.nabu.glue.impl.LambdaImpl;
+import be.nabu.glue.impl.LambdaMethodProvider.LambdaExecutionOperation;
 import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.impl.SimpleParameterDescription;
+import be.nabu.glue.impl.executors.EvaluateExecutor;
 import be.nabu.glue.impl.methods.ScriptMethods;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.QueryPart;
@@ -42,6 +48,9 @@ public class ScriptMethodProvider implements MethodProvider {
 		try {
 			if (ALLOW_LAMBDAS && ("lambda".equals(name) || "script.lambda".equals(name))) {
 				return new LambdaOperation();
+			}
+			else if (ALLOW_LAMBDAS && ("dispatch".equals(name) || "script.dispatch".equals(name))) {
+				return new DispatchOperation();
 			}
 			else if ("throw".equals(name) || "script.throw".equals(name)) {
 				return new ThrowOperation();
@@ -140,6 +149,141 @@ public class ScriptMethodProvider implements MethodProvider {
 				}
 			}
 			throw new ParameterizedEvaluationException(message, cause, parameters);
+		}
+	}
+	
+	public static class DispatchOperation extends BaseMethodOperation<ExecutionContext> {
+
+		@Override
+		public void finish() throws ParseException {
+			// do nothing
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public Object evaluate(ExecutionContext context) throws EvaluationException {
+			ScriptRuntime runtime = ScriptRuntime.getRuntime();
+			String fullName = ScriptUtils.getFullName(runtime.getScript());
+			Integer counter = (Integer) runtime.getContext().get(fullName + ".lambda.counter");
+			if (counter == null) {
+				counter = -1;
+			}
+			counter++;
+			runtime.getContext().put(fullName + ".lambda.counter", counter);
+			List<Lambda> lambdas = new ArrayList<Lambda>();
+			for (int i = 1; i < getParts().size(); i++) {
+				Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
+				Lambda lambda = (Lambda) argumentOperation.evaluate(context);
+				if (lambda.getOperation() instanceof DispatchOperationInstance) {
+					lambdas.addAll(((DispatchOperationInstance) lambda.getOperation()).getLambdas());
+				}
+				else {
+					lambdas.add(lambda);
+				}
+			}
+			return new LambdaImpl(new SimpleMethodDescription(runtime.getScript().getNamespace(), runtime.getScript().getName() + "$" + counter, "Lambda " + counter,
+				Arrays.asList(new ParameterDescription [] { new SimpleParameterDescription("x", "The input parameters", "object", true) }),
+				Arrays.asList(new ParameterDescription [] { new SimpleParameterDescription("result", "The output parameters", "object", true) })),
+				new DispatchOperationInstance(lambdas, runtime.getScript().getRepository()),
+				new HashMap<String, Object>()
+			);
+		}
+		
+	}
+	
+	public static class DispatchOperationInstance extends BaseMethodOperation<ExecutionContext> {
+		private List<Lambda> lambdas;
+		private ScriptRepository repository;
+		public DispatchOperationInstance(List<Lambda> lambdas, ScriptRepository repository) {
+			this.lambdas = lambdas;
+			this.repository = repository;
+		}
+		@Override
+		public void finish() throws ParseException {
+			// do nothing
+		}
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		@Override
+		public Object evaluate(ExecutionContext context) throws EvaluationException {
+			List<Object> arguments = new ArrayList<Object>();
+			Object object = context.getPipeline().get("x");
+			if (object instanceof Collection) {
+				arguments.addAll((Collection) object);
+			}
+			else if (object instanceof Iterable) {
+				for (Object single : (Iterable) object) {
+					arguments.add(single);
+				}
+			}
+			else if (object instanceof Object[]) {
+				arguments.addAll(Arrays.asList((Object[]) object));
+			}
+			Lambda closeMatch = null, exactMatch = null;
+			List<Object> closeConverted = null, exactConverted = null;
+			// find the first match within the given lambdas
+			for (Lambda lambda : lambdas) {
+				// the correct amount of parameters
+				if (lambda.getDescription().getParameters().size() == arguments.size()) {
+					List<Object> converted = new ArrayList<Object>();
+					boolean matches = true;
+					boolean isExactMatch = true;
+					// check the types
+					List<ParameterDescription> parameters = lambda.getDescription().getParameters();
+					for (int i = 0; i < parameters.size(); i++) {
+						ParameterDescription description = parameters.get(i);
+						converted.add(arguments.get(i));
+						// if there is no type or the type is object, anything goes
+						if (description.getType() != null && !description.getType().equalsIgnoreCase("object")) {
+							OptionalTypeConverter converter = EvaluateExecutor.getTypeProvider(repository, lambda instanceof EnclosedLambda ? ((EnclosedLambda) lambda).getEnclosedContext() : null).getConverter(description.getType());
+							if (converter == null) {
+								throw new RuntimeException("Unknown type defined by lambda for variable '" + description.getName() + "': " + description.getType());
+							}
+							if (arguments.get(i) != null) {
+								try {
+									Object convert = converter.convert(arguments.get(i));
+									if (convert == null) {
+										matches = false;
+										break;
+									}
+									else {
+										converted.set(i, convert);
+										isExactMatch &= convert.equals(arguments.get(i));
+									}
+								}
+								catch (Exception e) {
+									matches = false;
+									break;
+								}
+							}
+						}
+					}
+					if (matches) {
+						if (isExactMatch) {
+							exactMatch = lambda;
+							exactConverted = converted;
+							break;
+						}
+						else if (closeMatch == null) {
+							closeMatch = lambda;
+							closeConverted = converted;
+						}
+					}
+				}
+			}
+			if (exactMatch != null) {
+				LambdaExecutionOperation operation = new LambdaExecutionOperation(exactMatch.getDescription(), exactMatch.getOperation(), exactMatch instanceof EnclosedLambda ? ((EnclosedLambda) exactMatch).getEnclosedContext() : new HashMap<String, Object>());
+				return operation.evaluateWithParameters(context, exactConverted.toArray());
+			}
+			else if (closeMatch != null) {
+				LambdaExecutionOperation operation = new LambdaExecutionOperation(closeMatch.getDescription(), closeMatch.getOperation(), closeMatch instanceof EnclosedLambda ? ((EnclosedLambda) closeMatch).getEnclosedContext() : new HashMap<String, Object>());
+				return operation.evaluateWithParameters(context, closeConverted.toArray());
+			}
+			else {
+				throw new RuntimeException("Can not find matching target for dispatching");
+			}
+		}
+		public List<Lambda> getLambdas() {
+			return lambdas;
 		}
 	}
 	

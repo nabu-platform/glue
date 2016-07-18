@@ -78,8 +78,8 @@ public class LambdaMethodProvider implements MethodProvider {
 		@SuppressWarnings({ "unchecked", "rawtypes" })
 		@Override
 		public Object evaluate(ExecutionContext context) throws EvaluationException {
-			ForkedExecutionContext forkedContext = new ForkedExecutionContext(context, true);
-			forkedContext.getPipeline().putAll(enclosedContext);
+			ForkedExecutionContext forkedContext = new ForkedExecutionContext(context, enclosedContext);
+//			forkedContext.getPipeline().putAll(enclosedContext);
 			if (getParts().size() - 1 > description.getParameters().size() && (description.getParameters().isEmpty() || !description.getParameters().get(description.getParameters().size() - 1).isList())) {
 				throw new EvaluationException("Too many parameters for lambda");
 			}

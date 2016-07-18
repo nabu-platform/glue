@@ -95,7 +95,7 @@ public class FunctionExecutor extends BaseExecutor implements AssignmentExecutor
 	/**
 	 * The lambda operation does all the heavy lifting of the parameters etc
 	 */
-	private static class FunctionOperation extends BaseMethodOperation<ExecutionContext> {
+	public static class FunctionOperation extends BaseMethodOperation<ExecutionContext> {
 		private Executor executor;
 		public FunctionOperation(Executor executor) {
 			this.executor = executor;
@@ -137,6 +137,9 @@ public class FunctionExecutor extends BaseExecutor implements AssignmentExecutor
 					buildReturn(output, result, child);
 				}
 			}
+		}
+		public Executor getExecutor() {
+			return executor;
 		}
 	}
 

@@ -6,9 +6,11 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 
 import be.nabu.glue.OptionalTypeProviderFactory;
 import be.nabu.glue.ScriptRuntime;
+import be.nabu.glue.ScriptUtils;
 import be.nabu.glue.api.AssignmentExecutor;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutionException;
@@ -39,22 +41,26 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 	private boolean isList = false;
 	private OptionalTypeProvider optionalTypeProvider;
 	private OptionalTypeConverter converter;
+
+	private ScriptRepository repository;
 	
 	public EvaluateExecutor(ExecutorGroup parent, ExecutorContext context, ScriptRepository repository, Operation<ExecutionContext> condition, String variableName, String optionalType, Operation<ExecutionContext> operation, boolean overwriteIfExists) throws ParseException {
 		super(parent, context, condition);
+		this.repository = repository;
 		this.variableName = variableName;
 		this.optionalType = optionalType;
 		this.operation = operation;
 		this.overwriteIfExists = overwriteIfExists;
 		if (optionalType != null) {
-			optionalTypeProvider = ALLOW_STRUCTURE_TYPES
-				? new MultipleOptionalTypeProvider(Arrays.asList(OptionalTypeProviderFactory.getInstance().getProvider(), new StructureTypeProvider(repository)))
-				: OptionalTypeProviderFactory.getInstance().getProvider();
+			optionalTypeProvider = getTypeProvider(repository, null);
 			converter = optionalTypeProvider.getConverter(optionalType);
-			if (converter == null) {
-				throw new ParseException("Unknown type: " + optionalType, 0);
-			}
 		}
+	}
+
+	public static OptionalTypeProvider getTypeProvider(ScriptRepository repository, Map<String, Object> additionalContext) {
+		return ALLOW_STRUCTURE_TYPES
+			? new MultipleOptionalTypeProvider(Arrays.asList(OptionalTypeProviderFactory.getInstance().getProvider(), new StructureTypeProvider(ScriptUtils.getRoot(repository), additionalContext)))
+			: OptionalTypeProviderFactory.getInstance().getProvider();
 	}
 	
 	private Operation<ExecutionContext> getRewrittenOperation() throws ParseException {
@@ -96,6 +102,14 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 			}
 			catch (Exception e) {
 				throw new ExecutionException(e);
+			}
+		}
+		// it is possible the type can only be resolved at runtime because it is a lambda
+		OptionalTypeConverter converter = this.converter;
+		if (optionalType != null && converter == null) {
+			converter = getTypeProvider(repository, context.getPipeline()).getConverter(optionalType);
+			if (converter == null) {
+				throw new ExecutionException("Unknown type: " + optionalType);
 			}
 		}
 		// convert if necessary
