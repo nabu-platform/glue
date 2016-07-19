@@ -25,6 +25,9 @@ import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.Lambda;
 import be.nabu.glue.impl.GlueUtils;
 import be.nabu.glue.impl.LambdaMethodProvider.LambdaExecutionOperation;
+import be.nabu.glue.impl.methods.v2.generators.LambdaSeriesGenerator;
+import be.nabu.glue.impl.methods.v2.generators.LongGenerator;
+import be.nabu.glue.impl.methods.v2.generators.StringGenerator;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 
@@ -746,4 +749,31 @@ public class SeriesMethods {
 		}
 	}
 	
+	@GlueMethod(version = 2)
+	public static Object aggregate(final Lambda lambda, Object...objects) {
+		final Iterable<?> series = GlueUtils.toSeries(objects);
+		LambdaSeriesGenerator generator = new LambdaSeriesGenerator(lambda, series);
+		return generator.newSeries();
+	}
+	
+	@GlueMethod(version = 2)
+	public static Iterable<?> generate(@GlueParam(name = "series") Object series) {
+		SeriesGenerator<?> generator;
+		if (series instanceof Number) {
+			generator = new LongGenerator(((Number) series).longValue());
+		}
+		else if (series instanceof String) {
+			generator = new StringGenerator((String) series);
+		}
+		else if (series instanceof Lambda) {
+			generator = new LambdaSeriesGenerator((Lambda) series);
+		}
+		else if (series instanceof Object[]) {
+			return Arrays.asList((Object[]) series);
+		}
+		else {
+			throw new IllegalArgumentException("Can not unfold into a series");
+		}
+		return generator.newSeries();
+	}
 }
