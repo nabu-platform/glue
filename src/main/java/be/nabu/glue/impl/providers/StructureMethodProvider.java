@@ -4,7 +4,6 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 
 import be.nabu.glue.ScriptRuntime;
@@ -93,14 +92,10 @@ public class StructureMethodProvider implements MethodProvider {
 			}
 			// here we rewrite the lambda's in the new structure to make sure they have the correct scope
 			for (String key : forkedContext.getPipeline().keySet()) {
-				if (forkedContext.getPipeline().get(key) instanceof EnclosedLambda) {
+				if (forkedContext.getPipeline().get(key) instanceof EnclosedLambda && ((EnclosedLambda) forkedContext.getPipeline().get(key)).isMutable()) {
 					EnclosedLambda currentLambda = (EnclosedLambda) forkedContext.getPipeline().get(key);
-					LinkedHashMap<String, Object> newContext = new LinkedHashMap<String, Object>(currentLambda.getEnclosedContext());
-					newContext.putAll(forkedContext.getPipeline());
-					if (!currentLambda.getEnclosedContext().equals(newContext)) {
-						EnclosedLambda newLambda = new LambdaImpl(currentLambda.getDescription(), currentLambda.getOperation(), newContext);
-						forkedContext.getPipeline().put(key, newLambda);
-					}
+					EnclosedLambda newLambda = new LambdaImpl(currentLambda.getDescription(), currentLambda.getOperation(), forkedContext.getPipeline(), true);
+					forkedContext.getPipeline().put(key, newLambda);
 				}
 			}
 			return forkedContext.getPipeline();

@@ -12,11 +12,17 @@ public class LambdaImpl implements EnclosedLambda {
 	private MethodDescription description;
 	private Operation<ExecutionContext> operation;
 	private Map<String, Object> context;
+	private boolean mutable;
 
 	public LambdaImpl(MethodDescription description, Operation<ExecutionContext> operation, Map<String, Object> context) {
+		this(description, operation, context, false);
+	}
+	
+	public LambdaImpl(MethodDescription description, Operation<ExecutionContext> operation, Map<String, Object> context, boolean mutable) {
 		this.description = description;
 		this.operation = operation;
 		this.context = context;
+		this.mutable = mutable;
 	}
 	
 	@Override
@@ -37,5 +43,10 @@ public class LambdaImpl implements EnclosedLambda {
 	@Override
 	public String toString() {
 		return this.operation.toString();
+	}
+
+	@Override
+	public boolean isMutable() {
+		return mutable;
 	}
 }

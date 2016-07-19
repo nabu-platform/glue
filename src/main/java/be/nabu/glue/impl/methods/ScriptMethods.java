@@ -338,7 +338,7 @@ public class ScriptMethods {
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static Map<String, Object>[] map(Object...objects) {
+	public static Object map(Object...objects) {
 		// this will merge arrays etc
 //		objects = array(objects);
 		Set<String> keys = new LinkedHashSet<String>();
@@ -406,7 +406,12 @@ public class ScriptMethods {
 				throw new IllegalArgumentException("Invalid object for a map: " + object);
 			}
 		}
-		return maps.toArray(new Map[0]);
+		if (GlueUtils.getVersion().contains(1.0)) {
+			return maps.toArray(new Map[0]);
+		}
+		else {
+			return maps;
+		}
 	}
 	
 	@GlueMethod(description = "Returns a globally unique id (type 4)")
@@ -539,7 +544,7 @@ public class ScriptMethods {
 	@GlueMethod(version = 1)
 	public static String string(Object object, Boolean substitute) throws IOException {
 		if (substitute == null) {
-			substitute = true;
+			substitute = GlueUtils.getVersion().contains(1.0);
 		}
 		if (object == null) {
 			return null;

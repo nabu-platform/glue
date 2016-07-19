@@ -24,6 +24,7 @@ import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.api.ScriptRepository;
+import be.nabu.glue.impl.ForkedExecutionContext;
 import be.nabu.glue.impl.LambdaImpl;
 import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.impl.SimpleParameterDescription;
@@ -40,6 +41,8 @@ public class FunctionExecutor extends BaseExecutor implements AssignmentExecutor
 	// cached values
 	private SequenceExecutor sequence;
 	private List<ParameterDescription> inputs, outputs;
+	
+	private boolean useActualPipeline;
 
 	public FunctionExecutor(ExecutorGroup parent, ExecutorContext context, Operation<ExecutionContext> condition, String variableName, boolean overwriteIfExists, Executor...children) {
 		super(parent, context, condition);
@@ -74,12 +77,14 @@ public class FunctionExecutor extends BaseExecutor implements AssignmentExecutor
 		try {
 			Object object = context.getPipeline().get(variableName);
 			if (overwriteIfExists || object == null) {
-				HashMap<String, Object> captured = new HashMap<String, Object>(context.getPipeline());
+				Map<String, Object> captured = useActualPipeline ? context.getPipeline() : new HashMap<String, Object>(context.getPipeline());
 				Lambda lambda = new LambdaImpl(
 					new SimpleMethodDescription(script.getNamespace(), script.getName(), getContext().getComment(), getInputs(), getOutputs()), 
-					new FunctionOperation(getSequence()), 
-					captured
+					new FunctionOperation(getSequence(), useActualPipeline ? context.getPipeline() : null), 
+					captured,
+					useActualPipeline
 				);
+				// for recursiveness...
 				captured.put(variableName, lambda);
 				context.getPipeline().put(variableName, lambda);
 			}
@@ -97,8 +102,10 @@ public class FunctionExecutor extends BaseExecutor implements AssignmentExecutor
 	 */
 	public static class FunctionOperation extends BaseMethodOperation<ExecutionContext> {
 		private Executor executor;
-		public FunctionOperation(Executor executor) {
+		private Map<String, Object> capturedContext;
+		public FunctionOperation(Executor executor, Map<String, Object> capturedContext) {
 			this.executor = executor;
+			this.capturedContext = capturedContext;
 		}
 		@Override
 		public void finish() throws ParseException {
@@ -106,16 +113,23 @@ public class FunctionExecutor extends BaseExecutor implements AssignmentExecutor
 		}
 		@Override
 		public Object evaluate(ExecutionContext context) throws EvaluationException {
+			ForkedExecutionContext forked = new ForkedExecutionContext(context, true);
 			try {
-				executor.execute(context);
+				executor.execute(forked);
 			}
 			catch (ExecutionException e) {
 				throw new EvaluationException(e);
 			}
 			Map<String, Object> resultMap = new HashMap<String, Object>();
-			buildReturn(resultMap, context, executor);
+			Map<String, Object> persistMap = new HashMap<String, Object>();
+			buildReturn(resultMap, forked, executor, persistMap);
+			if (capturedContext != null && !persistMap.isEmpty()) {
+				synchronized(capturedContext) {
+					capturedContext.putAll(persistMap);
+				}
+			}
 			if (resultMap.isEmpty()) {
-				return context;
+				return forked;
 			}
 			else if (resultMap.size() == 1) {
 				return resultMap.values().iterator().next();
@@ -125,16 +139,20 @@ public class FunctionExecutor extends BaseExecutor implements AssignmentExecutor
 			}
 		}
 		
-		private void buildReturn(Map<String, Object> output, ExecutionContext result, Executor executor) {
+		private void buildReturn(Map<String, Object> output, ExecutionContext result, Executor executor, Map<String, Object> persistMap) {
 			if (executor instanceof AssignmentExecutor) {
 				if (executor.getContext() != null && executor.getContext().getAnnotations() != null && executor.getContext().getAnnotations().containsKey("return")) {
 					String variableName = ((AssignmentExecutor) executor).getVariableName();
 					output.put(variableName, result.getPipeline().get(variableName));
 				}
+				if (capturedContext != null && executor.getContext() != null && executor.getContext().getAnnotations() != null && executor.getContext().getAnnotations().containsKey("persist")) {
+					String variableName = ((AssignmentExecutor) executor).getVariableName();
+					persistMap.put(variableName, result.getPipeline().get(variableName));
+				}
 			}
 			else if (executor instanceof ExecutorGroup) {
 				for (Executor child : ((ExecutorGroup) executor).getChildren()) {
-					buildReturn(output, result, child);
+					buildReturn(output, result, child, persistMap);
 				}
 			}
 		}
@@ -213,6 +231,14 @@ public class FunctionExecutor extends BaseExecutor implements AssignmentExecutor
 	@Override
 	public List<Executor> getChildren() {
 		return children;
+	}
+
+	public boolean isUseActualPipeline() {
+		return useActualPipeline;
+	}
+
+	public void setUseActualPipeline(boolean useActualPipeline) {
+		this.useActualPipeline = useActualPipeline;
 	}
 	
 }

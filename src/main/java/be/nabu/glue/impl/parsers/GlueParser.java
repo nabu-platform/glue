@@ -272,7 +272,7 @@ public class GlueParser implements Parser {
 					sequenceExecutor.setIgnoreFailure(line.equals("try"));
 				}
 				// a sequence assigned to a variable
-				else if (line.matches("^[a-zA-Z]+[\\w]*[\\s]*=[\\s]*sequence$")) {
+				else if (line.matches("^[a-zA-Z]+[\\w]*[\\s]*=[\\s]*sequence$") || line.matches("^[a-zA-Z]+[\\w]*[\\s]*=[\\s]*lambda$") || line.matches("^[a-zA-Z]+[\\w]*[\\s]*=[\\s]*method$")) {
 					index = line.indexOf('=');
 					variableName = line.substring(0, index).trim();
 					line = line.substring(index + 1).trim();
@@ -282,6 +282,7 @@ public class GlueParser implements Parser {
 						variableName = variableName.substring(0, variableName.length() - 1).trim();
 					}
 					FunctionExecutor functionExecutor = new FunctionExecutor(executorGroups.peek(), context, null, variableName, overwriteIfExists);
+					functionExecutor.setUseActualPipeline(line.endsWith("method"));
 					functionExecutor.setOperationProvider(operationProvider);
 					executorGroups.peek().getChildren().add(functionExecutor);
 					executorGroups.push(functionExecutor);

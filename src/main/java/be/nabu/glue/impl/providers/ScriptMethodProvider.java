@@ -49,6 +49,9 @@ public class ScriptMethodProvider implements MethodProvider {
 			if (ALLOW_LAMBDAS && ("lambda".equals(name) || "script.lambda".equals(name))) {
 				return new LambdaOperation();
 			}
+			else if (ALLOW_LAMBDAS && ("method".equals(name) || "script.method".equals(name))) {
+				return new LambdaOperation(true);
+			}
 			else if (ALLOW_LAMBDAS && ("dispatch".equals(name) || "script.dispatch".equals(name))) {
 				return new DispatchOperation();
 			}
@@ -291,6 +294,14 @@ public class ScriptMethodProvider implements MethodProvider {
 	 * This is the lambda() method allowing you to create lambdas
 	 */
 	public static class LambdaOperation extends BaseMethodOperation<ExecutionContext> {
+		private boolean useActualPipeline;
+
+		public LambdaOperation() {
+			this(false);
+		}
+		public LambdaOperation(boolean useActualPipeline) {
+			this.useActualPipeline = useActualPipeline;
+		}
 		@SuppressWarnings("unchecked")
 		@Override
 		public Object evaluate(ExecutionContext context) throws EvaluationException {
@@ -331,10 +342,10 @@ public class ScriptMethodProvider implements MethodProvider {
 			counter++;
 			runtime.getContext().put(fullName + ".lambda.counter", counter);
 			Operation<ExecutionContext> lambdaOperation = (Operation<ExecutionContext>) getParts().get(getParts().size() - 1).getContent();
-			HashMap<String, Object> enclosedContext = new HashMap<String, Object>(context.getPipeline());
+			Map<String, Object> enclosedContext = useActualPipeline ? context.getPipeline() : new HashMap<String, Object>(context.getPipeline());
 			return new LambdaImpl(new SimpleMethodDescription(runtime.getScript().getNamespace(), runtime.getScript().getName() + "$" + counter, "Lambda " + counter, inputParameters, 
 					Arrays.asList(new ParameterDescription [] { new SimpleParameterDescription("return", null, "object") })), 
-					lambdaOperation, enclosedContext);
+					lambdaOperation, enclosedContext, useActualPipeline);
 		}
 
 		@Override
