@@ -186,7 +186,7 @@ public class StringMethods {
 		if (original == null || original.length == 0) {
 			return null;
 		}
-		Iterable<?> series = GlueUtils.toSeries(original);
+		Iterable<?> series = SeriesMethods.resolve(GlueUtils.toSeries(original));
 		StringBuilder builder = new StringBuilder();
 		boolean first = true;
 		for (Object object : series) {
