@@ -22,6 +22,7 @@ import be.nabu.glue.api.Script;
 import be.nabu.glue.api.ScriptRepository;
 import be.nabu.glue.impl.LambdaImpl;
 import be.nabu.glue.impl.LambdaMethodProvider.LambdaExecutionOperation;
+import be.nabu.glue.impl.GlueUtils;
 import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.impl.SimpleParameterDescription;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
@@ -324,7 +325,7 @@ public class ScriptMethodProvider implements MethodProvider {
 					inputParameters.add(new SimpleParameterDescription(parameterName.trim(), null, "object").setDefaultValue(value));
 				}
 				else if (argumentOperation.getParts().size() > 1) {
-					throw new EvaluationException("The parameter " + i + " has too many parts");
+					throw new EvaluationException("The parameter " + i + " has too many parts: " + argumentOperation.getParts());
 				}
 				else if (argumentOperation.getParts().isEmpty()) {
 					throw new EvaluationException("No parameters for: " + i);
@@ -362,21 +363,44 @@ public class ScriptMethodProvider implements MethodProvider {
 			this.script = script;
 		}
 		
-		@SuppressWarnings("unchecked")
+		@SuppressWarnings({ "unchecked", "rawtypes" })
 		@Override
 		public Object evaluate(ExecutionContext context) throws EvaluationException {
 			Map<String, Object> input = new HashMap<String, Object>();
 			try {
 				List<ParameterDescription> keys = ScriptUtils.getInputs(script);
+				boolean wasOriginalList = false;
 				for (int i = 1; i < getParts().size(); i++) {
 					Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
-					if (i > keys.size()) { 
+					if (GlueUtils.getVersion().contains(1.0) && i > keys.size()) { 
 						if (!ALLOW_VARARGS || keys.isEmpty() || !keys.get(keys.size() - 1).isVarargs()) {
 							throw new EvaluationException("Too many parameters, expecting: " + keys.size());
 						}
 						else {
 							input.put(keys.get(keys.size() - 1).getName(), ScriptMethods.array(input.get(keys.get(keys.size() - 1).getName()), argumentOperation.evaluate(context)));
 						}
+					}
+					// if you have indicated a list, we always want a list as last argument, not potentially a single element
+					else if (!GlueUtils.getVersion().contains(1.0) && i >= keys.size() && getParts().size() > keys.size() + 1) {
+						Object object = input.get(keys.get(keys.size() - 1).getName());
+						Object evaluated = argumentOperation.evaluate(context);
+						// if this is the exact count of the requested parameters and it is already a list, set it as parameter, you may want to pass it along as such
+						if (evaluated instanceof Iterable && i == keys.size()) {
+							wasOriginalList = true;
+							object = evaluated;
+						}
+						else {
+							// we don't have a list yet, create it
+							if (object == null) {
+								object = new ArrayList();
+							}
+							// the object exists, we are one past the last requested parameter and the previous was an original list, we want a list of lists
+							else if (i == keys.size() + 1 && wasOriginalList) {
+								object = new ArrayList(Arrays.asList(object));
+							}
+							((List) object).add(evaluated);
+						}
+						input.put(keys.get(keys.size() - 1).getName(), object);
 					}
 					else {
 						input.put(keys.get(i - 1).getName(), argumentOperation.evaluate(context));

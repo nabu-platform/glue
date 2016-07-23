@@ -125,11 +125,18 @@ public class ScriptMethods {
 					pipeline = ((ExecutionContext) single).getPipeline();
 				}
 				else {
-					try {
-						pipeline = toKeyValuePairs(single);
+					ContextAccessor<?> accessor = ContextAccessorFactory.getInstance().getAccessor(single.getClass());
+					if (accessor instanceof ListableContextAccessor) {
+						try {
+							pipeline = toKeyValuePairs(single);
+						}
+						catch (EvaluationException e) {
+							throw new RuntimeException(e);
+						}
 					}
-					catch (EvaluationException e) {
-						throw new RuntimeException(e);
+					else {
+						pipeline = new HashMap<String, Object>();
+						pipeline.put("$value", single);
 					}
 				}
 				ForkedExecutionContext fork = new ForkedExecutionContext(parentContext, pipeline);

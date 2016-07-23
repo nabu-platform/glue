@@ -14,6 +14,13 @@ public class IterableOperationExecutor implements OperationExecutor {
 
 	@Override
 	public boolean support(Object leftOperand, QueryPart.Type operator, Object rightOperand) {
+		// boolean comparison of series
+		if (leftOperand instanceof Iterable && rightOperand instanceof Boolean && (operator == QueryPart.Type.EQUALS || operator == QueryPart.Type.NOT_EQUALS)) {
+			return true;
+		}
+		else if (rightOperand instanceof Iterable && leftOperand instanceof Boolean && (operator == QueryPart.Type.EQUALS || operator == QueryPart.Type.NOT_EQUALS)) {
+			return true;
+		}
 		return (leftOperand instanceof Iterable || rightOperand instanceof Iterable) && operator != QueryPart.Type.IN && operator != QueryPart.Type.NOT_IN
 				&& operator != QueryPart.Type.EQUALS && operator != QueryPart.Type.NOT_EQUALS && operator != QueryPart.Type.NOT;
 	}
@@ -21,6 +28,21 @@ public class IterableOperationExecutor implements OperationExecutor {
 	@SuppressWarnings("rawtypes")
 	@Override
 	public Object calculate(final Object leftOperand, final QueryPart.Type operator, final Object rightOperand) {
+		// boolean comparison of series
+		if ((leftOperand instanceof Boolean || rightOperand instanceof Boolean) && (operator == QueryPart.Type.EQUALS || operator == QueryPart.Type.NOT_EQUALS)) {
+			Iterable iterable = (Iterable) (leftOperand instanceof Iterable ? leftOperand : rightOperand);
+			Boolean result = (Boolean) (leftOperand instanceof Boolean ? leftOperand : rightOperand);
+			for (Object object : iterable) {
+				boolean equals = result.equals(object);
+				if (equals && operator == QueryPart.Type.NOT_EQUALS) {
+					return false;
+				}
+				else if (!equals && operator == QueryPart.Type.EQUALS) {
+					return false;
+				}
+			}
+			return true;
+		}
 		return new Iterable() {
 			@Override
 			public Iterator iterator() {

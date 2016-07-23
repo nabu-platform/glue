@@ -110,4 +110,8 @@ public class ScannableScriptRepository implements ResourceScriptRepository, Grou
 		this.group = group;
 	}
 
+	public ResourceContainer<?> getRoot() {
+		return root;
+	}
+
 }

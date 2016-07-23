@@ -161,6 +161,6 @@ public class ResourceScript implements Script {
 	
 	@Override
 	public String toString() {
-		return (namespace == null ? "" : namespace + ".") + name;
+		return (namespace == null ? "" : namespace + ".") + getName();
 	}
 }

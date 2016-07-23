@@ -78,11 +78,12 @@ public class LambdaMethodProvider implements MethodProvider {
 		@SuppressWarnings({ "unchecked", "rawtypes" })
 		@Override
 		public Object evaluate(ExecutionContext context) throws EvaluationException {
-			ForkedExecutionContext forkedContext = new ForkedExecutionContext(context, enclosedContext);
-//			forkedContext.getPipeline().putAll(enclosedContext);
+			ForkedExecutionContext forkedContext = new ForkedExecutionContext(context, new HashMap<String, Object>());
+			forkedContext.getPipeline().putAll(enclosedContext);
 			if (getParts().size() - 1 > description.getParameters().size() && (description.getParameters().isEmpty() || !description.getParameters().get(description.getParameters().size() - 1).isList())) {
 				throw new EvaluationException("Too many parameters for lambda");
 			}
+			boolean wasOriginalList = false;
 			for (int i = 1; i < getParts().size(); i++) {
 				Operation<ExecutionContext> argumentOperation = ((Operation<ExecutionContext>) getParts().get(i).getContent());
 				Object value = argumentOperation.evaluate(context);
@@ -91,14 +92,25 @@ public class LambdaMethodProvider implements MethodProvider {
 				}
 				ParameterDescription parameterDescription = description.getParameters().get(i > description.getParameters().size() ? description.getParameters().size() - 1 : i - 1);
 				if (i > description.getParameters().size()) {
-					List list = (List) forkedContext.getPipeline().get(parameterDescription.getName());
-					list.add(value);
-					value = list;
+					Object object = forkedContext.getPipeline().get(parameterDescription.getName());
+					if (i == description.getParameters().size() + 1 && wasOriginalList) {
+						List list = new ArrayList();
+						list.add(object);
+						list.add(value);
+						value = list;
+					}
+					else {
+						((List) object).add(value);
+						value = object;
+					}
 				}
-				else if (parameterDescription.isList()) {
+				else if (parameterDescription.isList() && !(value instanceof Iterable)) {
 					List list = new ArrayList();
 					list.add(value);
 					value = list;
+				}
+				else if (value instanceof Iterable) {
+					wasOriginalList = i == description.getParameters().size();
 				}
 				forkedContext.getPipeline().put(parameterDescription.getName(), value);
 			}

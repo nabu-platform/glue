@@ -78,19 +78,24 @@ public class SeriesMethods {
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@GlueMethod(version = 2)
-	public static Iterable<?> sort(final Lambda lambda, Object...objects) {
+	public static Iterable<?> sort(@GlueParam(name = "lambda") final Lambda lambda, @GlueParam(name = "series") Object...objects) {
 		final Iterable<?> series = GlueUtils.toSeries(objects);
 		List<?> resolved = resolve(series);
 		final ScriptRuntime runtime = ScriptRuntime.getRuntime();
-		Collections.sort(resolved, new Comparator() {
-			@Override
-			public int compare(Object o1, Object o2) {
-				List parameters = new ArrayList();
-				parameters.add(o1);
-				parameters.add(o2);
-				return (int) GlueUtils.calculate(lambda, runtime, parameters);
-			}
-		});
+		if (lambda == null) {
+			Collections.sort((List<Comparable>) resolved);
+		}
+		else {
+			Collections.sort(resolved, new Comparator() {
+				@Override
+				public int compare(Object o1, Object o2) {
+					List parameters = new ArrayList();
+					parameters.add(o1);
+					parameters.add(o2);
+					return (int) GlueUtils.calculate(lambda, runtime, parameters);
+				}
+			});
+		}
 		return resolved;
 	}
 	
@@ -750,7 +755,7 @@ public class SeriesMethods {
 	}
 	
 	@GlueMethod(version = 2)
-	public static Object aggregate(final Lambda lambda, Object...objects) {
+	public static Iterable<?> aggregate(final Lambda lambda, Object...objects) {
 		final Iterable<?> series = GlueUtils.toSeries(objects);
 		LambdaSeriesGenerator generator = new LambdaSeriesGenerator(lambda, series);
 		return generator.newSeries();
