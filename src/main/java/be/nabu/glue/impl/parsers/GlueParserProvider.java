@@ -4,6 +4,7 @@ import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ParserProvider;
 import be.nabu.glue.api.ScriptRepository;
+import be.nabu.glue.impl.LambdaMethodProvider;
 import be.nabu.glue.impl.methods.v2.ControlMethodProvider;
 import be.nabu.glue.impl.operations.GlueOperationProvider;
 import be.nabu.glue.impl.providers.SystemMethodProvider;
@@ -39,8 +40,9 @@ public class GlueParserProvider implements ParserProvider {
 	}
 	
 	public MethodProvider[] getMethodProviders(ScriptRepository repository) {
-		MethodProvider [] providers = new MethodProvider[methodProviders.length + 5];
-		for (int i = 0; i < methodProviders.length; i++) {
+		MethodProvider [] providers = new MethodProvider[methodProviders.length + 6];
+		providers[0] = new LambdaMethodProvider();
+		for (int i = 1; i <= methodProviders.length; i++) {
 			providers[i] = methodProviders[i];
 		}
 		providers[providers.length - 5] = new ScriptMethodProvider(repository);

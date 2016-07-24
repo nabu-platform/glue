@@ -134,6 +134,14 @@ public class LambdaMethodProvider implements MethodProvider {
 			return description;
 		}
 		
+		public Operation<ExecutionContext> getOperation() {
+			return operation;
+		}
+
+		public Map<String, Object> getEnclosedContext() {
+			return enclosedContext;
+		}
+
 		@SuppressWarnings("rawtypes")
 		public Object evaluateWithParameters(ExecutionContext context, Object...parameters) throws EvaluationException {
 			LambdaExecutionOperation lambda = new LambdaExecutionOperation(getMethodDescription(), operation, enclosedContext);

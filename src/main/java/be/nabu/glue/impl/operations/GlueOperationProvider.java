@@ -7,9 +7,7 @@ import java.util.List;
 import be.nabu.glue.api.DynamicMethodOperationProvider;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.MethodProvider;
-import be.nabu.glue.impl.LambdaMethodProvider;
 import be.nabu.glue.impl.providers.DynamicMethodOperation;
-import be.nabu.glue.impl.providers.ScriptMethodProvider;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.impl.ClassicOperation;
 import be.nabu.libs.evaluator.impl.NativeOperation;
@@ -19,9 +17,6 @@ public class GlueOperationProvider implements DynamicMethodOperationProvider {
 	private List<MethodProvider> methodProviders = new ArrayList<MethodProvider>();
 
 	public GlueOperationProvider(MethodProvider...methodProviders) {
-		if (ScriptMethodProvider.ALLOW_LAMBDAS) {
-			this.methodProviders.add(new LambdaMethodProvider());
-		}
 		this.methodProviders.addAll(Arrays.asList(methodProviders));
 	}
 	

@@ -16,18 +16,27 @@ import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.Lambda;
 import be.nabu.glue.api.MethodDescription;
+import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.api.ParameterDescription;
+import be.nabu.glue.api.ParserProvider;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.impl.ForkedExecutionContext;
 import be.nabu.glue.impl.GlueUtils;
 import be.nabu.glue.impl.LambdaImpl;
 import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.impl.GlueUtils.ObjectHandler;
+import be.nabu.glue.impl.LambdaMethodProvider.LambdaExecutionOperation;
+import be.nabu.glue.impl.operations.GlueOperationProvider;
+import be.nabu.glue.impl.parsers.GlueParserProvider;
 import be.nabu.libs.evaluator.ContextAccessorFactory;
 import be.nabu.libs.evaluator.EvaluationException;
+import be.nabu.libs.evaluator.QueryPart;
+import be.nabu.libs.evaluator.QueryPart.Type;
 import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 import be.nabu.libs.evaluator.api.ContextAccessor;
 import be.nabu.libs.evaluator.api.ListableContextAccessor;
+import be.nabu.libs.evaluator.api.Operation;
+import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
 
 @MethodProviderClass(namespace = "script")
@@ -36,7 +45,8 @@ public class ScriptMethods {
 	@GlueMethod(description = "Write content to the standard output", version = 2)
 	public static void echo(Object...original) {
 		if (original != null) {
-			for (Object object : original) {
+			List<?> resolved = SeriesMethods.resolve(GlueUtils.toSeries(original));
+			for (Object object : resolved) {
 				if (object instanceof Iterable) {
 					object = SeriesMethods.resolve((Iterable<?>) object);
 				}
@@ -215,5 +225,46 @@ public class ScriptMethods {
 			return result;
 		}
 		
+	}
+	
+	@GlueMethod(description = "Executes the lambda with the given arguments", version = 2)
+	public static Object apply(Lambda lambda, Object...objects) {
+		List<?> resolved = SeriesMethods.resolve(GlueUtils.toSeries(objects));
+		return GlueUtils.calculate(lambda, ScriptRuntime.getRuntime(), resolved);
+	}
+	
+	@GlueMethod(description = "Allows you to make a lambda of any function", version = 2)
+	public static Lambda function(String name) {
+		ParserProvider parserProvider = ScriptRuntime.getRuntime().getScript().getRepository().getParserProvider();
+		if (!(parserProvider instanceof GlueParserProvider)) {
+			parserProvider = new GlueParserProvider();
+		}
+		MethodProvider[] methodProviders = ((GlueParserProvider) parserProvider).getMethodProviders(ScriptUtils.getRoot(ScriptRuntime.getRuntime().getScript().getRepository()));
+		for (MethodProvider provider : methodProviders) {
+			Operation<ExecutionContext> resolved = provider.resolve(name);
+			if (resolved instanceof LambdaExecutionOperation) {
+				return new LambdaImpl(((LambdaExecutionOperation) resolved).getMethodDescription(), 
+					((LambdaExecutionOperation) resolved).getOperation(),
+					((LambdaExecutionOperation) resolved).getEnclosedContext());
+			}
+			else if (resolved != null) {
+				// find the description
+				for (MethodDescription description : provider.getAvailableMethods()) {
+					if (description.getName().equals(name) || ((description.getNamespace() == null ? "" : description.getNamespace() + ".") + description.getName()).equals(name)) {
+						resolved.getParts().add(new QueryPart(Type.STRING, name));
+						// because of the method description, the lambda execution will inject all the correct variables, so we simply make sure the final execution takes the original variables
+						GlueOperationProvider operationProvider = new GlueOperationProvider(methodProviders);
+						for (ParameterDescription parameter : description.getParameters()) {
+							Operation<ExecutionContext> newOperation = operationProvider.newOperation(OperationType.VARIABLE);
+							newOperation.getParts().add(new QueryPart(Type.VARIABLE, parameter.getName()));
+							resolved.getParts().add(new QueryPart(Type.OPERATION, newOperation));
+						}
+						return new LambdaImpl(description, resolved, new HashMap<String, Object>());
+					}
+				}
+				throw new RuntimeException("Can only wrap functions with a runtime definition");
+			}
+		}
+		return null;
 	}
 }
