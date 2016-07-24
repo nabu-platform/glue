@@ -42,8 +42,8 @@ public class GlueParserProvider implements ParserProvider {
 	public MethodProvider[] getMethodProviders(ScriptRepository repository) {
 		MethodProvider [] providers = new MethodProvider[methodProviders.length + 6];
 		providers[0] = new LambdaMethodProvider();
-		for (int i = 1; i <= methodProviders.length; i++) {
-			providers[i] = methodProviders[i];
+		for (int i = 0; i < methodProviders.length; i++) {
+			providers[i + 1] = methodProviders[i];
 		}
 		providers[providers.length - 5] = new ScriptMethodProvider(repository);
 		providers[providers.length - 4] = new SPIMethodProvider();
