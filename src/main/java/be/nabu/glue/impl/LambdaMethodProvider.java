@@ -18,6 +18,7 @@ import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.QueryPart;
 import be.nabu.libs.evaluator.QueryPart.Type;
 import be.nabu.libs.evaluator.api.Operation;
+import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
 import be.nabu.libs.evaluator.impl.NativeOperation;
 
@@ -86,33 +87,54 @@ public class LambdaMethodProvider implements MethodProvider {
 			boolean wasOriginalList = false;
 			for (int i = 1; i < getParts().size(); i++) {
 				Operation<ExecutionContext> argumentOperation = ((Operation<ExecutionContext>) getParts().get(i).getContent());
-				Object value = argumentOperation.evaluate(context);
-				if (value == null) {
-					value = description.getParameters().get(i - 1).getDefaultValue();
+				// named parameters don't get to this point except if the lambda explicitly allowed them, at this point we want to rewrite correctly
+				// this is harder to combine with varargs etc...
+				if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.NAMING && argumentOperation.getParts().get(1).getContent().equals(":")) {
+					String name = argumentOperation.getParts().get(0).getContent().toString();
+					Object value = argumentOperation.getParts().get(2).getType() == QueryPart.Type.OPERATION 
+						? ((Operation<ExecutionContext>) argumentOperation.getParts().get(2).getContent()).evaluate(context)
+						: argumentOperation.getParts().get(2).getContent();
+					boolean found = false;
+					for (ParameterDescription parameter : description.getParameters()) {
+						if (parameter.getName().equals(name)) {
+							found = true;
+							break;
+						}
+					}
+					if (!found) {
+						throw new EvaluationException("Unknown parameter found: " + name);
+					}
+					forkedContext.getPipeline().put(name, value);
 				}
-				ParameterDescription parameterDescription = description.getParameters().get(i > description.getParameters().size() ? description.getParameters().size() - 1 : i - 1);
-				if (i > description.getParameters().size()) {
-					Object object = forkedContext.getPipeline().get(parameterDescription.getName());
-					if (i == description.getParameters().size() + 1 && wasOriginalList) {
+				else {
+					Object value = argumentOperation.evaluate(context);
+					if (value == null) {
+						value = description.getParameters().get(i - 1).getDefaultValue();
+					}
+					ParameterDescription parameterDescription = description.getParameters().get(i > description.getParameters().size() ? description.getParameters().size() - 1 : i - 1);
+					if (i > description.getParameters().size()) {
+						Object object = forkedContext.getPipeline().get(parameterDescription.getName());
+						if (i == description.getParameters().size() + 1 && wasOriginalList) {
+							List list = new ArrayList();
+							list.add(object);
+							list.add(value);
+							value = list;
+						}
+						else {
+							((List) object).add(value);
+							value = object;
+						}
+					}
+					else if (parameterDescription.isList() && !(value instanceof Iterable)) {
 						List list = new ArrayList();
-						list.add(object);
 						list.add(value);
 						value = list;
 					}
-					else {
-						((List) object).add(value);
-						value = object;
+					else if (value instanceof Iterable) {
+						wasOriginalList = i == description.getParameters().size();
 					}
+					forkedContext.getPipeline().put(parameterDescription.getName(), value);
 				}
-				else if (parameterDescription.isList() && !(value instanceof Iterable)) {
-					List list = new ArrayList();
-					list.add(value);
-					value = list;
-				}
-				else if (value instanceof Iterable) {
-					wasOriginalList = i == description.getParameters().size();
-				}
-				forkedContext.getPipeline().put(parameterDescription.getName(), value);
 			}
 			ExecutionContext previousContext = ScriptRuntime.getRuntime().getExecutionContext();
 			ScriptRuntime.getRuntime().setExecutionContext(forkedContext);

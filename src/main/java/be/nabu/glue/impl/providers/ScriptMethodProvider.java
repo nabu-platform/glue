@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -58,6 +59,9 @@ public class ScriptMethodProvider implements MethodProvider {
 			}
 			else if ("throw".equals(name) || "script.throw".equals(name)) {
 				return new ThrowOperation();
+			}
+			else if ("curry".equals(name) || "script.curry".equals(name)) {
+				return new CurryOperation();
 			}
 			else if (repository != null && repository.getScript(name) != null) {
 				return new ScriptOperation(repository.getScript(name));
@@ -433,5 +437,96 @@ public class ScriptMethodProvider implements MethodProvider {
 		public void finish() throws ParseException {
 			// do nothing
 		}
+	}
+	
+	public static class CurryOperation extends BaseMethodOperation<ExecutionContext> {
+
+		@Override
+		public void finish() throws ParseException {
+			// do nothing
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public Object evaluate(ExecutionContext context) throws EvaluationException {
+			if (getParts().size() != 2) {
+				throw new EvaluationException("Not the expected amount of parameters");
+			}
+			ScriptRuntime runtime = ScriptRuntime.getRuntime();
+			String fullName = ScriptUtils.getFullName(runtime.getScript());
+			Integer counter = (Integer) runtime.getContext().get(fullName + ".lambda.counter");
+			if (counter == null) {
+				counter = -1;
+			}
+			counter++;
+			runtime.getContext().put(fullName + ".lambda.counter", counter);
+			Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(1).getContent();
+			Lambda lambda = (Lambda) argumentOperation.evaluate(context);
+			// IMPORTANT: we make sure named parameters are not rewritten by the top level but instead passed along
+			// this means we won't get "null" values for missing parameters which means we can distinguish between truely missing and actually set to null
+			return new LambdaImpl(new SimpleMethodDescription(lambda.getDescription().getNamespace(), lambda.getDescription().getName(), lambda.getDescription().getDescription(), lambda.getDescription().getParameters(), lambda.getDescription().getReturnValues(), true),
+				new CurryOperationInstance(lambda, new HashMap<String, Object>(), lambda.getDescription().getParameters()),
+				new HashMap<String, Object>()
+			);
+		}
+	}
+	
+	public static class CurryOperationInstance extends BaseMethodOperation<ExecutionContext> {
+
+		private Lambda lambda;
+		private Map<String, Object> captured;
+		private List<ParameterDescription> currentParameters;
+
+		public CurryOperationInstance(Lambda lambda, Map<String, Object> captured, List<ParameterDescription> currentParameters) {
+			this.lambda = lambda;
+			this.currentParameters = currentParameters;
+			this.captured = new LinkedHashMap<String, Object>(captured);
+			if (lambda.getDescription().getParameters().size() <= captured.size()) {
+				throw new RuntimeException("Can not curry a function that is already fully evaluated");
+			}
+		}
+
+		@Override
+		public void finish() throws ParseException {
+			// do nothing
+		}
+
+		@Override
+		public Object evaluate(ExecutionContext context) throws EvaluationException {
+			Map<String, Object> captured = new HashMap<String, Object>(this.captured);
+			for (ParameterDescription description : currentParameters) {
+				if (context.getPipeline().containsKey(description.getName())) {
+					captured.put(description.getName(), context.getPipeline().get(description.getName()));
+				}
+			}
+			// construct a new lambda based on the old lambda but with the input parameters injected into the context
+			if (captured.size() == lambda.getDescription().getParameters().size()) {
+				Map<String, Object> pipeline = null;
+				if (lambda instanceof EnclosedLambda) {
+					if (((EnclosedLambda) lambda).isMutable()) {
+						pipeline = ((EnclosedLambda) lambda).getEnclosedContext();
+					}
+					else {
+						pipeline = new HashMap<String, Object>();
+						pipeline.putAll(((EnclosedLambda) lambda).getEnclosedContext());
+					}
+				}
+				pipeline.putAll(captured);
+				LambdaExecutionOperation operation = new LambdaExecutionOperation(new SimpleMethodDescription(lambda.getDescription().getNamespace(), lambda.getDescription().getName(), lambda.getDescription().getDescription(), new ArrayList<ParameterDescription>(), lambda.getDescription().getReturnValues()), lambda.getOperation(), pipeline);
+				return operation.evaluate(context);
+			}
+			// construct a new curry lambda
+			else {
+				List<ParameterDescription> parameters = new ArrayList<ParameterDescription>();
+				for (ParameterDescription parameter : lambda.getDescription().getParameters()) {
+					if (!captured.containsKey(parameter.getName())) {
+						parameters.add(parameter);
+					}
+				}
+				return new LambdaImpl(new SimpleMethodDescription(lambda.getDescription().getNamespace(), lambda.getDescription().getName(), lambda.getDescription().getDescription(), parameters, lambda.getDescription().getReturnValues(), true), 
+					new CurryOperationInstance(lambda, captured, parameters), new HashMap<String, Object>());
+			}
+		}
+		
 	}
 }
