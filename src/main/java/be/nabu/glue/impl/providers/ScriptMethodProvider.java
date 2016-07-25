@@ -529,4 +529,27 @@ public class ScriptMethodProvider implements MethodProvider {
 		}
 		
 	}
+	
+	public static class DecoratorOperation extends BaseMethodOperation<ExecutionContext> {
+		private Lambda decorated;
+		private Lambda decorator;
+		public DecoratorOperation(Lambda decorated, Lambda decorator) {
+			this.decorated = decorated;
+			this.decorator = decorator;
+		}
+		@Override
+		public void finish() throws ParseException {
+			// do nothing
+		}
+		@Override
+		public Object evaluate(ExecutionContext context) throws EvaluationException {
+			List<Object> arguments = new ArrayList<Object>();
+			for (ParameterDescription parameter : decorated.getDescription().getParameters()) {
+				arguments.add(context.getPipeline().get(parameter.getName()));
+			}
+			LambdaExecutionOperation lambdaExecutionOperation = new LambdaExecutionOperation(decorator.getDescription(), decorator.getOperation(), decorator instanceof EnclosedLambda ? ((EnclosedLambda) decorator).getEnclosedContext() : new HashMap<String, Object>());
+			return lambdaExecutionOperation.evaluateWithParameters(context, decorated, arguments);
+		}
+		
+	}
 }

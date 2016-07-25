@@ -28,6 +28,7 @@ import be.nabu.glue.impl.GlueUtils.ObjectHandler;
 import be.nabu.glue.impl.LambdaMethodProvider.LambdaExecutionOperation;
 import be.nabu.glue.impl.operations.GlueOperationProvider;
 import be.nabu.glue.impl.parsers.GlueParserProvider;
+import be.nabu.glue.impl.providers.ScriptMethodProvider.DecoratorOperation;
 import be.nabu.libs.evaluator.ContextAccessorFactory;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.QueryPart;
@@ -266,5 +267,16 @@ public class ScriptMethods {
 			}
 		}
 		return null;
+	}
+	
+	public static Lambda decorate(Lambda decorated, Lambda...decorators) {
+		for (Lambda decorator : decorators) {
+			decorated = decorateSingle(decorated, decorator);
+		}
+		return decorated;
+	}
+	
+	private static Lambda decorateSingle(Lambda decorated, Lambda decorator) {
+		return new LambdaImpl(decorated.getDescription(), new DecoratorOperation(decorated, decorator), new HashMap<String, Object>());
 	}
 }
