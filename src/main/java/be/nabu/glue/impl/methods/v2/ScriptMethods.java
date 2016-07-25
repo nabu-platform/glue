@@ -45,10 +45,12 @@ public class ScriptMethods {
 
 	@GlueMethod(description = "Write content to the standard output", version = 2)
 	public static void echo(Object...original) {
-		if (original != null) {
+		if (original != null && original.length > 0) {
+			boolean isIterable = original.length == 1 && original[0] instanceof Iterable;
 			List<?> resolved = SeriesMethods.resolve(GlueUtils.toSeries(original));
 			for (Object object : resolved) {
-				if (object instanceof Iterable) {
+				// only recursively resolve if the parent is not an iterable
+				if (object instanceof Iterable && !isIterable) {
 					object = SeriesMethods.resolve((Iterable<?>) object);
 				}
 				else if (object instanceof ExecutionContext) {
