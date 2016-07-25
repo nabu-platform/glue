@@ -12,7 +12,7 @@ public class DateOperationExecutor implements OperationExecutor {
 
 	@Override
 	public boolean support(Object leftOperand, QueryPart.Type operator, Object rightOperand) {
-		return (leftOperand instanceof Date || rightOperand instanceof Date)
+		return leftOperand instanceof Date
 				&& (operator == QueryPart.Type.ADD || operator == QueryPart.Type.SUBSTRACT);
 	}
 

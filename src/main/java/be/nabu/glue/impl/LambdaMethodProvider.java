@@ -82,7 +82,7 @@ public class LambdaMethodProvider implements MethodProvider {
 			ForkedExecutionContext forkedContext = new ForkedExecutionContext(context, new HashMap<String, Object>());
 			forkedContext.getPipeline().putAll(enclosedContext);
 			if (getParts().size() - 1 > description.getParameters().size() && (description.getParameters().isEmpty() || !description.getParameters().get(description.getParameters().size() - 1).isList())) {
-				throw new EvaluationException("Too many parameters for lambda");
+				throw new EvaluationException("Too many parameters for lambda: " + (getParts().size() - 1) + "/" + description.getParameters().size());
 			}
 			boolean wasOriginalList = false;
 			for (int i = 1; i < getParts().size(); i++) {
