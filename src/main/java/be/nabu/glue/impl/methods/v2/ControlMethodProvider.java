@@ -53,7 +53,7 @@ public class ControlMethodProvider implements MethodProvider {
 				return resolve((Operation<ExecutionContext>) getParts().get(2).getContent(), context);
 			}
 			else {
-				return resolve((Operation<ExecutionContext>) getParts().get(3).getContent(), context);
+				return getParts().size() > 3 ? resolve((Operation<ExecutionContext>) getParts().get(3).getContent(), context) : null;
 			}
 		}
 		
