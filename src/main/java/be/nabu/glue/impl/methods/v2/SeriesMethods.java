@@ -306,7 +306,7 @@ public class SeriesMethods {
 	
 	@GlueMethod(description = "Gets the amount of dimensions for a given series", version = 2)
 	@SuppressWarnings("rawtypes")
-	public static Integer dimensions(Iterable series) {
+	public static Integer depth(Iterable series) {
 		int dimensions = 0;
 		while (series != null) {
 			dimensions++;
@@ -325,9 +325,9 @@ public class SeriesMethods {
 		return dimensions;
 	}
 	
-	@GlueMethod(description = "Gets the shape for a given series", version = 2)
+	@GlueMethod(description = "Gets the dimensions of a given series", version = 2)
 	@SuppressWarnings("rawtypes")
-	public static List<Integer> shape(Iterable series) {
+	public static List<Integer> dimensions(Iterable series) {
 		List<Integer> shape = new ArrayList<Integer>();
 		while (series != null) {
 			Iterator iterator = series.iterator();
