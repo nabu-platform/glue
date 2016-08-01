@@ -49,4 +49,25 @@ public class LambdaImpl implements EnclosedLambda {
 	public boolean isMutable() {
 		return mutable;
 	}
+
+	public Map<String, Object> getContext() {
+		return context;
+	}
+
+	public void setContext(Map<String, Object> context) {
+		this.context = context;
+	}
+
+	public void setDescription(MethodDescription description) {
+		this.description = description;
+	}
+
+	public void setOperation(Operation<ExecutionContext> operation) {
+		this.operation = operation;
+	}
+
+	public void setMutable(boolean mutable) {
+		this.mutable = mutable;
+	}
+	
 }

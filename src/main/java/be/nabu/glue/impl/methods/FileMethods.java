@@ -131,7 +131,7 @@ public class FileMethods {
 		}
 	}
 	
-	private static List<String> list(ResourceContainer<?> file, String fileRegex, String directoryRegex, boolean recursive, String path) {
+	static List<String> list(ResourceContainer<?> file, String fileRegex, String directoryRegex, boolean recursive, String path) {
 		List<String> results = new ArrayList<String>();
 		for (Resource child : file) {
 			String childPath = path == null ? child.getName() : path + "/" + child.getName();

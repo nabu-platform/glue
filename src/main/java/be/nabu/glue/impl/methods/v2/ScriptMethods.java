@@ -13,6 +13,7 @@ import be.nabu.glue.ScriptRuntime;
 import be.nabu.glue.ScriptUtils;
 import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
+import be.nabu.glue.api.EnclosedLambda;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.Lambda;
 import be.nabu.glue.api.MethodDescription;
@@ -281,4 +282,22 @@ public class ScriptMethods {
 	private static Lambda decorateSingle(Lambda decorated, Lambda decorator) {
 		return new LambdaImpl(decorated.getDescription(), new DecoratorOperation(decorated, decorator), new HashMap<String, Object>());
 	}
+	
+	@SuppressWarnings("unchecked")
+	public static Lambda bind(@GlueParam(name = "lambda") EnclosedLambda original, @GlueParam(name = "scope") Object scope) {
+		if (scope == null) {
+			scope = ScriptRuntime.getRuntime().getExecutionContext().getPipeline();
+		}
+		else if (scope instanceof ExecutionContext) {
+			scope = ((ExecutionContext) scope).getPipeline();
+		}
+		Map<String, Object> enclosed = original.isMutable() ? (Map<String, Object>) scope : new HashMap<String, Object>((Map<String, Object>) scope);
+		return new LambdaImpl(original.getDescription(), original.getOperation(), enclosed, original.isMutable());
+	}
+	
+	// create a copy of a lambda, can update function to first check for lambdas
+	// we need a way to freeze the context of a method lambda
+//	public static Lambda freeze(EnclosedLambda original) {
+//		
+//	}
 }

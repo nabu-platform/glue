@@ -14,6 +14,7 @@ import be.nabu.glue.api.Lambda;
 import be.nabu.glue.api.MethodProvider;
 import be.nabu.glue.impl.ForkedExecutionContext;
 import be.nabu.glue.impl.GlueUtils;
+import be.nabu.glue.impl.LambdaMethodProvider;
 import be.nabu.glue.impl.TransactionalCloseable;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.QueryPart;
@@ -30,6 +31,12 @@ public class DynamicMethodOperation extends BaseOperation {
 
 	private MethodProvider [] methodProviders;
 	
+	// this was added to prevent static resolution of lambdas, this was the case for long form lambdas that had other lambdas as input
+	// the operation was looked up the first time (so first lambda passed in) and cached in the operation here
+	// any subsequent calls to the long form lambda used the first parameter, not subsequent lambdas passed in
+	// the same goes for the rewriting logic of method calls but it is assumed that all passed in lambdas have the same specification so that step is still cached
+	private boolean isDynamic;
+	
 	public DynamicMethodOperation(MethodProvider...methodProviders) {
 		this.methodProviders = methodProviders;
 	}
@@ -37,35 +44,41 @@ public class DynamicMethodOperation extends BaseOperation {
 	@SuppressWarnings({ "unchecked" })
 	@Override
 	public Object evaluate(Object context) throws EvaluationException {
-		if (operation != null) {
-			ExecutionContext executionContext;
-			if (context instanceof ExecutionContext) {
-				executionContext = (ExecutionContext) context;
+		try {
+			Operation<ExecutionContext> operation = buildOperation();
+			if (operation != null) {
+				ExecutionContext executionContext;
+				if (context instanceof ExecutionContext) {
+					executionContext = (ExecutionContext) context;
+				}
+				// for example when doing calculations inside a variable scope: employees[age > 60] in this case the employees is not an execution context
+				else if (context instanceof Map) {
+					executionContext = new ForkedExecutionContext(ScriptRuntime.getRuntime().getExecutionContext(), true);
+					executionContext.getPipeline().putAll((Map) context);
+				}
+				else {
+					// TODO: can use accessor to map anything that is supported
+					throw new RuntimeException("Only execution context and map are supported atm");
+				}
+				return postProcess(operation.evaluate(executionContext));
 			}
-			// for example when doing calculations inside a variable scope: employees[age > 60] in this case the employees is not an execution context
-			else if (context instanceof Map) {
-				executionContext = new ForkedExecutionContext(ScriptRuntime.getRuntime().getExecutionContext(), true);
-				executionContext.getPipeline().putAll((Map) context);
+			else if (((List<QueryPart>) getParts()).get(0).getContent() instanceof Operation) {
+				Object result = ((Operation) ((List<QueryPart>) getParts()).get(0).getContent()).evaluate(context);
+				if (result instanceof Lambda) {
+					List parameters = new ArrayList();
+					for (int i = 1; i < getParts().size(); i++) {
+						parameters.add(((List<QueryPart>) getParts()).get(i).getContent() instanceof Operation ? ((Operation) ((List<QueryPart>) getParts()).get(i).getContent()).evaluate(context) : ((List<QueryPart>) getParts()).get(i).getContent());
+					}
+					return postProcess(GlueUtils.calculate((Lambda) result, ScriptRuntime.getRuntime(), parameters));
+				}
+				throw new EvaluationException("Could not resolve a lambda: " + ((List<QueryPart>) getParts()).get(0).getContent());
 			}
 			else {
-				// TODO: can use accessor to map anything that is supported
-				throw new RuntimeException("Only execution context and map are supported atm");
+				throw new EvaluationException("Could not resolve a method with the name: " + ((List<QueryPart>) getParts()).get(0).getContent());
 			}
-			return postProcess(operation.evaluate(executionContext));
 		}
-		else if (((List<QueryPart>) getParts()).get(0).getContent() instanceof Operation) {
-			Object result = ((Operation) ((List<QueryPart>) getParts()).get(0).getContent()).evaluate(context);
-			if (result instanceof Lambda) {
-				List parameters = new ArrayList();
-				for (int i = 1; i < getParts().size(); i++) {
-					parameters.add(((List<QueryPart>) getParts()).get(i).getContent() instanceof Operation ? ((Operation) ((List<QueryPart>) getParts()).get(i).getContent()).evaluate(context) : ((List<QueryPart>) getParts()).get(i).getContent());
-				}
-				return postProcess(GlueUtils.calculate((Lambda) result, ScriptRuntime.getRuntime(), parameters));
-			}
-			throw new EvaluationException("Could not resolve a lambda: " + ((List<QueryPart>) getParts()).get(0).getContent());
-		}
-		else {
-			throw new EvaluationException("Could not resolve a method with the name: " + ((List<QueryPart>) getParts()).get(0).getContent());
+		catch (ParseException e) {
+			throw new EvaluationException(e);
 		}
 	}
 	
@@ -96,9 +109,14 @@ public class DynamicMethodOperation extends BaseOperation {
 		return returnValue;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void finish() throws ParseException {
+		buildOperation();
+	}
+
+	@SuppressWarnings("unchecked")
+	private Operation<ExecutionContext> buildOperation() throws ParseException {
+		Operation<ExecutionContext> operation = this.operation;
 		if (operation == null && !(((List<QueryPart>) getParts()).get(0).getContent() instanceof Operation)) {
 			String fullName = (String) ((List<QueryPart>) getParts()).get(0).getContent();
 			operation = getOperation(fullName);
@@ -109,12 +127,17 @@ public class DynamicMethodOperation extends BaseOperation {
 				operation.finish();
 			}
 		}
+		if (!isDynamic) {
+			this.operation = operation;
+		}
+		return operation;
 	}
 
 	protected Operation<ExecutionContext> getOperation(String fullName) {
 		for (MethodProvider provider : methodProviders) {
 			Operation<ExecutionContext> operation = provider.resolve(fullName);
 			if (operation != null) {
+				isDynamic = provider instanceof LambdaMethodProvider;
 				return operation;
 			}
 		}

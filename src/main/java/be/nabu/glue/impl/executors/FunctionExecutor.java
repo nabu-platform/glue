@@ -24,7 +24,6 @@ import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.api.ScriptRepository;
-import be.nabu.glue.impl.ForkedExecutionContext;
 import be.nabu.glue.impl.LambdaImpl;
 import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.impl.SimpleParameterDescription;
@@ -113,23 +112,23 @@ public class FunctionExecutor extends BaseExecutor implements AssignmentExecutor
 		}
 		@Override
 		public Object evaluate(ExecutionContext context) throws EvaluationException {
-			ForkedExecutionContext forked = new ForkedExecutionContext(context, true);
 			try {
-				executor.execute(forked);
+				// when wrapped in a lambda, it is the lambda executor that provides a correct context so we don't need to fork it
+				executor.execute(context);
 			}
 			catch (ExecutionException e) {
 				throw new EvaluationException(e);
 			}
 			Map<String, Object> resultMap = new HashMap<String, Object>();
 			Map<String, Object> persistMap = new HashMap<String, Object>();
-			buildReturn(resultMap, forked, executor, persistMap);
+			buildReturn(resultMap, context, executor, persistMap);
 			if (capturedContext != null && !persistMap.isEmpty()) {
 				synchronized(capturedContext) {
 					capturedContext.putAll(persistMap);
 				}
 			}
 			if (resultMap.isEmpty()) {
-				return forked;
+				return context;
 			}
 			else if (resultMap.size() == 1) {
 				return resultMap.values().iterator().next();

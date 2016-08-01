@@ -28,9 +28,11 @@ import be.nabu.glue.ScriptUtils;
 import be.nabu.glue.VirtualScript;
 import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
+import be.nabu.glue.api.EnclosedLambda;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutionException;
 import be.nabu.glue.api.ExecutorGroup;
+import be.nabu.glue.api.Lambda;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.impl.ForkedExecutionContext;
 import be.nabu.glue.impl.GlueUtils;
@@ -139,13 +141,16 @@ public class ScriptMethods {
 		}
 	}
 	
-	public static Map<String, Object> scope(Integer offset) {
+	public static Map<String, Object> scope(Object object) {
 		// take the current scope
-		if (offset == null) {
-			offset = 0;
+		if (object == null) {
+			object = 0;
+		}
+		else if (object instanceof Lambda) {
+			return object instanceof EnclosedLambda ? ((EnclosedLambda) object).getEnclosedContext() : null;
 		}
 		ScriptRuntime runtime = ScriptRuntime.getRuntime();
-		for (int i = 0; i < offset; i++) {
+		for (int i = 0; i < GlueUtils.convert(object, Integer.class); i++) {
 			if (runtime.getParent() == null) {
 				break;
 			}

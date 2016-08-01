@@ -31,6 +31,10 @@ public class ReflectionMethods {
 		return object == null ? "null" : object.getClass().getName();
 	}
 	
+	public static String identity(Object object) {
+		return object == null ? null : Integer.toString(object.hashCode());
+	}
+	
 	public static boolean instanceOf(Object object, String name) throws ClassNotFoundException {
 		return Thread.currentThread().getContextClassLoader().loadClass(name).isAssignableFrom(object.getClass());
 	}
