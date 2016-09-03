@@ -20,6 +20,7 @@ import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ScriptRepository;
 import be.nabu.glue.impl.GlueQueryParser;
 import be.nabu.glue.impl.SimpleExecutorContext;
+import be.nabu.glue.impl.executors.BaseExecutor;
 import be.nabu.glue.impl.executors.BreakExecutor;
 import be.nabu.glue.impl.executors.CatchExecutor;
 import be.nabu.glue.impl.executors.EvaluateExecutor;
@@ -30,6 +31,7 @@ import be.nabu.glue.impl.executors.SequenceExecutor;
 import be.nabu.glue.impl.executors.SwitchExecutor;
 import be.nabu.glue.impl.executors.WhileExecutor;
 import be.nabu.glue.impl.formatters.SimpleOutputFormatter;
+import be.nabu.glue.impl.operations.GlueOperationProvider;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.converter.api.Converter;
 import be.nabu.libs.evaluator.EvaluationException;
@@ -524,6 +526,9 @@ public class GlueParser implements Parser {
 					throw new IllegalArgumentException("The opening ${ is missing an end tag");
 				}
 				Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(query));
+				if (operationProvider instanceof GlueOperationProvider) {
+					operation = BaseExecutor.rewrite((GlueOperationProvider) operationProvider, operation);
+				}
 				Object evaluatedResult = operation.evaluate(context);
 				if (!allowNull && evaluatedResult == null) {
 					throw new IllegalArgumentException("Can not replace the query " + query);
