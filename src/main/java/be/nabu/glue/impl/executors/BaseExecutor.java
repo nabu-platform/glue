@@ -144,9 +144,12 @@ abstract public class BaseExecutor implements Executor {
 				description = ((DescribedOperation<?>) operation).getMethodDescription();
 			}
 			if (description == null) {
-				Object object = ScriptRuntime.getRuntime().getExecutionContext().getPipeline().get(fullName);
-				if (object instanceof Lambda) {
-					description = ((Lambda) object).getDescription();
+				ScriptRuntime runtime = ScriptRuntime.getRuntime();
+				if (runtime != null) {
+					Object object = runtime.getExecutionContext().getPipeline().get(fullName);
+					if (object instanceof Lambda) {
+						description = ((Lambda) object).getDescription();
+					}
 				}
 			}
 			if (description == null) {
