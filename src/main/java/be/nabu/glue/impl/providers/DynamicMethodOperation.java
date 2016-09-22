@@ -106,6 +106,30 @@ public class DynamicMethodOperation extends BaseOperation {
 		else if (returnValue instanceof Closeable) {
 			ScriptRuntime.getRuntime().addTransactionable(new TransactionalCloseable((Closeable) returnValue));
 		}
+		// process recursively, there could be a stream deep down
+		// this code was disabled again cause in a lot of scenario's it doesn't make sense:
+		// - glue code itself can only get streams from direct java methods which generally immediately return an inputstream, not as a nested part (so they should be converted already, even if deep in a glue return value)
+		// - if you have a java object or even structure or the like and it contains a stream, transforming it to bytes and setting it again will throw an exception or reconvert to a stream respectively
+//		else if (returnValue != null) {
+//			ContextAccessor accessor = ContextAccessorFactory.getInstance().getAccessor(returnValue.getClass());
+//			if (accessor instanceof ListableContextAccessor && accessor instanceof WritableContextAccessor) {
+//				Collection<String> keys = ((ListableContextAccessor) accessor).list(returnValue);
+//				for (String key : keys) {
+//					try {
+//						Object value = accessor.get(returnValue, key);
+//						if (value != null) {
+//							Object newValue = postProcess(value);
+//							if (!value.equals(newValue)) {
+//								((WritableContextAccessor) accessor).set(returnValue, key, newValue);
+//							}
+//						}
+//					}
+//					catch (EvaluationException e) {
+//						e.printStackTrace();
+//					}
+//				}
+//			}
+//		}
 		return returnValue;
 	}
 
