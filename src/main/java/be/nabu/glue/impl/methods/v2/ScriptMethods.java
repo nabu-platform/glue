@@ -294,6 +294,20 @@ public class ScriptMethods {
 		Map<String, Object> enclosed = original.isMutable() ? (Map<String, Object>) scope : new HashMap<String, Object>((Map<String, Object>) scope);
 		return new LambdaImpl(original.getDescription(), original.getOperation(), enclosed, original.isMutable());
 	}
+
+	@GlueMethod(description = "Returns the keys available in this object", version = 2)
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static Collection<String> keys(Object object) {
+		if (object == null) {
+			return null;
+		}
+		ContextAccessor accessor = ContextAccessorFactory.getInstance().getAccessor(object.getClass());
+		if (accessor instanceof ListableContextAccessor) {
+			return ((ListableContextAccessor) accessor).list(object);
+		}
+		return null;
+	}
+
 	
 	// create a copy of a lambda, can update function to first check for lambdas
 	// we need a way to freeze the context of a method lambda

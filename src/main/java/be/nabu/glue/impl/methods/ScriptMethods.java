@@ -773,6 +773,7 @@ public class ScriptMethods {
 		}
 	}
 	
+	@GlueMethod(version = 1)
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static Object [] keys(Object object) {
 		if (object == null) {
