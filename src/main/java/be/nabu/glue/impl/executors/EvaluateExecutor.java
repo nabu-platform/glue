@@ -6,6 +6,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 
 import be.nabu.glue.OptionalTypeProviderFactory;
@@ -130,6 +131,28 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 					targetItems.add(converter.convert(item));
 				}
 				context.getPipeline().put(variableName, targetItems);
+			}
+			else if (context.getPipeline().get(variableName) instanceof Iterable) {
+				final Iterable items = (Iterable) context.getPipeline().get(variableName);
+				final OptionalTypeConverter finalConverter = converter;
+				context.getPipeline().put(variableName, new Iterable() {
+					@Override
+					public Iterator iterator() {
+						return new Iterator() {
+							private Iterator parent = items.iterator();
+							@Override
+							public boolean hasNext() {
+								return parent.hasNext();
+							}
+							@Override
+							public Object next() {
+								Object next = parent.next();
+								return next == null ? null : finalConverter.convert(next);
+							}
+							
+						};
+					}
+				});
 			}
 			else {
 				context.getPipeline().put(variableName, converter.convert(context.getPipeline().get(variableName)));
