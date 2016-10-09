@@ -5,6 +5,7 @@
 	<version>${be.nabu.glue-glue-version}</version>
 	<name>glue</name>
 	<url>https://github.com/nablex/glue</url>
+	
 	<parent>
 		<groupId>be.nabu</groupId>
 		<artifactId>core</artifactId>
@@ -47,7 +48,6 @@
 			<groupId>be.nabu.libs.resources</groupId>
 			<artifactId>resources-api</artifactId>
 		</dependency>
-
 		<dependency>
 			<groupId>be.nabu.libs.resources</groupId>
 			<artifactId>resources-url</artifactId>
