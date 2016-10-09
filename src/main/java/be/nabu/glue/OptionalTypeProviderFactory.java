@@ -3,9 +3,9 @@ package be.nabu.glue;
 import java.util.ArrayList;
 import java.util.List;
 
-import be.nabu.glue.api.OptionalTypeProvider;
-import be.nabu.glue.impl.MultipleOptionalTypeProvider;
-import be.nabu.glue.impl.SPIOptionalTypeProvider;
+import be.nabu.glue.core.api.OptionalTypeProvider;
+import be.nabu.glue.core.impl.MultipleOptionalTypeProvider;
+import be.nabu.glue.core.impl.SPIOptionalTypeProvider;
 
 public class OptionalTypeProviderFactory {
 	

@@ -1,5 +1,5 @@
-be.nabu.glue.converters.DateToString
-be.nabu.glue.converters.StringToDate
-be.nabu.glue.converters.CustomDateToDate
-be.nabu.glue.converters.DateToCustomDate
-be.nabu.glue.converters.IterableToBoolean
+be.nabu.glue.core.converters.DateToString
+be.nabu.glue.core.converters.StringToDate
+be.nabu.glue.core.converters.CustomDateToDate
+be.nabu.glue.core.converters.DateToCustomDate
+be.nabu.glue.core.converters.IterableToBoolean

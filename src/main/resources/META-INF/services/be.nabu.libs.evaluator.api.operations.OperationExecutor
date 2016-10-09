@@ -1,3 +1,3 @@
-be.nabu.glue.impl.methods.v2.IterableOperationExecutor
-be.nabu.glue.impl.methods.v2.DateOperationExecutor
-be.nabu.glue.impl.methods.v2.LambdaOperationExecutor
+be.nabu.glue.core.impl.methods.v2.IterableOperationExecutor
+be.nabu.glue.core.impl.methods.v2.DateOperationExecutor
+be.nabu.glue.core.impl.methods.v2.LambdaOperationExecutor
