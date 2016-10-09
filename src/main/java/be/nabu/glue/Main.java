@@ -26,8 +26,10 @@ import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.impl.EnvironmentLabelEvaluator;
+import be.nabu.glue.impl.GlueUtils;
 import be.nabu.glue.impl.SimpleExecutionEnvironment;
 import be.nabu.glue.impl.formatters.MarkdownOutputFormatter;
+import be.nabu.glue.impl.formatters.SimpleOutputFormatter;
 import be.nabu.glue.impl.methods.ScriptMethods;
 import be.nabu.glue.impl.methods.TestMethods;
 import be.nabu.glue.impl.methods.GlueValidationImpl;
@@ -149,6 +151,9 @@ public class Main {
 			runtime.setTrace(trace);
 			if (useMarkdown) {
 				runtime.setFormatter(new MarkdownOutputFormatter(new OutputStreamWriter(System.out)));
+			}
+			else {
+				runtime.setFormatter(new SimpleOutputFormatter(new OutputStreamWriter(System.out, Charset.forName("UTF-8")), true, GlueUtils.getVersion().contains(1d)));
 			}
 			
 			// this is the field the label is checked against in your environment list
