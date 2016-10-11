@@ -165,6 +165,12 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 				context.getPipeline().put(variableName, ScriptMethods.array(context.getPipeline().get(variableName)));
 			}
 		}
+		// otherwise, make it an iterable if requested
+		else if (isList && context.getPipeline().get(variableName) != null && !(context.getPipeline().get(variableName) instanceof Iterable)) {
+			ArrayList list = new ArrayList();
+			list.add(context.getPipeline().get(variableName));
+			context.getPipeline().put(variableName, list);
+		}
 	}
 
 	@Override
