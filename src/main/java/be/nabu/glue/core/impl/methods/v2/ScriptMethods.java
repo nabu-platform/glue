@@ -124,7 +124,7 @@ public class ScriptMethods {
 	@GlueMethod(description = "Fill in the template with the given series of objects", version = 2)
 	public static Object template(final String template, Object...original) throws EvaluationException {
 		if (original == null || original.length == 0) {
-			return ScriptRuntime.getRuntime().getSubstituter().substitute(template, ScriptRuntime.getRuntime().getExecutionContext(), true);
+			return template == null ? null : ScriptRuntime.getRuntime().getSubstituter().substitute(template, ScriptRuntime.getRuntime().getExecutionContext(), true);
 		}
 		return GlueUtils.wrap(new ObjectHandler() {
 			@SuppressWarnings("unchecked")
