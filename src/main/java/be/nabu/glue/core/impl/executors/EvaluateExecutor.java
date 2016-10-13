@@ -16,6 +16,7 @@ import be.nabu.glue.api.ExecutionException;
 import be.nabu.glue.api.ExecutorContext;
 import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.api.ScriptRepository;
+import be.nabu.glue.core.api.CollectionIterable;
 import be.nabu.glue.core.api.OptionalTypeConverter;
 import be.nabu.glue.core.api.OptionalTypeProvider;
 import be.nabu.glue.core.impl.GlueUtils;
@@ -135,7 +136,7 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 			else if (context.getPipeline().get(variableName) instanceof Iterable) {
 				final Iterable items = (Iterable) context.getPipeline().get(variableName);
 				final OptionalTypeConverter finalConverter = converter;
-				context.getPipeline().put(variableName, new Iterable() {
+				context.getPipeline().put(variableName, new CollectionIterable() {
 					@Override
 					public Iterator iterator() {
 						return new Iterator() {

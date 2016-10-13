@@ -2,6 +2,7 @@ package be.nabu.glue.core.impl.methods.v2.generators;
 
 import java.util.Iterator;
 
+import be.nabu.glue.core.api.CollectionIterable;
 import be.nabu.glue.core.impl.methods.v2.SeriesGenerator;
 
 public class LongGenerator implements SeriesGenerator<Long> {
@@ -14,7 +15,7 @@ public class LongGenerator implements SeriesGenerator<Long> {
 	
 	@Override
 	public Iterable<Long> newSeries() {
-		return new Iterable<Long>() {
+		return new CollectionIterable<Long>() {
 			@Override
 			public Iterator<Long> iterator() {
 				return new Iterator<Long>() {

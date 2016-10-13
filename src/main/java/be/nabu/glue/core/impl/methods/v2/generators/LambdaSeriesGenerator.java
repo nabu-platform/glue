@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Queue;
 
 import be.nabu.glue.api.ParameterDescription;
+import be.nabu.glue.core.api.CollectionIterable;
 import be.nabu.glue.core.api.EnclosedLambda;
 import be.nabu.glue.core.api.Lambda;
 import be.nabu.glue.core.impl.GlueUtils;
@@ -47,7 +48,7 @@ public class LambdaSeriesGenerator implements SeriesGenerator<Object> {
 	
 	@Override
 	public Iterable<Object> newSeries() {
-		return new Iterable<Object>() {
+		return new CollectionIterable<Object>() {
 			@Override
 			public Iterator<Object> iterator() {
 				return new Iterator<Object>() {

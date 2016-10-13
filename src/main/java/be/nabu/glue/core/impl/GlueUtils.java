@@ -1,5 +1,6 @@
 package be.nabu.glue.core.impl;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import be.nabu.glue.core.api.CollectionIterable;
 import be.nabu.glue.core.api.EnclosedLambda;
 import be.nabu.glue.core.api.Lambda;
 import be.nabu.glue.core.impl.LambdaMethodProvider.LambdaExecutionOperation;
@@ -163,6 +165,9 @@ public class GlueUtils {
 		else if (targetClass.isAssignableFrom(object.getClass())) {
 			return (T) object;
 		}
+		if (object instanceof String && targetClass.equals(byte[].class)) {
+			return (T) ((String) object).getBytes(Charset.forName("UTF-8"));
+		}
 		Converter converter = ConverterFactory.getInstance().getConverter();
 		if (!converter.canConvert(object.getClass(), targetClass)) {
 			if (targetClass.equals(String.class)) {
@@ -201,7 +206,7 @@ public class GlueUtils {
 		}
 		else {
 			final Iterable<?> iterable = GlueUtils.toSeries(original);
-			return new Iterable() {
+			return new CollectionIterable() {
 				@Override
 				public Iterator iterator() {
 					return new Iterator() {
@@ -251,7 +256,7 @@ public class GlueUtils {
 		}
 		else {
 			final Iterable<?> iterable = GlueUtils.toSeries(original);
-			return new Iterable() {
+			return new CollectionIterable() {
 				@Override
 				public Iterator iterator() {
 					return new Iterator() {

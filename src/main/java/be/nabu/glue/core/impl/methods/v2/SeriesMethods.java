@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.api.ExecutionContext;
+import be.nabu.glue.core.api.CollectionIterable;
 import be.nabu.glue.core.api.EnclosedLambda;
 import be.nabu.glue.core.api.Lambda;
 import be.nabu.glue.core.impl.GlueUtils;
@@ -101,9 +102,9 @@ public class SeriesMethods {
 	
 	@SuppressWarnings("rawtypes")
 	@GlueMethod(version = 2)
-	public static Iterable<?> repeat(Object...objects) {
+	public static CollectionIterable<?> repeat(Object...objects) {
 		final Iterable<?> series = GlueUtils.toSeries(objects);
-		return new Iterable() {
+		return new CollectionIterable() {
 			@Override
 			public Iterator iterator() {
 				return new Iterator() {
@@ -152,10 +153,10 @@ public class SeriesMethods {
 	
 	@SuppressWarnings("rawtypes")
 	@GlueMethod(returns = "series", description = "Find elements in the series that match the lambda expression", version = 2)
-	public static Object filter(final Lambda lambda, Object...objects) {
+	public static CollectionIterable filter(final Lambda lambda, Object...objects) {
 		final Iterable<?> series = GlueUtils.toSeries(objects);
 		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
-		return new Iterable() {
+		return new CollectionIterable() {
 			@Override
 			public Iterator iterator() {
 				return new Iterator() {
@@ -271,11 +272,11 @@ public class SeriesMethods {
 	
 	@SuppressWarnings("rawtypes")
 	@GlueMethod(description = "Merges the given series into a single series", version = 2)
-	public static Object merge(final Object...original) {
+	public static CollectionIterable merge(final Object...original) {
 		if (original == null || original.length == 0) {
 			return null;
 		}
-		return new Iterable() {
+		return new CollectionIterable() {
 			@Override
 			public Iterator iterator() {
 				return new Iterator() {
@@ -390,7 +391,7 @@ public class SeriesMethods {
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@GlueMethod(description = "Creates a derived series based on the given one(s)", version = 2)
-	public static Iterable<?> derive(@GlueParam(name = "lambda") final Lambda lambda, @GlueParam(name = "content") Object...original) {
+	public static CollectionIterable<?> derive(@GlueParam(name = "lambda") final Lambda lambda, @GlueParam(name = "content") Object...original) {
 		if (original == null || original.length == 0) {
 			return null;
 		}
@@ -405,7 +406,7 @@ public class SeriesMethods {
 			throw new IllegalArgumentException("The lambda does not have enough parameters to process the series: expecting " + iterables.size() + " input parameters, has " + lambda.getDescription().getParameters().size());
 		}
 		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
-		return new Iterable() {
+		return new CollectionIterable() {
 			@Override
 			public Iterator iterator() {
 				return new Iterator() {
@@ -451,8 +452,8 @@ public class SeriesMethods {
 	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private static Iterable<?> offsetFromBack(final long offset, final Iterable<?> iterable) {
-		return new Iterable() {
+	private static CollectionIterable<?> offsetFromBack(final long offset, final Iterable<?> iterable) {
+		return new CollectionIterable() {
 			@Override
 			public Iterator iterator() {
 				return new Iterator() {
@@ -494,7 +495,7 @@ public class SeriesMethods {
 			return offsetFromBack(Math.abs(offset), iterable);
 		}
 		else {
-			return new Iterable() {
+			return new CollectionIterable() {
 				@Override
 				public Iterator iterator() {
 					return new Iterator() {
@@ -538,7 +539,7 @@ public class SeriesMethods {
 			return list.subList(0, (int) Math.min(limit, list.size()));
 		}
 		else {
-			return new Iterable() {
+			return new CollectionIterable() {
 				@Override
 				public Iterator iterator() {
 					return new Iterator() {
@@ -564,10 +565,10 @@ public class SeriesMethods {
 	
 	@SuppressWarnings("rawtypes")
 	@GlueMethod(description = "Stops a series when a certain condition is met", version = 2)
-	public static Iterable<?> until(final Lambda lambda, Object...original) {
+	public static CollectionIterable<?> until(final Lambda lambda, Object...original) {
 		final Iterable<?> iterable = GlueUtils.toSeries(original);
 		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
-		return new Iterable() {
+		return new CollectionIterable() {
 			@Override
 			public Iterator iterator() {
 				return new Iterator() {
@@ -612,10 +613,10 @@ public class SeriesMethods {
 	
 	@SuppressWarnings("rawtypes")
 	@GlueMethod(description = "Starts a series when a certain condition is met", version = 2)
-	public static Iterable<?> from(final Lambda lambda, Object...original) {
+	public static CollectionIterable<?> from(final Lambda lambda, Object...original) {
 		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
 		final Iterable<?> iterable = GlueUtils.toSeries(original);
-		return new Iterable() {
+		return new CollectionIterable() {
 			@Override
 			public Iterator iterator() {
 				return new Iterator() {
@@ -668,13 +669,13 @@ public class SeriesMethods {
 	
 	@SuppressWarnings("rawtypes")
 	@GlueMethod(description = "Explodes each argument in the series into a multiple new arguments for the new series", version = 2)
-	public static Object explode(final Lambda lambda, Object...original) {
+	public static CollectionIterable explode(final Lambda lambda, Object...original) {
 		if (original == null || original.length == 0) {
 			return null;
 		}
 		final Iterable<?> series = GlueUtils.toSeries(original);
 		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
-		return new Iterable() {
+		return new CollectionIterable() {
 			@Override
 			public Iterator iterator() {
 				return new Iterator() {

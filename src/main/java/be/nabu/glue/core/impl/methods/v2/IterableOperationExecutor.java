@@ -3,6 +3,7 @@ package be.nabu.glue.core.impl.methods.v2;
 import java.util.Iterator;
 
 import be.nabu.glue.api.ExecutionContext;
+import be.nabu.glue.core.api.CollectionIterable;
 import be.nabu.glue.core.impl.GlueUtils;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.QueryPart;
@@ -43,7 +44,7 @@ public class IterableOperationExecutor implements OperationExecutor {
 			}
 			return true;
 		}
-		return new Iterable() {
+		return new CollectionIterable() {
 			@Override
 			public Iterator iterator() {
 				return new Iterator() {
