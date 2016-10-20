@@ -59,6 +59,9 @@ public class DateOperationExecutor implements OperationExecutor {
 		else if (name.startsWith("m")) {
 			return Calendar.MONTH;
 		}
+		else if (name.startsWith("w")) {
+			return Calendar.WEEK_OF_YEAR;
+		}
 		else if (name.startsWith("d")) {
 			return Calendar.DATE;
 		}

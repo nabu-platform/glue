@@ -34,6 +34,7 @@ import be.nabu.libs.evaluator.QueryPart.Type;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
+import be.nabu.libs.evaluator.impl.VariableOperation;
 
 public class ScriptMethodProvider implements MethodProvider {
 
@@ -415,7 +416,13 @@ public class ScriptMethodProvider implements MethodProvider {
 				if (context.isTrace()) {
 					runtime.addBreakpoint(context.getBreakpoints().toArray(new String[0]));
 				}
-				runtime.run();
+				VariableOperation.registerRoot();
+				try {
+					runtime.run();
+				}
+				finally {
+					VariableOperation.unregisterRoot();
+				}
 				// could have turned off trace mode in runtime
 				context.setTrace(runtime.isTrace());
 				if (context.isTrace()) {

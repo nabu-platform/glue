@@ -11,6 +11,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -276,6 +277,7 @@ public class Main {
 		}
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static Map<String, Object> getParameters(Script script, String...arguments) throws ParseException, IOException {
 		List<ParameterDescription> inputs = ScriptUtils.getInputs(script);
 		Map<String, Object> parameters = new HashMap<String, Object>();
@@ -285,8 +287,17 @@ public class Main {
 				if (!ScriptMethodProvider.ALLOW_VARARGS || inputs.isEmpty() || !inputs.get(inputs.size() - 1).isVarargs()) {
 					throw new IllegalArgumentException("Too many arguments, expecting " + inputs.size());
 				}
-				else {
+				else if (GlueUtils.getVersion().contains(1.0)) {
 					parameters.put(inputs.get(inputs.size() - 1).getName(), ScriptMethods.array(parameters.get(inputs.get(inputs.size() - 1).getName()), commands.get(i)));
+				}
+				else {
+					String name = inputs.get(inputs.size() - 1).getName();
+					Object object = parameters.get(name);
+					if (!(object instanceof List)) {
+						object = new ArrayList(Arrays.asList(object));
+						parameters.put(name, object);
+					}
+					((List) object).add(commands.get(i));
 				}
 			}
 			else {

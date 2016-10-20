@@ -343,6 +343,7 @@ public class ScriptMethods {
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@GlueMethod(version = 1)
 	public static Object map(Object...objects) {
 		// this will merge arrays etc
 //		objects = array(objects);

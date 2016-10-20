@@ -4,10 +4,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
@@ -308,6 +313,83 @@ public class ScriptMethods {
 		return null;
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@GlueMethod(version = 2)
+	public static Object map(Object...objects) {
+		// this will merge arrays etc
+//		objects = array(objects);
+		Set<String> keys = new LinkedHashSet<String>();
+		List<Map<String, Object>> maps = new ArrayList<Map<String, Object>>();
+		for (Object object : GlueUtils.toSeries(objects)) {
+			if (object == null) {
+				continue;
+			}
+			else if (object instanceof String) {
+				keys.add((String) object);
+			}
+			else if (object instanceof Map) {
+				keys.addAll(((Map<String, Object>) object).keySet());
+				maps.add((Map<String, Object>) object);
+			}
+			else if (object instanceof Object[] || object instanceof Collection || object instanceof Iterable) {
+				if (keys.isEmpty()) {
+					throw new IllegalArgumentException("The map has no defined keys");
+				}
+				Iterable iterable;
+				if (object instanceof Iterable) {
+					iterable = GlueUtils.resolve((Iterable) object);
+				}
+				else if (object instanceof Object[]) {
+					iterable = Arrays.asList((Object[]) object);
+				}
+				else {
+					iterable = (Collection) object;
+				}
+				if (iterable.iterator().hasNext()) {
+					Object first = iterable.iterator().next();
+					// it's a matrix
+					if (first instanceof Object[] || first instanceof Collection) {
+						Iterator iterator = iterable.iterator();
+						while(iterator.hasNext()) {
+							Object record = iterator.next();
+							if (!(record instanceof Object[]) && !(record instanceof Collection)) {
+								throw new IllegalArgumentException("The record is not an array or collection: " + record);
+							}
+							List<Object> fields = record instanceof Object[] ? Arrays.asList((Object[]) record) : new ArrayList<Object>((Collection<Object>) record);
+							// use linked hashmaps to retain key order
+							Map<String, Object> result = new LinkedHashMap<String, Object>();
+							if (fields.size() > keys.size()) {
+								throw new IllegalArgumentException("There are " + fields.size() + " objects but only " + keys.size() + " keys in: " + fields);
+							}
+							int i = 0;
+							for (String key : keys) {
+								result.put(key, fields.size() > i ? fields.get(i++) : null);
+							}
+							maps.add(result);
+						}
+					}
+					else {
+						Iterator iterator = iterable.iterator();
+						// use linked hashmaps to retain key order
+						Map<String, Object> result = new LinkedHashMap<String, Object>();
+						for (String key : keys) {
+							result.put(key, iterator.hasNext() ? iterator.next() : null);
+						}
+						maps.add(result);
+					}
+				}
+			}
+			else {
+				throw new IllegalArgumentException("Invalid object for a map: " + object);
+			}
+		}
+		if (GlueUtils.getVersion().contains(1.0)) {
+			return maps.toArray(new Map[0]);
+		}
+		else {
+			return maps;
+		}
+	}
 	
 	// create a copy of a lambda, can update function to first check for lambdas
 	// we need a way to freeze the context of a method lambda
