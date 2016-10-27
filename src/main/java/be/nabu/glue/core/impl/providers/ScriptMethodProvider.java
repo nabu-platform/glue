@@ -376,6 +376,9 @@ public class ScriptMethodProvider implements MethodProvider {
 				List<ParameterDescription> keys = ScriptUtils.getInputs(script);
 				boolean wasOriginalList = false;
 				for (int i = 1; i < getParts().size(); i++) {
+					if (keys.size() == 0) {
+						throw new EvaluationException("The script '" + ScriptUtils.getFullName(script) + "' does not allow for any input parameters, received: " + (getParts().size() - 1) + " parameters");
+					}
 					Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
 					if (GlueUtils.getVersion().contains(1.0) && i > keys.size()) { 
 						if (!ALLOW_VARARGS || keys.isEmpty() || !keys.get(keys.size() - 1).isVarargs()) {
