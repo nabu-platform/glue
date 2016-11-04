@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import be.nabu.glue.core.api.OptionalTypeProvider;
+import be.nabu.glue.core.impl.FallbackOptionalTypeProvider;
 import be.nabu.glue.core.impl.MultipleOptionalTypeProvider;
 import be.nabu.glue.core.impl.SPIOptionalTypeProvider;
 
@@ -43,6 +44,7 @@ public class OptionalTypeProviderFactory {
 	public List<OptionalTypeProvider> getProviders() {
 		if (providers.isEmpty()) {
 			providers.add(new SPIOptionalTypeProvider());
+			providers.add(new FallbackOptionalTypeProvider());
 		}
 		return providers;
 	}

@@ -58,14 +58,6 @@ public class DefaultOptionalTypeProvider implements OptionalTypeProvider {
 	@Override
 	public OptionalTypeConverter getConverter(String optionalType) {
 		Class<?> targetClass = wrapDefault(optionalType);
-		if (targetClass == null) {
-			try {
-				targetClass = Thread.currentThread().getContextClassLoader().loadClass(optionalType);
-			}
-			catch (ClassNotFoundException e) {
-				// ignore
-			}
-		}
 		return targetClass != null ? new DefaultTypeConverter(converter, targetClass) : null;
 	}
 
@@ -81,7 +73,15 @@ public class DefaultOptionalTypeProvider implements OptionalTypeProvider {
 		
 		@Override
 		public Object convert(Object object) {
-			return object == null ? null : converter.convert(object, targetClass);
+			if (object == null) {
+				return null;
+			}
+			else if (targetClass.isAssignableFrom(object.getClass())) {
+				return object;
+			}
+			else {
+				return converter.convert(object, targetClass);
+			}
 		}
 
 		@Override
