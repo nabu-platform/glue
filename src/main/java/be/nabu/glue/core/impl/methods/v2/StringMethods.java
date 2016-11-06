@@ -193,7 +193,7 @@ public class StringMethods {
 			if (first) {
 				first = false;
 			}
-			else {
+			else if (separator != null) {
 				builder.append(separator);
 			}
 			builder.append(object == null ? "null" : GlueUtils.convert(object, String.class));
