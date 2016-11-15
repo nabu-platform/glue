@@ -78,6 +78,9 @@ public class ScriptMethods {
 	
 	@SuppressWarnings("unchecked")
 	public static Object eval(String evaluation, Object context) throws IOException, ParseException, ExecutionException, EvaluationException {
+		if (evaluation == null || evaluation.trim().isEmpty()) {
+			return null;
+		}
 		ExecutionContext executionContext;
 		if (context instanceof ExecutionContext) {
 			executionContext = (ExecutionContext) context;
