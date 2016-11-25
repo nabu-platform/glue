@@ -2,6 +2,8 @@ package be.nabu.glue.core.impl.providers;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -32,7 +34,6 @@ import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
 import be.nabu.libs.resources.URIUtils;
-import be.nabu.utils.io.IOUtils;
 
 public class SystemMethodProvider implements MethodProvider {
 
@@ -223,7 +224,19 @@ public class SystemMethodProvider implements MethodProvider {
 				output.close();
 			}
 		}
+		CopyStream inputStream = null, errorStream = null;
+		ByteArrayOutputStream inputResult = null, errorResult = null;
 		try {
+			// if we are not redirecting I/O to emulate system behavior, capture the content in a separate thread
+			if (!redirectIO) {
+				errorResult = new ByteArrayOutputStream();
+				errorStream = new CopyStream(new BufferedInputStream(process.getErrorStream()), errorResult);
+				new Thread(errorStream).start();
+				
+				inputResult = new ByteArrayOutputStream();
+				inputStream = new CopyStream(new BufferedInputStream(process.getInputStream()), inputResult);
+				new Thread(inputStream).start();
+			}
 			process.waitFor();
 		}
 		catch (InterruptedException e) {
@@ -234,32 +247,21 @@ public class SystemMethodProvider implements MethodProvider {
 			return Integer.toString(process.exitValue());
 		}
 		else {
-			String error;
-			InputStream input = process.getErrorStream();
-			try {
-				byte [] bytes = IOUtils.toBytes(IOUtils.wrap(input));
-				error = bytes == null ? null : new String(bytes);
-			}
-			finally {
-				input.close();
-			}
+			inputStream.close();
+			errorStream.close();
+			
+			String error = errorResult == null ? null : new String(errorResult.toByteArray());
 			if (error != null && !error.isEmpty()) {
 				System.err.println(error);
 			}
-			input = new BufferedInputStream(process.getInputStream());
-			try {
-				byte [] bytes = IOUtils.toBytes(IOUtils.wrap(input));
-				return bytes == null ? null : new String(bytes);
-			}
-			finally {
-				input.close();
-			}
+			return inputResult == null ? null : new String(inputResult.toByteArray());
 		}
 	}
 	
-	public static class CopyStream implements Runnable {
+	public static class CopyStream implements Runnable, Closeable {
 		private InputStream input;
 		private OutputStream output;
+		private boolean closed;
 		public CopyStream(InputStream input, OutputStream output) {
 			this.input = input;
 			this.output = output;
@@ -269,13 +271,18 @@ public class SystemMethodProvider implements MethodProvider {
 			byte [] buffer = new byte[4096];
 			int read = 0;
 			try {
-				while((read = input.read(buffer)) > 0) {
+				while(!closed && (read = input.read(buffer)) > 0) {
 					output.write(buffer, 0, read);
 				}
 			}
 			catch (IOException e) {
 				throw new RuntimeException(e);
 			}
+		}
+		@Override
+		public void close() throws IOException {
+			closed = true;
+			input.close();
 		}
 	}
 }
