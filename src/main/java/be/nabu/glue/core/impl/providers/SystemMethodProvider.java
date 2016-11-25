@@ -226,16 +226,19 @@ public class SystemMethodProvider implements MethodProvider {
 		}
 		CopyStream inputStream = null, errorStream = null;
 		ByteArrayOutputStream inputResult = null, errorResult = null;
+		Thread inputThread = null, errorThread = null;
 		try {
 			// if we are not redirecting I/O to emulate system behavior, capture the content in a separate thread
 			if (!redirectIO) {
 				errorResult = new ByteArrayOutputStream();
-				errorStream = new CopyStream(new BufferedInputStream(process.getErrorStream()), errorResult);
-				new Thread(errorStream).start();
+				errorStream = new CopyStream(process.getErrorStream(), errorResult);
+				errorThread = new Thread(errorStream);
+				errorThread.start();
 				
 				inputResult = new ByteArrayOutputStream();
-				inputStream = new CopyStream(new BufferedInputStream(process.getInputStream()), inputResult);
-				new Thread(inputStream).start();
+				inputStream = new CopyStream(process.getInputStream(), inputResult);
+				inputThread = new Thread(inputStream);
+				inputThread.start();
 			}
 			process.waitFor();
 		}
@@ -247,9 +250,14 @@ public class SystemMethodProvider implements MethodProvider {
 			return Integer.toString(process.exitValue());
 		}
 		else {
+
+			inputThread.join();
+			errorThread.join();
+			
+			// not necessary?
 			inputStream.close();
 			errorStream.close();
-			
+
 			String error = errorResult == null ? null : new String(errorResult.toByteArray());
 			if (error != null && !error.isEmpty()) {
 				System.err.println(error);
@@ -262,18 +270,21 @@ public class SystemMethodProvider implements MethodProvider {
 		private InputStream input;
 		private OutputStream output;
 		private boolean closed;
+		private BufferedInputStream buffered;
 		public CopyStream(InputStream input, OutputStream output) {
 			this.input = input;
 			this.output = output;
+			this.buffered = new BufferedInputStream(input);
 		}
 		@Override
 		public void run() {
 			byte [] buffer = new byte[4096];
 			int read = 0;
 			try {
-				while(!closed && (read = input.read(buffer)) > 0) {
+				while((read = buffered.read(buffer)) > 0) {
 					output.write(buffer, 0, read);
 				}
+				closed = true;
 			}
 			catch (IOException e) {
 				throw new RuntimeException(e);
