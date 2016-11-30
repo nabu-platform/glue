@@ -3,6 +3,7 @@ package be.nabu.glue.core.impl.methods;
 import java.util.ArrayList;
 import java.util.List;
 
+import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.api.ScriptRepository;
@@ -15,16 +16,28 @@ import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 @MethodProviderClass(namespace = "reflection")
 public class ReflectionMethods {
 	
+	@GlueMethod(version = 1)
 	public static Script getScript() {
 		return ScriptRuntime.getRuntime().getScript();
 	}
 	
+	@GlueMethod(version = 2)
+	public static Script script() {
+		return getScript();
+	}
+	
+	@GlueMethod(version = 1)
 	public static ScriptRepository getRepository() {
 		ScriptRepository repository = getScript().getRepository();
 		while (repository.getParent() != null) {
 			repository = repository.getParent();
 		}
 		return repository;
+	}
+	
+	@GlueMethod(version = 2)
+	public static ScriptRepository repository() {
+		return getRepository();
 	}
 	
 	public static String typeof(Object object) {
@@ -39,6 +52,12 @@ public class ReflectionMethods {
 		return Thread.currentThread().getContextClassLoader().loadClass(name).isAssignableFrom(object.getClass());
 	}
 
+	@GlueMethod(version = 2)
+	public static MethodDescription method(String name) {
+		return getMethodDescription(name);
+	}
+	
+	@GlueMethod(version = 1)
 	public static MethodDescription getMethodDescription(String name) {
 		GlueOperationProvider newOperationProvider = new GlueParserProvider().newOperationProvider(getRepository());
 		MethodDescription nameOnlyMatch = null;
@@ -56,6 +75,7 @@ public class ReflectionMethods {
 		return nameOnlyMatch;
 	}
 	
+	@GlueMethod(version = 1)
 	public static MethodDescription [] getMethodDescriptions() {
 		GlueOperationProvider newOperationProvider = new GlueParserProvider().newOperationProvider(getRepository());
 		List<MethodDescription> descriptions = new ArrayList<MethodDescription>();
@@ -63,5 +83,10 @@ public class ReflectionMethods {
 			descriptions.addAll(methodProvider.getAvailableMethods());
 		}
 		return descriptions.toArray(new MethodDescription[descriptions.size()]);
+	}
+	
+	@GlueMethod(version = 2)
+	public static MethodDescription [] methods() {
+		return getMethodDescriptions();
 	}
 }
