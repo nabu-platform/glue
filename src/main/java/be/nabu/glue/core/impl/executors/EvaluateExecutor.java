@@ -117,7 +117,7 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 		// convert if necessary
 		if (variableName != null && converter != null && context.getPipeline().get(variableName) != null) {
 			// for arrays, loop over the items
-			if (context.getPipeline().get(variableName) instanceof Object[]) {
+			if (isList && context.getPipeline().get(variableName) instanceof Object[]) {
 				Object [] items = (Object[]) context.getPipeline().get(variableName);
 				Object [] targetItems = (Object[]) Array.newInstance(converter.getComponentType(), items.length);
 				for (int i = 0; i < items.length; i++) {
@@ -125,7 +125,7 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 				}
 				context.getPipeline().put(variableName, targetItems);
 			}
-			else if (context.getPipeline().get(variableName) instanceof Collection) {
+			else if (isList && context.getPipeline().get(variableName) instanceof Collection) {
 				Collection items = (Collection) context.getPipeline().get(variableName);
 				Collection targetItems = (Collection) new ArrayList(items.size());
 				for (Object item : items) {
@@ -133,7 +133,7 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 				}
 				context.getPipeline().put(variableName, targetItems);
 			}
-			else if (context.getPipeline().get(variableName) instanceof Iterable) {
+			else if (isList && context.getPipeline().get(variableName) instanceof Iterable) {
 				final Iterable items = (Iterable) context.getPipeline().get(variableName);
 				final OptionalTypeConverter finalConverter = converter;
 				context.getPipeline().put(variableName, new CollectionIterable() {
