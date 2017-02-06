@@ -15,6 +15,7 @@ import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.api.ScriptRepository;
+import be.nabu.glue.api.ScriptRepositoryWithDescriptions;
 import be.nabu.glue.core.api.EnclosedLambda;
 import be.nabu.glue.core.api.Lambda;
 import be.nabu.glue.core.api.MethodProvider;
@@ -79,20 +80,12 @@ public class ScriptMethodProvider implements MethodProvider {
 
 	@Override
 	public List<MethodDescription> getAvailableMethods() {
-		List<MethodDescription> descriptions = new ArrayList<MethodDescription>();
-		for (Script script : repository) {
-			try {
-				descriptions.add(new SimpleMethodDescription(script.getNamespace(), script.getName(), script.getRoot().getContext().getComment(), ScriptUtils.getInputs(script), ScriptUtils.getOutputs(script)));
-			}
-			catch (IOException e) {
-				// ignore
-			}
-			catch (ParseException e) {
-				// ignore
-			}
-			catch (RuntimeException e) {
-				// ignore
-			}
+		List<MethodDescription> descriptions;
+		if (repository instanceof ScriptRepositoryWithDescriptions) {
+			descriptions = new ArrayList<MethodDescription>(((ScriptRepositoryWithDescriptions) repository).getDescriptions());
+		}
+		else {
+			descriptions = ScriptUtils.buildDescriptionsFor(repository);
 		}
 		// add lambda if necessary
 		if (ALLOW_LAMBDAS) {
@@ -363,15 +356,24 @@ public class ScriptMethodProvider implements MethodProvider {
 	public static class ScriptOperation extends BaseMethodOperation<ExecutionContext> {
 
 		private Script script;
+		private Map<String, Object> enclosedContext;
 
 		public ScriptOperation(Script script) {
 			this.script = script;
+		}
+		
+		public ScriptOperation(Script script, Map<String, Object> enclosedContext) {
+			this.script = script;
+			this.enclosedContext = enclosedContext;
 		}
 		
 		@SuppressWarnings({ "unchecked", "rawtypes" })
 		@Override
 		public Object evaluate(ExecutionContext context) throws EvaluationException {
 			Map<String, Object> input = new HashMap<String, Object>();
+			if (enclosedContext != null) {
+				input.putAll(enclosedContext);
+			}
 			try {
 				List<ParameterDescription> keys = ScriptUtils.getInputs(script);
 				boolean wasOriginalList = false;
@@ -441,6 +443,14 @@ public class ScriptMethodProvider implements MethodProvider {
 			catch (ParseException e) {
 				throw new EvaluationException(e);
 			}
+		}
+		
+		public Script getScript() {
+			return script;
+		}
+
+		public Map<String, Object> getEnclosedContext() {
+			return enclosedContext;
 		}
 
 		@Override

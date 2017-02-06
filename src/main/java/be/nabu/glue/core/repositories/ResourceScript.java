@@ -17,6 +17,7 @@ import be.nabu.libs.resources.api.ReadableResource;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
 import be.nabu.libs.resources.api.TimestampedResource;
+import be.nabu.libs.resources.api.features.CacheableResource;
 import be.nabu.utils.io.IOUtils;
 import be.nabu.utils.io.api.ByteBuffer;
 import be.nabu.utils.io.api.ReadableContainer;
@@ -113,6 +114,18 @@ public class ResourceScript implements Script {
 	}
 	
 	public boolean refresh() {
+		try {
+			// refresh the resources folder just in case something has changed
+			Resource resourceFolder = repository.resolve(getPath(false));
+			if (resourceFolder instanceof CacheableResource) {
+				((CacheableResource) resourceFolder).resetCache();
+			}
+			// and reset the cached resources list
+			resources = null;
+		}
+		catch (IOException e) {
+			// ignore
+		}
 		if (resource instanceof TimestampedResource) {
 			Date newLastModified = ((TimestampedResource) resource).getLastModified();
 			if (newLastModified.after(lastModified)) {

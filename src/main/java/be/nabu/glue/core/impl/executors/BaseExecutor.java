@@ -3,7 +3,6 @@ package be.nabu.glue.core.impl.executors;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +35,6 @@ abstract public class BaseExecutor implements Executor {
 	private UUID uuid;
 	private ExecutorGroup parent;
 	private OperationProvider<ExecutionContext> operationProvider;
-	public static Boolean CACHE_REWRITTEN = Boolean.parseBoolean(System.getProperty("be.nabu.glue.cacheRewritten", "true"));
 
 	public BaseExecutor(ExecutorGroup parent, ExecutorContext context, Operation<ExecutionContext> condition) {
 		this.parent = parent;
@@ -134,18 +132,8 @@ abstract public class BaseExecutor implements Executor {
 			: operation;
 	}
 	
-	private static Map<String, Operation<ExecutionContext>> cachedRewritten = new HashMap<String, Operation<ExecutionContext>>();
-	
 	@SuppressWarnings("unchecked")
 	public static Operation<ExecutionContext> rewrite(GlueOperationProvider operationProvider, Operation<ExecutionContext> operation) throws ParseException {
-		String string = null;
-		if (CACHE_REWRITTEN) {
-			string = operation.toString();
-			Operation<ExecutionContext> rewritten = cachedRewritten.get(string);
-			if (rewritten != null) {
-				return rewritten;
-			}
-		}
 		List<QueryPart> parts = null;
 		PathAnalyzer<ExecutionContext> pathAnalyzer = null;
 		if (operation.getType() == OperationType.METHOD) {
@@ -283,11 +271,6 @@ abstract public class BaseExecutor implements Executor {
 			}
 		}
 		clone.finish();
-		if (CACHE_REWRITTEN) {
-			synchronized(cachedRewritten) {
-				cachedRewritten.put(string, clone);
-			}
-		}
 		return clone;
 	}
 	

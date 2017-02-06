@@ -93,7 +93,7 @@ public class SeriesMethods {
 					List parameters = new ArrayList();
 					parameters.add(o1);
 					parameters.add(o2);
-					return (Integer) GlueUtils.calculate(lambda, runtime, parameters);
+					return GlueUtils.convert(GlueUtils.calculate(lambda, runtime, parameters), Integer.class);
 				}
 			});
 		}

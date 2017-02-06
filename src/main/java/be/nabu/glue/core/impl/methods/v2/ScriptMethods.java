@@ -31,6 +31,7 @@ import be.nabu.glue.core.impl.LambdaMethodProvider.LambdaExecutionOperation;
 import be.nabu.glue.core.impl.operations.GlueOperationProvider;
 import be.nabu.glue.core.impl.parsers.GlueParserProvider;
 import be.nabu.glue.core.impl.providers.ScriptMethodProvider.DecoratorOperation;
+import be.nabu.glue.core.impl.providers.ScriptMethodProvider.ScriptOperation;
 import be.nabu.glue.impl.ForkedExecutionContext;
 import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.utils.ScriptRuntime;
@@ -297,7 +298,11 @@ public class ScriptMethods {
 			scope = ((ExecutionContext) scope).getPipeline();
 		}
 		Map<String, Object> enclosed = original.isMutable() ? (Map<String, Object>) scope : new HashMap<String, Object>((Map<String, Object>) scope);
-		return new LambdaImpl(original.getDescription(), original.getOperation(), enclosed, original.isMutable());
+		Operation<ExecutionContext> operation = original.getOperation();
+		if (operation instanceof ScriptOperation) {
+			operation = new ScriptOperation(((ScriptOperation) operation).getScript(), enclosed);
+		}
+		return new LambdaImpl(original.getDescription(), operation, enclosed, original.isMutable());
 	}
 
 	@GlueMethod(description = "Returns the keys available in this object", version = 2)

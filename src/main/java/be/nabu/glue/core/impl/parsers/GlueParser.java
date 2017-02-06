@@ -239,14 +239,14 @@ public class GlueParser implements Parser {
 					// the switch was never pushed to the stack, only the if or else if above this
 					// so get the last child of the current stack element, this has to be the switch
 					if (executorGroups.peek().getChildren().isEmpty()) {
-						throw new ParseException("An else if can only exist after an if", 0);
+						throw new ParseException("An else can only exist after an if", 0);
 					}
 					Executor executor = executorGroups.peek().getChildren().get(executorGroups.peek().getChildren().size() - 1);
 					if (!(executor instanceof SwitchExecutor)) {
-						throw new ParseException("An else if can only exist after an if", 0);
+						throw new ParseException("An else can only exist after an if", 0);
 					}
 					else if (!((SwitchExecutor) executor).isIf()) {
-						throw new ParseException("An else if can only exist after an if", 0);
+						throw new ParseException("An else can only exist after an if", 0);
 					}
 					SequenceExecutor sequenceExecutor = new SequenceExecutor((ExecutorGroup) executor, context, null);
 					sequenceExecutor.setOperationProvider(operationProvider);

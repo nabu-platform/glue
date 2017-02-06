@@ -11,6 +11,7 @@ import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.core.api.MethodProvider;
 import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.impl.SimpleParameterDescription;
+import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
@@ -48,7 +49,11 @@ public class ControlMethodProvider implements MethodProvider {
 		@SuppressWarnings("unchecked")
 		@Override
 		public Object evaluate(ExecutionContext context) throws EvaluationException {
-			Boolean result = (Boolean) resolve((Operation<ExecutionContext>) getParts().get(1).getContent(), context);
+			Object resolve = resolve((Operation<ExecutionContext>) getParts().get(1).getContent(), context);
+			if (!(resolve instanceof Boolean)) {
+				resolve = ConverterFactory.getInstance().getConverter().convert(resolve, Boolean.class);
+			}
+			Boolean result = (Boolean) resolve;
 			if (result != null && result) {
 				return resolve((Operation<ExecutionContext>) getParts().get(2).getContent(), context);
 			}
