@@ -231,7 +231,12 @@ public class SeriesMethods {
 						@Override
 						public Object call() throws Exception {
 							runtime.registerInThread();
-							return ((Callable) single).call();
+							try {
+								return ((Callable) single).call();
+							}
+							finally {
+								runtime.unregisterInThread();
+							}
 						}
 					}));
 				}

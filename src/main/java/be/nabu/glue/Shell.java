@@ -57,57 +57,62 @@ public class Shell {
 		runtime.setLabelEvaluator(new EnvironmentLabelEvaluator(Main.getLabel(arguments)));
 		runtime.registerInThread();
 		
-		// if you have given a script, execute that already and pop up the shell afterwards, this allows you to pick in on a certain point
-		// especially combined with the available $script variable, this basically allows you to craft a script as you go along
-		List<String> commands = Main.getCommands(arguments);
-		if (commands.size() > 0) {
-			Script script = repository.getScript(commands.get(0));
-			Map<String, Object> parameters = Main.getParameters(script, arguments);
-			// set initial parameters
-			runtime.getExecutionContext().getPipeline().putAll(parameters);
-			// run the script
-			script.getRoot().execute(runtime.getExecutionContext());
-			GlueFormatter formatter = new GlueFormatter();
-			StringWriter writer = new StringWriter();
-			formatter.format(script.getRoot(), writer);
-			fullScript.addAll(Arrays.asList((String []) StringMethods.lines(writer.toString())));
-			runtime.getExecutionContext().getPipeline().put("$script", StringMethods.join(System.getProperty("line.separator"), fullScript.toArray(new String[0])));
-		}
-		
-		System.out.print(">> ");
-		List<String> bufferedLines = new ArrayList<String>();
-		while ((line = Main.readLine()) != null) {
-			if (line.trim().isEmpty()) {
-				continue;
+		try {
+			// if you have given a script, execute that already and pop up the shell afterwards, this allows you to pick in on a certain point
+			// especially combined with the available $script variable, this basically allows you to craft a script as you go along
+			List<String> commands = Main.getCommands(arguments);
+			if (commands.size() > 0) {
+				Script script = repository.getScript(commands.get(0));
+				Map<String, Object> parameters = Main.getParameters(script, arguments);
+				// set initial parameters
+				runtime.getExecutionContext().getPipeline().putAll(parameters);
+				// run the script
+				script.getRoot().execute(runtime.getExecutionContext());
+				GlueFormatter formatter = new GlueFormatter();
+				StringWriter writer = new StringWriter();
+				formatter.format(script.getRoot(), writer);
+				fullScript.addAll(Arrays.asList((String []) StringMethods.lines(writer.toString())));
+				runtime.getExecutionContext().getPipeline().put("$script", StringMethods.join(System.getProperty("line.separator"), fullScript.toArray(new String[0])));
 			}
-			else if (line.trim().equals("quit")) {
-				break;
-			}
-			// allow multiline creation
-			else if (line.trim().endsWith("/")) {
-				bufferedLines.add(line.trim().replaceAll("[/]+$", "").replaceAll(";", System.getProperty("line.separator")));
-			}
-			else {
-				try {
-					bufferedLines.add(line.replaceAll(";", System.getProperty("line.separator")));
-					String script = StringMethods.join(System.getProperty("line.separator"), bufferedLines.toArray(new String[0]));
-					parser.parse(new StringReader(script)).execute(runtime.getExecutionContext());
-					
-					// make sure you have access to the full script, but do it _after_ your call, that way your current line is not added
-					fullScript.addAll(bufferedLines);
-					runtime.getExecutionContext().getPipeline().put("$script", StringMethods.join(System.getProperty("line.separator"), fullScript.toArray(new String[0])));
-					// add the last buffer as well, that way you can basically inspect your own last line (-sequence)
-					runtime.getExecutionContext().getPipeline().put("$buffer", StringMethods.join(System.getProperty("line.separator"), bufferedLines.toArray(new String[0])));
-				}
-				catch (ParseException e) {
-					e.printStackTrace();
-				}
-				catch (ExecutionException e) {
-					e.printStackTrace();
-				}
-				bufferedLines.clear();
-			}
+			
 			System.out.print(">> ");
+			List<String> bufferedLines = new ArrayList<String>();
+			while ((line = Main.readLine()) != null) {
+				if (line.trim().isEmpty()) {
+					continue;
+				}
+				else if (line.trim().equals("quit")) {
+					break;
+				}
+				// allow multiline creation
+				else if (line.trim().endsWith("/")) {
+					bufferedLines.add(line.trim().replaceAll("[/]+$", "").replaceAll(";", System.getProperty("line.separator")));
+				}
+				else {
+					try {
+						bufferedLines.add(line.replaceAll(";", System.getProperty("line.separator")));
+						String script = StringMethods.join(System.getProperty("line.separator"), bufferedLines.toArray(new String[0]));
+						parser.parse(new StringReader(script)).execute(runtime.getExecutionContext());
+						
+						// make sure you have access to the full script, but do it _after_ your call, that way your current line is not added
+						fullScript.addAll(bufferedLines);
+						runtime.getExecutionContext().getPipeline().put("$script", StringMethods.join(System.getProperty("line.separator"), fullScript.toArray(new String[0])));
+						// add the last buffer as well, that way you can basically inspect your own last line (-sequence)
+						runtime.getExecutionContext().getPipeline().put("$buffer", StringMethods.join(System.getProperty("line.separator"), bufferedLines.toArray(new String[0])));
+					}
+					catch (ParseException e) {
+						e.printStackTrace();
+					}
+					catch (ExecutionException e) {
+						e.printStackTrace();
+					}
+					bufferedLines.clear();
+				}
+				System.out.print(">> ");
+			}
+		}
+		finally {
+			runtime.unregisterInThread();
 		}
 	}
 }

@@ -35,16 +35,21 @@ public class ParallelMethods {
 		public Object call() throws Exception {
 			fork = runtime.fork(false);
 			fork.registerInThread();
-			List parameters = new ArrayList();
-			for (Object resolve : resolved) {
-				if (resolve instanceof Future) {
-					parameters.add(((Future) resolve).get());
+			try {
+				List parameters = new ArrayList();
+				for (Object resolve : resolved) {
+					if (resolve instanceof Future) {
+						parameters.add(((Future) resolve).get());
+					}
+					else {
+						parameters.add(resolve);
+					}
 				}
-				else {
-					parameters.add(resolve);
-				}
+				return GlueUtils.calculate(lambda, fork, parameters);
 			}
-			return GlueUtils.calculate(lambda, fork, parameters);
+			finally {
+				fork.unregisterInThread();
+			}
 		}
 		
 		public void abort() {
