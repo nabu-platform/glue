@@ -283,7 +283,24 @@ public class Main {
 		Map<String, Object> parameters = new HashMap<String, Object>();
 		List<String> commands = getCommands(arguments);
 		for (int i = 1; i < commands.size(); i++) {
-			if (i > inputs.size()) {
+			// if we find a ":", we may want to do named binding
+			if (commands.get(i).contains(":")) {
+				int index = commands.get(i).indexOf(':');
+				String name = commands.get(i).substring(0, index);
+				String value = commands.get(i).substring(index + 1);
+				if (parameters.containsKey(name)) {
+					if (!(parameters.get(name) instanceof List)) {
+						List list = new ArrayList();
+						list.add(parameters.get(name));
+						parameters.put(name, list);
+					}
+					((List) parameters.get(name)).add(value);
+				}
+				else {
+					parameters.put(name, value);
+				}
+			}
+			else if (i > inputs.size()) {
 				if (!ScriptMethodProvider.ALLOW_VARARGS || inputs.isEmpty() || !inputs.get(inputs.size() - 1).isVarargs()) {
 					throw new IllegalArgumentException("Too many arguments, expecting " + inputs.size());
 				}
