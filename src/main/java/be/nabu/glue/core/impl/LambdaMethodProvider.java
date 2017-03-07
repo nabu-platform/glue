@@ -126,7 +126,7 @@ public class LambdaMethodProvider implements MethodProvider {
 							value = object;
 						}
 					}
-					else if (parameterDescription.isList() && !(value instanceof Iterable)) {
+					else if (value != null && parameterDescription.isList() && !(value instanceof Iterable)) {
 						List list = new ArrayList();
 						list.add(value);
 						value = list;
