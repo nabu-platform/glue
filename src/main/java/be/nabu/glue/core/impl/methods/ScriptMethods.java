@@ -114,12 +114,12 @@ public class ScriptMethods {
 		return eval(evaluation, ScriptRuntime.getRuntime().getExecutionContext());
 	}
 	
-	public static void inject(Object object) {
+	public static void inject(Object object) throws EvaluationException {
 		inject(object, false);
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static void inject(Object object, boolean overwriteExisting) {
+	public static void inject(Object object, boolean overwriteExisting) throws EvaluationException {
 		if (object != null) {
 			Map<String, Object> current = ScriptRuntime.getRuntime().getExecutionContext().getPipeline();
 			
@@ -134,7 +134,15 @@ public class ScriptMethods {
 				pipeline = scope(((Number) object).intValue());
 			}
 			else {
-				throw new IllegalArgumentException("Can not inject: " + object);
+				ContextAccessor accessor = ContextAccessorFactory.getInstance().getAccessor(object.getClass());
+				if (!(accessor instanceof ListableContextAccessor)) {
+					throw new IllegalArgumentException("Can not inject: " + object);
+				}
+				pipeline = new HashMap<String, Object>();
+				Collection<String> keys = ((ListableContextAccessor) accessor).list(object);
+				for (String key : keys) {
+					pipeline.put(key, accessor.get(object, key));
+				}
 			}
 			for (String key : pipeline.keySet()) {
 				if (overwriteExisting || !current.containsKey(key)) {
