@@ -6,12 +6,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
@@ -685,18 +685,21 @@ public class SeriesMethods {
 			public Iterator iterator() {
 				return new Iterator() {
 					private Iterator iterator = series.iterator();
-					private Deque queue = new ArrayDeque();
+					// started with an arraydeque but it does not allow for null values
+					private Stack queue = new Stack();
 					@SuppressWarnings("unchecked")
 					@Override
 					public boolean hasNext() {
 						while(queue.isEmpty() && iterator.hasNext()) {
 							Object next = iterator.next();
 							Object calculate = GlueUtils.calculate(lambda, runtime, Arrays.asList(next));
-							if (!(calculate instanceof Iterable)) {
-								calculate = Arrays.asList(calculate);
-							}
-							for (Object single : (Iterable) calculate) {
-								queue.add(single);
+							if (calculate != null) {
+								if (!(calculate instanceof Iterable)) {
+									calculate = Arrays.asList(calculate);
+								}
+								for (Object single : (Iterable) calculate) {
+									queue.add(single);
+								}
 							}
 						}
 						return !queue.isEmpty();
