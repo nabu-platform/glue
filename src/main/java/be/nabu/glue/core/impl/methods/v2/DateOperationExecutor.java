@@ -13,13 +13,33 @@ public class DateOperationExecutor implements OperationExecutor {
 	@Override
 	public boolean support(Object leftOperand, QueryPart.Type operator, Object rightOperand) {
 		return leftOperand instanceof Date
-				&& (operator == QueryPart.Type.ADD || operator == QueryPart.Type.SUBSTRACT);
+				&& (operator == QueryPart.Type.ADD || operator == QueryPart.Type.SUBSTRACT || (
+						((operator == QueryPart.Type.EQUALS || operator == QueryPart.Type.NOT_EQUALS || operator == QueryPart.Type.GREATER || operator == QueryPart.Type.GREATER_OR_EQUALS
+								|| operator == QueryPart.Type.LESSER || operator == QueryPart.Type.LESSER_OR_EQUALS) && rightOperand instanceof Date)));
 	}
 
 	@Override
 	public Object calculate(Object leftOperand, QueryPart.Type operator, Object rightOperand) {
+		if (operator == QueryPart.Type.EQUALS) {
+			return ((Date) leftOperand).getTime() == ((Date) rightOperand).getTime();
+		}
+		else if (operator == QueryPart.Type.NOT_EQUALS) {
+			return ((Date) leftOperand).getTime() != ((Date) rightOperand).getTime();
+		}
+		else if (operator == QueryPart.Type.GREATER) {
+			return ((Date) leftOperand).getTime() > ((Date) rightOperand).getTime();
+		}
+		else if (operator == QueryPart.Type.GREATER_OR_EQUALS) {
+			return ((Date) leftOperand).getTime() >= ((Date) rightOperand).getTime();
+		}
+		else if (operator == QueryPart.Type.LESSER) {
+			return ((Date) leftOperand).getTime() < ((Date) rightOperand).getTime();
+		}
+		else if (operator == QueryPart.Type.LESSER_OR_EQUALS) {
+			return ((Date) leftOperand).getTime() <= ((Date) rightOperand).getTime();
+		}
 		// we assume it's an offset in milliseconds
-		if (rightOperand instanceof Number) {
+		else if (rightOperand instanceof Number) {
 			return operator == QueryPart.Type.ADD
 				? new Date(((Date) leftOperand).getTime() + ((Number) rightOperand).longValue())
 				: new Date(((Date) leftOperand).getTime() - ((Number) rightOperand).longValue());

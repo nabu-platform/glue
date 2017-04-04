@@ -272,7 +272,7 @@ public class ScriptMethods {
 						return new LambdaImpl(description, resolved, new HashMap<String, Object>());
 					}
 				}
-				throw new RuntimeException("Can only wrap functions with a runtime definition");
+				throw new RuntimeException("The function '" + name + "' does not have a runtime definition");
 			}
 		}
 		return null;

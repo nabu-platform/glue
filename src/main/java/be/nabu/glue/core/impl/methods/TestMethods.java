@@ -217,13 +217,16 @@ public class TestMethods {
 	}
 	
 	private static String getCheck() {
-		// get the validation that was performed
-		// the operation should be a method operation
-		Operation<ExecutionContext> operation = ((EvaluateExecutor) ScriptRuntime.getRuntime().getExecutionContext().getCurrent()).getOperation();
-		// 0 is the method name
-		// 1 is the the string message
-		// 2 is the operation to be executed
-		return operation.getParts().size() >= 3 ? operation.getParts().get(2).getContent().toString() : null;
+		if (ScriptRuntime.getRuntime().getExecutionContext().getCurrent() instanceof EvaluateExecutor) {
+			// get the validation that was performed
+			// the operation should be a method operation
+			Operation<ExecutionContext> operation = ((EvaluateExecutor) ScriptRuntime.getRuntime().getExecutionContext().getCurrent()).getOperation();
+			// 0 is the method name
+			// 1 is the the string message
+			// 2 is the operation to be executed
+			return operation.getParts().size() >= 3 ? operation.getParts().get(2).getContent().toString() : null;
+		}
+		return null;
 	}
 	
 	public static boolean check(String message, Boolean result, String check, boolean fail) {

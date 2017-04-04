@@ -15,8 +15,12 @@ public class IterableOperationExecutor implements OperationExecutor {
 
 	@Override
 	public boolean support(Object leftOperand, QueryPart.Type operator, Object rightOperand) {
+		// if we are checking that the list is null or not null, we don't particularly care to differentiate between empty lists and actual null values
+		if (leftOperand instanceof Iterable && rightOperand == null && (operator == QueryPart.Type.EQUALS || operator == QueryPart.Type.NOT_EQUALS)) {
+			return true;
+		}
 		// boolean comparison of series
-		if (leftOperand instanceof Iterable && rightOperand instanceof Boolean && (operator == QueryPart.Type.EQUALS || operator == QueryPart.Type.NOT_EQUALS)) {
+		else if (leftOperand instanceof Iterable && rightOperand instanceof Boolean && (operator == QueryPart.Type.EQUALS || operator == QueryPart.Type.NOT_EQUALS)) {
 			return true;
 		}
 		else if (rightOperand instanceof Iterable && leftOperand instanceof Boolean && (operator == QueryPart.Type.EQUALS || operator == QueryPart.Type.NOT_EQUALS)) {
@@ -29,6 +33,10 @@ public class IterableOperationExecutor implements OperationExecutor {
 	@SuppressWarnings("rawtypes")
 	@Override
 	public Object calculate(final Object leftOperand, final QueryPart.Type operator, final Object rightOperand) {
+		if (leftOperand instanceof Iterable && rightOperand == null && (operator == QueryPart.Type.EQUALS || operator == QueryPart.Type.NOT_EQUALS)) {
+			boolean isEmpty = !((Iterable) leftOperand).iterator().hasNext();
+			return operator == QueryPart.Type.EQUALS ? isEmpty : !isEmpty;
+		}
 		// boolean comparison of series
 		if ((leftOperand instanceof Boolean || rightOperand instanceof Boolean) && (operator == QueryPart.Type.EQUALS || operator == QueryPart.Type.NOT_EQUALS)) {
 			Iterable iterable = (Iterable) (leftOperand instanceof Iterable ? leftOperand : rightOperand);
