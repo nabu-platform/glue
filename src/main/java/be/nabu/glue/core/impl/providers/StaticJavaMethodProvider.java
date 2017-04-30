@@ -29,7 +29,7 @@ public class StaticJavaMethodProvider implements MethodProvider {
 	private Collection<Class<?>> methodClasses;
 	private List<MethodDescription> descriptions;
 	private boolean includeDeprecated = Boolean.parseBoolean(System.getProperty("include.deprecated", "false"));
-	
+	private Object context;
 	
 	public StaticJavaMethodProvider() {
 		// auto construct
@@ -39,6 +39,11 @@ public class StaticJavaMethodProvider implements MethodProvider {
 		if (methodClasses != null && methodClasses.length > 0) {
 			this.methodClasses = Arrays.asList(methodClasses);
 		}
+	}
+	
+	public StaticJavaMethodProvider(Object context) {
+		this.methodClasses = Arrays.asList(new Class<?>[] { context.getClass() });
+		this.context = context;
 	}
 
 	Collection<Class<?>> getMethodClasses() {
@@ -73,6 +78,7 @@ public class StaticJavaMethodProvider implements MethodProvider {
 		});
 		try {
 			if (methodOperation.findMethod(name) != null) {
+				methodOperation.setContext(context);
 				return methodOperation;
 			}
 		}
@@ -90,7 +96,7 @@ public class StaticJavaMethodProvider implements MethodProvider {
 					List<MethodDescription> descriptions = new ArrayList<MethodDescription>();
 					for (Class<?> methodClass : getMethodClasses()) {
 						for (Method method : methodClass.getDeclaredMethods()) {
-							if (Modifier.isStatic(method.getModifiers()) && Modifier.isPublic(method.getModifiers())) {
+							if ((context != null || Modifier.isStatic(method.getModifiers())) && Modifier.isPublic(method.getModifiers())) {
 								Deprecated deprecatedAnnotation = method.getAnnotation(Deprecated.class);
 								// ignore deprecated methods unless specifically requested
 								if (deprecatedAnnotation != null && !includeDeprecated) {

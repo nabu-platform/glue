@@ -37,6 +37,7 @@ public class DefaultStaticMethodFactory implements StaticMethodFactory {
 		classes.add(be.nabu.glue.core.impl.methods.v2.MathMethods.class);
 		classes.add(be.nabu.glue.core.impl.methods.v2.HTTPMethods.class);
 		classes.add(be.nabu.glue.core.impl.methods.v2.HashMethods.class);
+		classes.add(be.nabu.glue.core.impl.methods.v2.ContextMethods.class);
 		return classes;
 	}
 }
