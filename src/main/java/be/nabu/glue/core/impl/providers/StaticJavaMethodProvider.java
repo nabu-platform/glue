@@ -51,11 +51,16 @@ public class StaticJavaMethodProvider implements MethodProvider {
 		if (methodClasses == null) {
 			synchronized(this) {
 				if (methodClasses == null) {
-					List<Class<?>> allClasses = new ArrayList<Class<?>>();
-					for (StaticMethodFactory staticMethodFactory : ServiceLoader.load(StaticMethodFactory.class)) {
-						allClasses.addAll(staticMethodFactory.getStaticMethodClasses());
+					if (context != null) {
+						this.methodClasses = Arrays.asList(new Class<?>[] { context.getClass() });
 					}
-					this.methodClasses = allClasses;
+					else {
+						List<Class<?>> allClasses = new ArrayList<Class<?>>();
+						for (StaticMethodFactory staticMethodFactory : ServiceLoader.load(StaticMethodFactory.class)) {
+							allClasses.addAll(staticMethodFactory.getStaticMethodClasses());
+						}
+						this.methodClasses = allClasses;
+					}
 				}
 			}
 		}
@@ -65,6 +70,7 @@ public class StaticJavaMethodProvider implements MethodProvider {
 	@Override
 	public Operation<ExecutionContext> resolve(String name) {
 		MethodOperation<ExecutionContext> methodOperation = new MethodOperation<ExecutionContext>(getMethodClasses());
+		methodOperation.setContext(context);
 		methodOperation.setMethodFilter(new MethodFilter() {
 			@Override
 			public boolean isAllowed(Method method) {
@@ -78,7 +84,6 @@ public class StaticJavaMethodProvider implements MethodProvider {
 		});
 		try {
 			if (methodOperation.findMethod(name) != null) {
-				methodOperation.setContext(context);
 				return methodOperation;
 			}
 		}
