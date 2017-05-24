@@ -42,8 +42,13 @@ public class StaticJavaMethodProvider implements MethodProvider {
 	}
 	
 	public StaticJavaMethodProvider(Object context) {
-		this.methodClasses = Arrays.asList(new Class<?>[] { context.getClass() });
-		this.context = context;
+		if (context instanceof Class) {
+			this.methodClasses = Arrays.asList(new Class<?>[] { (Class<?>) context });	
+		}
+		else {
+			this.methodClasses = Arrays.asList(new Class<?>[] { context.getClass() });
+			this.context = context;
+		}
 	}
 
 	Collection<Class<?>> getMethodClasses() {

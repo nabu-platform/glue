@@ -7,6 +7,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.core.api.Lambda;
@@ -86,25 +87,26 @@ public class DynamicMethodOperation extends BaseOperation {
 		// from version 2 onwards we immediately load all streams
 		// in the unlikely event that you open the stream only to stream it to somewhere else we can provide dedicated methods, in all other cases it will be loaded in memory anyway
 		// this way we at least have no leaks and the streams are not "read-once" until converted to bytes and autoconversion is easier
-		if (!GlueUtils.getVersion().contains(1.0)) {
-			if (returnValue instanceof InputStream) {
-				InputStream stream = (InputStream) returnValue;
+		if (!GlueUtils.getVersion().contains(1.0) && returnValue instanceof InputStream) {
+			InputStream stream = (InputStream) returnValue;
+			try {
 				try {
-					try {
-						returnValue = IOUtils.toBytes(IOUtils.wrap(stream));
-					}
-					finally {
-						stream.close();
-					}
+					returnValue = IOUtils.toBytes(IOUtils.wrap(stream));
 				}
-				catch (IOException e) {
-					throw new RuntimeException(e);
+				finally {
+					stream.close();
 				}
+			}
+			catch (IOException e) {
+				throw new RuntimeException(e);
 			}
 		}
 		// in version 1 we have to make sure all closeables are added as transactionables
 		else if (returnValue instanceof Closeable) {
 			ScriptRuntime.getRuntime().addTransactionable(new TransactionalCloseable((Closeable) returnValue));
+		}
+		else if (returnValue instanceof Future) {
+			ScriptRuntime.getRuntime().addFuture((Future<?>) returnValue);
 		}
 		// process recursively, there could be a stream deep down
 		// this code was disabled again cause in a lot of scenario's it doesn't make sense:

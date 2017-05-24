@@ -319,7 +319,19 @@ public class GlueUtils {
 		LambdaExecutionOperation lambdaOperation = new LambdaExecutionOperation(lambda.getDescription(), lambda.getOperation(), 
 			lambda instanceof EnclosedLambda ? ((EnclosedLambda) lambda).getEnclosedContext() : new HashMap<String, Object>());
 		try {
-			return lambdaOperation.evaluateWithParameters(runtime.getExecutionContext(), parameters.toArray());
+			ScriptRuntime current = ScriptRuntime.getRuntime();
+			runtime.registerInThread();
+			try {
+				return lambdaOperation.evaluateWithParameters(runtime.getExecutionContext(), parameters.toArray());
+			}
+			finally {
+				if (current == null) {
+					runtime.unregisterInThread();
+				}
+				else {
+					current.registerInThread();
+				}
+			}
 		}
 		catch (EvaluationException e) {
 			throw new RuntimeException(e);

@@ -361,7 +361,7 @@ public class Main {
 				}
 			}
 			// try a dedicated "GLUEPATH" variable first because the general "PATH" variable tends to be very big (at least when searching recursively) and slows down the startup of glue
-			String systemPath = System.getenv("GLUEPATH");
+			String systemPath = System.getProperty("gluepath", System.getenv("GLUEPATH"));
 			if (systemPath == null) {
 				if (getArgument("path", null, arguments) == null) {
 					System.out.println("You can set a 'GLUEPATH' system variable which points to the directories that contain scripts");
