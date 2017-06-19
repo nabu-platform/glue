@@ -13,6 +13,7 @@ import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.impl.SimpleParameterDescription;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.evaluator.EvaluationException;
+import be.nabu.libs.evaluator.QueryPart;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
 
@@ -22,6 +23,9 @@ public class ControlMethodProvider implements MethodProvider {
 	public Operation<ExecutionContext> resolve(String name) {
 		if ("control.when".equals(name) || "when".equals(name)) {
 			return new WhenOperation();
+		}
+		if ("control.all".equals(name) || "all".equals(name)) {
+			return new AllOperation();
 		}
 		return null;
 	}
@@ -73,4 +77,29 @@ public class ControlMethodProvider implements MethodProvider {
 		}
 	}
 
+	private static class AllOperation extends BaseMethodOperation<ExecutionContext> {
+
+		@Override
+		public void finish() throws ParseException {
+			// do nothing
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public Object evaluate(ExecutionContext context) throws EvaluationException {
+			List<Object> results = new ArrayList<Object>();
+			// the first part is the method itself
+			boolean first = true;
+			for (QueryPart part : getParts()) {
+				if (first) {
+					first = false;
+				}
+				else {
+					results.add(((Operation<ExecutionContext>) part.getContent()).evaluate(context));
+				}
+			}
+			return results;
+		}
+		
+	}
 }

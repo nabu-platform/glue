@@ -25,10 +25,11 @@ import be.nabu.glue.core.api.EnclosedLambda;
 import be.nabu.glue.core.api.Lambda;
 import be.nabu.glue.core.api.MethodProvider;
 import be.nabu.glue.core.impl.GlueUtils;
-import be.nabu.glue.core.impl.LambdaImpl;
 import be.nabu.glue.core.impl.GlueUtils.ObjectHandler;
+import be.nabu.glue.core.impl.LambdaImpl;
 import be.nabu.glue.core.impl.LambdaMethodProvider.LambdaExecutionOperation;
 import be.nabu.glue.core.impl.operations.GlueOperationProvider;
+import be.nabu.glue.core.impl.operations.ScriptVariableOperation.LambdaJavaAccessor;
 import be.nabu.glue.core.impl.parsers.GlueParserProvider;
 import be.nabu.glue.core.impl.providers.ScriptMethodProvider.DecoratorOperation;
 import be.nabu.glue.core.impl.providers.ScriptMethodProvider.ScriptOperation;
@@ -132,11 +133,13 @@ public class ScriptMethods {
 		if (original == null || original.length == 0) {
 			return template == null ? null : ScriptRuntime.getRuntime().getSubstituter().substitute(template, ScriptRuntime.getRuntime().getExecutionContext(), true);
 		}
+		final ScriptRuntime runtime = ScriptRuntime.getRuntime();
+		// fork it on the current state of affairs
+		final ForkedExecutionContext originalFork = new ForkedExecutionContext(runtime.getExecutionContext(), true);
 		return GlueUtils.wrap(new ObjectHandler() {
 			@SuppressWarnings("unchecked")
 			@Override
 			public Object handle(Object single) {
-				ExecutionContext parentContext = ScriptRuntime.getRuntime().getExecutionContext();
 				Map<String, Object> pipeline;
 				if (single instanceof Map) {
 					pipeline = (Map<String, Object>) single;
@@ -159,10 +162,21 @@ public class ScriptMethods {
 						pipeline.put("$value", single);
 					}
 				}
-				ForkedExecutionContext fork = new ForkedExecutionContext(parentContext, pipeline);
-				String result = ScriptRuntime.getRuntime().getSubstituter().substitute(template, fork, true);
-				ScriptRuntime.getRuntime().setExecutionContext(parentContext);
-				return result;
+				// start a new fork with local modifications
+				ForkedExecutionContext fork = new ForkedExecutionContext(originalFork, true);
+				fork.getPipeline().putAll(pipeline);
+				ScriptRuntime newRuntime = new ScriptRuntime(runtime.getScript(), fork, new HashMap<String, Object>());
+				ScriptRuntime oldRuntime = ScriptRuntime.getRuntime();
+				newRuntime.registerInThread();
+				try {
+					return runtime.getSubstituter().substitute(template, fork, true);
+				}
+				finally {
+					newRuntime.unregisterInThread();
+					if (oldRuntime != null) {
+						oldRuntime.registerInThread();
+					}
+				}
 			}
 		}, false, original);
 	}
@@ -244,35 +258,44 @@ public class ScriptMethods {
 	}
 	
 	@GlueMethod(description = "Allows you to make a lambda of any function", version = 2)
-	public static Lambda function(String name) {
-		ParserProvider parserProvider = ScriptRuntime.getRuntime().getScript().getRepository().getParserProvider();
-		if (!(parserProvider instanceof GlueParserProvider)) {
-			parserProvider = new GlueParserProvider();
-		}
-		MethodProvider[] methodProviders = ((GlueParserProvider) parserProvider).getMethodProviders(ScriptUtils.getRoot(ScriptRuntime.getRuntime().getScript().getRepository()));
-		for (MethodProvider provider : methodProviders) {
-			Operation<ExecutionContext> resolved = provider.resolve(name);
-			if (resolved instanceof LambdaExecutionOperation) {
-				return new LambdaImpl(((LambdaExecutionOperation) resolved).getMethodDescription(), 
-					((LambdaExecutionOperation) resolved).getOperation(),
-					((LambdaExecutionOperation) resolved).getEnclosedContext());
+	public static Lambda function(String name, Object context) throws EvaluationException {
+		if (context == null) {
+			ParserProvider parserProvider = ScriptRuntime.getRuntime().getScript().getRepository().getParserProvider();
+			if (!(parserProvider instanceof GlueParserProvider)) {
+				parserProvider = new GlueParserProvider();
 			}
-			else if (resolved != null) {
-				// find the description
-				for (MethodDescription description : provider.getAvailableMethods()) {
-					if (description.getName().equals(name) || ((description.getNamespace() == null ? "" : description.getNamespace() + ".") + description.getName()).equals(name)) {
-						resolved.getParts().add(new QueryPart(Type.STRING, name));
-						// because of the method description, the lambda execution will inject all the correct variables, so we simply make sure the final execution takes the original variables
-						GlueOperationProvider operationProvider = new GlueOperationProvider(methodProviders);
-						for (ParameterDescription parameter : description.getParameters()) {
-							Operation<ExecutionContext> newOperation = operationProvider.newOperation(OperationType.VARIABLE);
-							newOperation.getParts().add(new QueryPart(Type.VARIABLE, parameter.getName()));
-							resolved.getParts().add(new QueryPart(Type.OPERATION, newOperation));
-						}
-						return new LambdaImpl(description, resolved, new HashMap<String, Object>());
-					}
+			MethodProvider[] methodProviders = ((GlueParserProvider) parserProvider).getMethodProviders(ScriptUtils.getRoot(ScriptRuntime.getRuntime().getScript().getRepository()));
+			for (MethodProvider provider : methodProviders) {
+				Operation<ExecutionContext> resolved = provider.resolve(name);
+				if (resolved instanceof LambdaExecutionOperation) {
+					return new LambdaImpl(((LambdaExecutionOperation) resolved).getMethodDescription(), 
+						((LambdaExecutionOperation) resolved).getOperation(),
+						((LambdaExecutionOperation) resolved).getEnclosedContext());
 				}
-				throw new RuntimeException("The function '" + name + "' does not have a runtime definition");
+				else if (resolved != null) {
+					// find the description
+					for (MethodDescription description : provider.getAvailableMethods()) {
+						if (description.getName().equals(name) || ((description.getNamespace() == null ? "" : description.getNamespace() + ".") + description.getName()).equals(name)) {
+							resolved.getParts().add(new QueryPart(Type.STRING, name));
+							// because of the method description, the lambda execution will inject all the correct variables, so we simply make sure the final execution takes the original variables
+							GlueOperationProvider operationProvider = new GlueOperationProvider(methodProviders);
+							for (ParameterDescription parameter : description.getParameters()) {
+								Operation<ExecutionContext> newOperation = operationProvider.newOperation(OperationType.VARIABLE);
+								newOperation.getParts().add(new QueryPart(Type.VARIABLE, parameter.getName()));
+								resolved.getParts().add(new QueryPart(Type.OPERATION, newOperation));
+							}
+							return new LambdaImpl(description, resolved, new HashMap<String, Object>());
+						}
+					}
+					throw new RuntimeException("The function '" + name + "' does not have a runtime definition");
+				}
+			}
+		}
+		else {
+			LambdaJavaAccessor accessor = new LambdaJavaAccessor(null);
+			Object object = accessor.get(context, name);
+			if (object instanceof Lambda) {
+				return (Lambda) object;
 			}
 		}
 		return null;

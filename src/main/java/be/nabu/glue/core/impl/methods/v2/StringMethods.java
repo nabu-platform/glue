@@ -8,8 +8,10 @@ import java.util.regex.Pattern;
 
 import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
+import be.nabu.glue.core.api.Lambda;
 import be.nabu.glue.core.impl.GlueUtils;
 import be.nabu.glue.core.impl.GlueUtils.ObjectHandler;
+import be.nabu.glue.utils.ScriptRuntime;
 import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 
 @MethodProviderClass(namespace = "string")
@@ -120,12 +122,67 @@ public class StringMethods {
 	@GlueMethod(description = "Replaces the given regex with the replacement in the given string(s)", version = 2)
 	public static Object replace(
 			@GlueParam(name = "regex", description = "The regex to match") final String regex, 
-			@GlueParam(name = "replacement", description = "The replacement to replace it with") final String replacement, 
+			@GlueParam(name = "replacement", description = "The replacement to replace it with") final Object replacement, 
 			@GlueParam(name = "string", description = "The string(s) to perform the replacement on") Object...original) {
+		final Pattern pattern = Pattern.compile(regex);
+		final ScriptRuntime runtime = ScriptRuntime.getRuntime();
 		return GlueUtils.wrap(GlueUtils.cast(new ObjectHandler() {
 			@Override
 			public Object handle(Object single) {
-				return ((String) single).replaceAll(regex, replacement);
+				// if it is a lambda, we expect a different replacement for each match (even if they are the exact same match)
+				if (replacement instanceof Lambda) {
+					String text = (String) single;
+					Matcher matcher = pattern.matcher(text);
+					StringBuilder builder = new StringBuilder();
+					int lastPosition = 0;
+					ScriptRuntime current = ScriptRuntime.getRuntime();
+					runtime.registerInThread();
+					try {
+						while (matcher.find()) {
+							if (matcher.start() > lastPosition) {
+								builder.append(text.substring(lastPosition, matcher.start()));
+							}
+							builder.append(GlueUtils.calculate((Lambda) replacement, runtime, Arrays.asList(matcher.group())));
+							lastPosition = matcher.end();
+						}
+					}
+					finally {
+						if (current != null) {
+							current.registerInThread();
+						}
+						else {
+							runtime.unregisterInThread();
+						}
+					}
+					if (lastPosition < text.length()) {
+						builder.append(text.substring(lastPosition, text.length()));
+					}
+					return builder.toString();
+				}
+				// if it is a string, we expect a fixed replacement for all matches
+				else {
+					return ((String) single).replaceAll(regex, GlueUtils.convert(replacement, String.class));
+				}
+			}
+		}, String.class), false, original);
+	}
+	
+	@GlueMethod(version = 2)
+	public static Object quoteRegex(Object...original) {
+		return GlueUtils.wrap(GlueUtils.cast(new ObjectHandler() {
+			@Override
+			public Object handle(Object single) {
+				return Pattern.quote(((String) single));
+			}
+		}, String.class), false, original);
+	}
+	
+	@GlueMethod(version = 2)
+	public static Object quoteReplacement(Object...original) {
+		return GlueUtils.wrap(GlueUtils.cast(new ObjectHandler() {
+			@Override
+			public Object handle(Object single) {
+				return Matcher.quoteReplacement(((String) single));
 			}
 		}, String.class), false, original);
 	}

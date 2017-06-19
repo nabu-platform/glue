@@ -98,7 +98,7 @@ public class ScriptVariableOperation<T> extends VariableOperation<T> {
 			if (context == null) {
 				return false;
 			}
-			if (!parent.has(context, name)) {
+			if (parent == null || !parent.has(context, name)) {
 				Map<String, Lambda> methods = getMethods(context.getClass());
 				if (methods.containsKey(name)) {
 					return true;
@@ -148,7 +148,7 @@ public class ScriptVariableOperation<T> extends VariableOperation<T> {
 		
 		@Override
 		public Object get(Object context, String name) throws EvaluationException {
-			if (parent.has(context, name)) {
+			if (parent != null && parent.has(context, name)) {
 				return parent.get(context, name);	
 			}
 			else {

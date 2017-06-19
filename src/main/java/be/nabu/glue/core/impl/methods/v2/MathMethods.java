@@ -236,8 +236,8 @@ public class MathMethods {
 		}, Double.class), false, original);
 	}
 	
-	@GlueMethod(description = "Converts the degrees to radians", version = 2)
-	public static Object round(final Integer amountOfNumbers, Object...original) {
+	@GlueMethod(description = "Rounds the given numbers", version = 2)
+	public static Object round(final Integer amountOfNumbers, @GlueParam(name = "number") Object...original) {
 		StringBuilder builder = new StringBuilder();
 		for (int i = 0; i < (amountOfNumbers == null ? 0 : amountOfNumbers); i++) {
 			builder.append("#");

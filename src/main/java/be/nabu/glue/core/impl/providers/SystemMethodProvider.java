@@ -81,6 +81,7 @@ public class SystemMethodProvider implements MethodProvider {
 			List<SystemProperty> systemProperties = new ArrayList<SystemProperty>();
 			List<byte []> inputBytes = new ArrayList<byte[]>();
 			boolean redirectIO = false;
+			boolean includeError = false;
 			for (int i = 1; i < getParts().size(); i++) {
 				Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
 				// if you have a lesser then (e.g. 1<), you can redirect an input to it
@@ -103,7 +104,12 @@ public class SystemMethodProvider implements MethodProvider {
 				// if you have a greater then (e.g. 1>) you can redirect the output
 				else if (argumentOperation.getType() == OperationType.CLASSIC && argumentOperation.getParts().size() == 3 && argumentOperation.getParts().get(1).getType() == Type.GREATER) {
 					Object output = argumentOperation.getParts().get(2).getContent().toString();
-					redirectIO = "system".equals(output);
+					if (argumentOperation.getParts().get(0).getContent().toString().equals("1")) {
+						redirectIO = "system".equals(output);
+					}
+					else if (argumentOperation.getParts().get(0).getContent().toString().equals("2")) {
+						includeError = "stream".equals(output);
+					}
 				}
 				else {
 					Object evaluated = argumentOperation.evaluate(context);
@@ -149,7 +155,7 @@ public class SystemMethodProvider implements MethodProvider {
 			else {
 				arguments.add(0, command);
 				try {
-					return exec(directory, arguments.toArray(new String[arguments.size()]), inputBytes, systemProperties, redirectIO).trim();
+					return exec(directory, arguments.toArray(new String[arguments.size()]), inputBytes, systemProperties, redirectIO, includeError).trim();
 				}
 				catch (IOException e) {
 					throw new EvaluationException(e);
@@ -173,7 +179,7 @@ public class SystemMethodProvider implements MethodProvider {
 		}
 	}
 	
-	public static String exec(String directory, String [] commands, List<byte[]> inputContents, List<SystemProperty> systemProperties, boolean redirectIO) throws IOException, InterruptedException {
+	public static String exec(String directory, String [] commands, List<byte[]> inputContents, List<SystemProperty> systemProperties, boolean redirectIO, boolean includeError) throws IOException, InterruptedException {
 		if (!directory.endsWith("/")) {
 			directory += "/";
 		}
@@ -259,10 +265,21 @@ public class SystemMethodProvider implements MethodProvider {
 			errorStream.close();
 
 			String error = errorResult == null ? null : new String(errorResult.toByteArray());
+			String result = inputResult == null ? null : new String(inputResult.toByteArray());
 			if (error != null && !error.isEmpty()) {
-				System.err.println(error);
+				if (includeError) {
+					if (result == null) {
+						result = error;
+					}
+					else {
+						result += "\n" + error;
+					}
+				}
+				else {
+					System.err.println(error);
+				}
 			}
-			return inputResult == null ? null : new String(inputResult.toByteArray());
+			return result;
 		}
 	}
 	

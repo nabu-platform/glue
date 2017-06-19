@@ -351,7 +351,7 @@ public class FileMethods {
 	 * 		<filename>=<content>
 	 * They are differentiated by a best effort
 	 */
-	@GlueMethod(description = "This method will zip all the given files", returns = "The bytes representing the zip file")
+	@GlueMethod(description = "This method will zip all the given files", returns = "The bytes representing the zip file", version = 1)
 	public static byte [] zip(@GlueParam(name = "fileNames", description = "You can pass in actual filenames e.g. 'test.txt' or mapped filenames e.g. 'other.txt=test.txt' or mapped string content e.g. 'something.txt=this is the text that goes in here!'") String...fileNames) throws IOException {
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		ZipOutputStream zip = new ZipOutputStream(output);
