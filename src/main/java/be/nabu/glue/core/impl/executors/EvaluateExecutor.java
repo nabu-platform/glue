@@ -103,7 +103,7 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 				}
 			}
 			catch (Exception e) {
-				throw new ExecutionException(e);
+				throw new ExecutionException("Failed to execute: " + operation, e);
 			}
 		}
 		// it is possible the type can only be resolved at runtime because it is a lambda

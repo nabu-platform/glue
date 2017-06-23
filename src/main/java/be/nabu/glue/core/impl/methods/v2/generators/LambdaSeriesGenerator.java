@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 
+import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.core.api.CollectionIterable;
 import be.nabu.glue.core.api.EnclosedLambda;
@@ -48,6 +49,8 @@ public class LambdaSeriesGenerator implements SeriesGenerator<Object> {
 	
 	@Override
 	public Iterable<Object> newSeries() {
+		final ScriptRuntime runtime = ScriptRuntime.getRuntime();
+		final ExecutionContext executionContext = runtime.getExecutionContext();
 		return new CollectionIterable<Object>() {
 			@Override
 			public Iterator<Object> iterator() {
@@ -105,11 +108,21 @@ public class LambdaSeriesGenerator implements SeriesGenerator<Object> {
 								operation.add(new QueryPart(Type.UNKNOWN, resolveSingle));
 								lambdaOperation.getParts().add(new QueryPart(Type.OPERATION, operation));
 							}
+							ScriptRuntime current = ScriptRuntime.getRuntime();
+							runtime.registerInThread();
 							try {
-								response = lambdaOperation.evaluate(ScriptRuntime.getRuntime().getExecutionContext());
+								response = lambdaOperation.evaluate(executionContext);
 							}
 							catch (EvaluationException e) {
 								throw new RuntimeException(e);
+							}
+							finally {
+								if (current == null) {
+									runtime.unregisterInThread();
+								}
+								else {
+									current.registerInThread();
+								}
 							}
 						}
 						history.add(response);

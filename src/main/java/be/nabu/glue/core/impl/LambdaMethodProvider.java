@@ -22,6 +22,7 @@ import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
 import be.nabu.libs.evaluator.impl.NativeOperation;
+import be.nabu.libs.evaluator.impl.VariableOperation;
 
 public class LambdaMethodProvider implements MethodProvider {
 
@@ -139,11 +140,13 @@ public class LambdaMethodProvider implements MethodProvider {
 			}
 			ExecutionContext previousContext = ScriptRuntime.getRuntime().getExecutionContext();
 			ScriptRuntime.getRuntime().setExecutionContext(forkedContext);
+			VariableOperation.registerRoot();
 			try {
 				return operation.evaluate(forkedContext); 
 			}
 			finally {
 				ScriptRuntime.getRuntime().setExecutionContext(previousContext);
+				VariableOperation.unregisterRoot();
 			}
 		}
 
