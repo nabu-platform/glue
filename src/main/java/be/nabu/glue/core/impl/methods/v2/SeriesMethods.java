@@ -220,13 +220,13 @@ public class SeriesMethods {
 	public static List<?> resolve(Iterable<?> iterable) {
 		List<Object> objects = new ArrayList<Object>();
 		ForkJoinPool pool = null;
-		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
 		for (final Object single : iterable) {
 			if (single instanceof Callable) {
 				if (GlueUtils.useParallelism()) {
 					if (pool == null) {
 						pool = new ForkJoinPool();
 					}
+					final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
 					objects.add(pool.submit(new Callable() {
 						@Override
 						public Object call() throws Exception {
@@ -436,10 +436,11 @@ public class SeriesMethods {
 							for (Iterator iterator : iterators) {
 								parameters.add(iterator.next());
 							}
+							final ScriptRuntime fork = runtime.fork(true);
 							return new Callable() {
 								@Override
 								public Object call() throws Exception {
-									return GlueUtils.calculate(lambda, runtime, parameters);
+									return GlueUtils.calculate(lambda, fork, parameters);
 								}
 							};
 						}

@@ -583,6 +583,9 @@ public class ScriptMethods {
 		if (object == null) {
 			return null;
 		}
+		else if (object instanceof byte[]) {
+			return (byte[]) object;
+		}
 		else if (object instanceof String && ((String) object).matches("^[^\n<>]+$")) {
 			try {
 				InputStream data = getInputStream((String) object);

@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 import be.nabu.glue.api.ExecutionContext;
+import be.nabu.glue.api.Executor;
+import be.nabu.glue.api.Script;
 import be.nabu.glue.core.api.Lambda;
 import be.nabu.glue.core.api.MethodProvider;
 import be.nabu.glue.core.impl.GlueUtils;
@@ -23,6 +25,9 @@ import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 import be.nabu.libs.evaluator.base.BaseOperation;
 import be.nabu.libs.evaluator.impl.MethodOperation;
+import be.nabu.libs.metrics.api.MetricInstance;
+import be.nabu.libs.metrics.api.MetricProvider;
+import be.nabu.libs.metrics.api.MetricTimer;
 import be.nabu.utils.io.IOUtils;
 
 @SuppressWarnings("rawtypes")
@@ -31,6 +36,8 @@ public class DynamicMethodOperation extends BaseOperation {
 	private Operation<ExecutionContext> operation;
 
 	private MethodProvider [] methodProviders;
+	
+	public static final String METRIC_EXECUTION_TIME = "methodExecutionTime";
 	
 	// this was added to prevent static resolution of lambdas, this was the case for long form lambdas that had other lambdas as input
 	// the operation was looked up the first time (so first lambda passed in) and cached in the operation here
@@ -61,7 +68,18 @@ public class DynamicMethodOperation extends BaseOperation {
 					// TODO: can use accessor to map anything that is supported
 					throw new RuntimeException("Only execution context and map are supported atm");
 				}
-				return postProcess(operation.evaluate(executionContext));
+				MetricInstance metrics = getMetrics(operation);
+				MetricTimer timer = metrics == null ? null : metrics.start(METRIC_EXECUTION_TIME);
+				Object evaluated;
+				try {
+					evaluated = operation.evaluate(executionContext);
+				}
+				finally {
+					if (timer != null) {
+						timer.stop();
+					}
+				}
+				return postProcess(evaluated);
 			}
 			else if (((List<QueryPart>) getParts()).get(0).getContent() instanceof Operation) {
 				Object result = ((Operation) ((List<QueryPart>) getParts()).get(0).getContent()).evaluate(context);
@@ -81,6 +99,22 @@ public class DynamicMethodOperation extends BaseOperation {
 		catch (ParseException e) {
 			throw new EvaluationException(e);
 		}
+	}
+
+	private MetricInstance getMetrics(Operation<ExecutionContext> operation) {
+		MetricInstance metrics = null;
+		ExecutionContext executionContext = ScriptRuntime.getRuntime().getExecutionContext();
+		Executor executor = executionContext.getCurrent();
+		while (executionContext instanceof ForkedExecutionContext) {
+			executionContext = ((ForkedExecutionContext) executionContext).getParent();
+		}
+		if (executionContext instanceof MetricProvider) {
+			Script script = ScriptRuntime.getRuntime().getScript();
+			int line = executor != null && executor.getContext() != null ? executor.getContext().getLineNumber() + 1 : -1;
+			String id = (script.getNamespace() != null ? script.getNamespace() + "." : "") + script.getName() + "$" + line + "$" + operation.getParts().get(0).getContent();
+			metrics = ((MetricProvider) executionContext).getMetricInstance(id);
+		}
+		return metrics;
 	}
 	
 	private static Object postProcess(Object returnValue) {

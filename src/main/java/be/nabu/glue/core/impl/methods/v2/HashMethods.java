@@ -21,7 +21,7 @@ public class HashMethods {
 					MessageDigest digest = MessageDigest.getInstance(algorithm);
 					digest.update((byte[]) single);
 					byte [] hash = digest.digest();
-					StringBuffer string = new StringBuffer();
+					StringBuilder string = new StringBuilder();
 					for (int i = 0; i < hash.length; ++i)
 						string.append(Integer.toHexString((hash[i] & 0xFF) | 0x100).substring(1,3));
 					return string.toString();

@@ -1,6 +1,7 @@
 package be.nabu.glue.core.impl.methods;
 
 import java.awt.Desktop;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -411,7 +412,7 @@ public class FileMethods {
 	public static Object unzip(@GlueParam(name = "zipContent", description = "The content of the zip file") Object content, @GlueParam(name = "fileName", description = "The filename to find") String fileName) throws IOException {
 		if (fileName == null) {
 			Map<String, byte[]> entries = new HashMap<String, byte[]>();
-			ZipInputStream zip = new ZipInputStream(ScriptMethods.toStream(ScriptMethods.bytes(content)));
+			ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(ScriptMethods.bytes(content)));
 			try {
 				ZipEntry entry = null;
 				while ((entry = zip.getNextEntry()) != null) {
@@ -425,12 +426,13 @@ public class FileMethods {
 		}
 		else {
 			fileName = fileName.replaceAll("^[/]+", "");
-			ZipInputStream zip = new ZipInputStream(ScriptMethods.toStream(ScriptMethods.bytes(content)));
+			ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(ScriptMethods.bytes(content)));
 			try {
 				ZipEntry entry = null;
 				while ((entry = zip.getNextEntry()) != null) {
-					if (entry.getName().replaceAll("^[/]+", "").equals(fileName)) {
-						return ScriptMethods.bytes(zip);
+					String entryName = entry.getName().replaceAll("^[/]+", "");
+					if (entryName.equals(fileName) || entryName.matches(fileName)) {
+						return IOUtils.toBytes(IOUtils.wrap(zip));
 					}
 				}
 				return null;

@@ -23,6 +23,9 @@ import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
 import be.nabu.libs.evaluator.impl.NativeOperation;
 import be.nabu.libs.evaluator.impl.VariableOperation;
+import be.nabu.libs.metrics.api.MetricInstance;
+import be.nabu.libs.metrics.api.MetricProvider;
+import be.nabu.libs.metrics.api.MetricTimer;
 
 public class LambdaMethodProvider implements MethodProvider {
 
@@ -68,6 +71,8 @@ public class LambdaMethodProvider implements MethodProvider {
 	 */
 	public static class LambdaExecutionOperation extends BaseMethodOperation<ExecutionContext> implements DescribedOperation<ExecutionContext> {
 
+		public static final String METRIC_EXECUTION_TIME = "lambdaExecutionTime";
+		
 		private Operation<ExecutionContext> operation;
 		private Map<String, Object> enclosedContext;
 		private MethodDescription description;
@@ -141,10 +146,18 @@ public class LambdaMethodProvider implements MethodProvider {
 			ExecutionContext previousContext = ScriptRuntime.getRuntime().getExecutionContext();
 			ScriptRuntime.getRuntime().setExecutionContext(forkedContext);
 			VariableOperation.registerRoot();
+			MetricInstance metrics = null;
+			if (previousContext instanceof MetricProvider) {
+				metrics = ((MetricProvider) previousContext).getMetricInstance((description.getNamespace() != null ? description.getNamespace() + "." : "") + description.getName());
+			}
+			MetricTimer timer = metrics != null ? metrics.start(METRIC_EXECUTION_TIME) : null;
 			try {
 				return operation.evaluate(forkedContext); 
 			}
 			finally {
+				if (timer != null) {
+					timer.stop();
+				}
 				ScriptRuntime.getRuntime().setExecutionContext(previousContext);
 				VariableOperation.unregisterRoot();
 			}
