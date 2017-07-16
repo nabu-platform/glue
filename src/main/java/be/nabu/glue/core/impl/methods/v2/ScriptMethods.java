@@ -2,6 +2,7 @@ package be.nabu.glue.core.impl.methods.v2;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -126,6 +127,15 @@ public class ScriptMethods {
 			}
 		}
 		return resources;
+	}
+	
+	// TODO: can add support for parameters
+	@GlueMethod(description = "Returns an instance of the given object", version = 2)
+	public static Object instantiate(Object clazz) throws ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
+		if (!(clazz instanceof Class)) {
+			clazz = Thread.currentThread().getContextClassLoader().loadClass(clazz.toString());
+		}
+		return ((Class<?>) clazz).getConstructor().newInstance();
 	}
 	
 	@GlueMethod(description = "Fill in the template with the given series of objects", version = 2)
