@@ -80,7 +80,12 @@ public class DynamicScript implements Script {
 		if (root == null) {
 			synchronized(this) {
 				if (root == null) {
-					root = new SequenceExecutor(null, null, null);
+					if (content != null) {
+						this.root = parser.parse(new StringReader(content));
+					}
+					else {
+						root = new SequenceExecutor(null, null, null);
+					}
 				}
 			}
 		}
@@ -109,7 +114,6 @@ public class DynamicScript implements Script {
 	}
 
 	public void setContent(String content) throws IOException, ParseException {
-		this.root = parser.parse(new StringReader(content));
 		this.content = content;
 	}
 }
