@@ -688,12 +688,20 @@ public class SeriesMethods {
 					private Iterator iterator = series.iterator();
 					// started with an arraydeque but it does not allow for null values
 					private Stack queue = new Stack();
+					private List<Object> history = new ArrayList<Object>(); {
+						// add a history of nulls so the next is fitted in the last slot
+						for (int i = 0; i < lambda.getDescription().getParameters().size() - 1; i++) {
+							history.add(null);
+						}
+					}
 					@SuppressWarnings("unchecked")
 					@Override
 					public boolean hasNext() {
 						while(queue.isEmpty() && iterator.hasNext()) {
 							Object next = iterator.next();
-							Object calculate = GlueUtils.calculate(lambda, runtime, Arrays.asList(next));
+							history.add(next);
+							List<Object> parameterList = new ArrayList(history);
+							Object calculate = GlueUtils.calculate(lambda, runtime, parameterList);
 							if (calculate != null) {
 								if (!(calculate instanceof Iterable)) {
 									calculate = Arrays.asList(calculate);
@@ -702,13 +710,15 @@ public class SeriesMethods {
 									queue.add(single);
 								}
 							}
+							// always remove the first item, we have pre-filled the array with enough elements
+							history.remove(0);
 						}
 						return !queue.isEmpty();
 					}
 					@Override
 					public Object next() {
 						if (hasNext()) {
-							return queue.pop();
+							return queue.remove(0);
 						}
 						else {
 							return null;

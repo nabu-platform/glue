@@ -177,7 +177,7 @@ public class ScriptMethods {
 				fork.getPipeline().putAll(pipeline);
 				ScriptRuntime newRuntime = new ScriptRuntime(runtime.getScript(), fork, new HashMap<String, Object>());
 				ScriptRuntime oldRuntime = ScriptRuntime.getRuntime();
-				newRuntime.registerInThread();
+				newRuntime.registerInThread(true);
 				try {
 					return runtime.getSubstituter().substitute(template, fork, true);
 				}

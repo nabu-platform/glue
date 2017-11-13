@@ -145,12 +145,12 @@ public class LambdaMethodProvider implements MethodProvider {
 			}
 			ExecutionContext previousContext = ScriptRuntime.getRuntime().getExecutionContext();
 			ScriptRuntime.getRuntime().setExecutionContext(forkedContext);
-			VariableOperation.registerRoot();
 			MetricInstance metrics = null;
 			if (previousContext instanceof MetricProvider) {
 				metrics = ((MetricProvider) previousContext).getMetricInstance((description.getNamespace() != null ? description.getNamespace() + "." : "") + description.getName());
 			}
 			MetricTimer timer = metrics != null ? metrics.start(METRIC_EXECUTION_TIME) : null;
+			VariableOperation.registerRoot();
 			try {
 				return operation.evaluate(forkedContext); 
 			}

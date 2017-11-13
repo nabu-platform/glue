@@ -10,7 +10,7 @@ public class StringToDate implements ConverterProvider<String, Date> {
 	@Override
 	public Date convert(String arg0) {
 		try {
-			return arg0 == null ? null : DateToString.getFormatter().parse(arg0);
+			return arg0 == null || arg0.trim().isEmpty() ? null : DateToString.getFormatter().parse(arg0);
 		}
 		catch (ParseException e) {
 			return null;

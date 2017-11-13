@@ -25,6 +25,7 @@ import be.nabu.glue.core.impl.LambdaImpl;
 import be.nabu.glue.core.impl.LambdaMethodProvider.LambdaExecutionOperation;
 import be.nabu.glue.core.impl.executors.EvaluateExecutor;
 import be.nabu.glue.core.impl.methods.ScriptMethods;
+import be.nabu.glue.impl.SimpleExecutionContext;
 import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.impl.SimpleParameterDescription;
 import be.nabu.glue.utils.ScriptRuntime;
@@ -416,7 +417,12 @@ public class ScriptMethodProvider implements MethodProvider {
 						input.put(keys.get(i - 1).getName(), argumentOperation.evaluate(context));
 					}
 				}
-				ScriptRuntime runtime = new ScriptRuntime(script, context.getExecutionEnvironment(), context.isDebug(), input);
+				SimpleExecutionContext newContext = new SimpleExecutionContext(context.getExecutionEnvironment(), context.getLabelEvaluator(), context.isDebug());
+				newContext.setPrincipal(context.getPrincipal());
+				newContext.setOutputCurrentLine(false);
+				newContext.setTrace(context.isTrace());
+//				ScriptRuntime runtime = new ScriptRuntime(script, context.getExecutionEnvironment(), context.isDebug(), input);
+				ScriptRuntime runtime = new ScriptRuntime(script, newContext, input);
 				runtime.setTrace(context.isTrace());
 				if (context.isTrace()) {
 					runtime.addBreakpoint(context.getBreakpoints().toArray(new String[0]));

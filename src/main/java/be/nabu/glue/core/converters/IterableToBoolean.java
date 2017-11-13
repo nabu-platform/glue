@@ -1,6 +1,5 @@
 package be.nabu.glue.core.converters;
 
-import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.converter.api.ConverterProvider;
 
 @SuppressWarnings("rawtypes")
@@ -8,17 +7,12 @@ public class IterableToBoolean implements ConverterProvider<Iterable, Boolean> {
 
 	@Override
 	public Boolean convert(Iterable instance) {
-		boolean result = true;
+		boolean result = false;
+		// if there is a non-null entry, it will return true
 		for (Object entry : instance) {
-			if (entry == null) {
-				result &= false;
-			}
-			else {
-				Boolean bool = entry instanceof Boolean ? (Boolean) entry : ConverterFactory.getInstance().getConverter().convert(entry, Boolean.class);
-				if (bool == null) {
-					throw new RuntimeException("Can not convert entry in iterable to boolean: " + entry);
-				}
-				result &= bool;
+			if (entry != null) {
+				result = true;
+				break;
 			}
 		}
 		return result;
