@@ -66,7 +66,9 @@ public class DynamicMethodOperation extends BaseOperation {
 				}
 				else {
 					// TODO: can use accessor to map anything that is supported
-					throw new RuntimeException("Only execution context and map are supported atm");
+//					throw new RuntimeException("Only execution context and map are supported currently, can not execute: " + operation + " on " + context);
+					executionContext = new ForkedExecutionContext(ScriptRuntime.getRuntime().getExecutionContext(), true);
+					executionContext.getPipeline().put("$this", context);
 				}
 				MetricInstance metrics = getMetrics(operation);
 				MetricTimer timer = metrics == null ? null : metrics.start(METRIC_EXECUTION_TIME);
