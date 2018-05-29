@@ -437,6 +437,14 @@ public class FileMethods {
 				}
 				return null;
 			}
+			catch (Exception e) {
+				if (content instanceof String) {
+					throw new RuntimeException("Could not read zip file: " + content, e);
+				}
+				else {
+					throw new RuntimeException("Could not unzip content", e);
+				}
+			}
 			finally {
 				zip.close();
 			}

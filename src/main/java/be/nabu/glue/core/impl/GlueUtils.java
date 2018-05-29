@@ -1,22 +1,29 @@
 package be.nabu.glue.core.impl;
 
 import java.nio.charset.Charset;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 
+import be.nabu.glue.api.ExecutionContext;
+import be.nabu.glue.api.MethodDescription;
+import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.core.api.CollectionIterable;
 import be.nabu.glue.core.api.EnclosedLambda;
 import be.nabu.glue.core.api.Lambda;
 import be.nabu.glue.core.impl.LambdaMethodProvider.LambdaExecutionOperation;
+import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.utils.ScriptRuntime;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.converter.api.Converter;
 import be.nabu.libs.evaluator.EvaluationException;
+import be.nabu.libs.evaluator.base.BaseMethodOperation;
 
 public class GlueUtils {
 	
@@ -68,7 +75,7 @@ public class GlueUtils {
 	}
 
 	public static class VersionRange {
-		private Double min, max;
+		private Double min = 2d, max;
 
 		public VersionRange(Double min, Double max) {
 			this.min = min;
@@ -117,7 +124,7 @@ public class GlueUtils {
 		}
 		// get a range for everything
 		if (range == null) {
-			range = getVersion(null);
+			range = getVersion();
 		}
 		return range;
 	}
@@ -339,5 +346,20 @@ public class GlueUtils {
 		catch (EvaluationException e) {
 			throw new RuntimeException(e);
 		}
+	}
+	
+	public static Lambda toLambda(final Runnable runnable) {
+		MethodDescription description = new SimpleMethodDescription("$generated", UUID.randomUUID().toString().replace("-", ""), null, new ArrayList<ParameterDescription>(), new ArrayList<ParameterDescription>());
+		return new LambdaImpl(description, new BaseMethodOperation<ExecutionContext>() {
+			@Override
+			public void finish() throws ParseException {
+			}
+			@Override
+			public Object evaluate(ExecutionContext context) throws EvaluationException {
+				runnable.run();
+				return null;
+			}
+			
+		}, new HashMap<String, Object>());
 	}
 }

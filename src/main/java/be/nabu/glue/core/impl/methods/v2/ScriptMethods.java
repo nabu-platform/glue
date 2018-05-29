@@ -54,18 +54,22 @@ public class ScriptMethods {
 
 	@GlueMethod(description = "Write content to the standard output", version = 2)
 	public static void echo(Object...original) {
-		if (original != null && original.length > 0) {
-			boolean isIterable = original.length == 1 && original[0] instanceof Iterable;
-			List<?> resolved = SeriesMethods.resolve(GlueUtils.toSeries(original));
-			for (Object object : resolved) {
-				// only recursively resolve if the parent is not an iterable
-				if (object instanceof Iterable && !isIterable) {
-					object = SeriesMethods.resolve((Iterable<?>) object);
+		if (original != null) {
+			for (Object object : original) {
+				// if we have an array, you must have explicitly unwrapped the parameter as part of a list of parameters, echo it as such
+				if (object instanceof Object[]) {
+					echo((Object[]) object);
 				}
-				else if (object instanceof ExecutionContext) {
-					object = ((ExecutionContext) object).getPipeline();
+				else {
+					// resolve iterables so we can see the content
+					if (object instanceof Iterable) {
+						object = SeriesMethods.resolve((Iterable<?>) object);
+					}
+					else if (object instanceof ExecutionContext) {
+						object = ((ExecutionContext) object).getPipeline();
+					}
+					ScriptRuntime.getRuntime().getFormatter().print(GlueUtils.convert(object, String.class));
 				}
-				ScriptRuntime.getRuntime().getFormatter().print(GlueUtils.convert(object, String.class));
 			}
 		}
 	}
