@@ -115,5 +115,7 @@ public class DynamicScript implements Script {
 
 	public void setContent(String content) throws IOException, ParseException {
 		this.content = content;
+		// reset root so it is reparsed when necessary
+		this.root = null;
 	}
 }
