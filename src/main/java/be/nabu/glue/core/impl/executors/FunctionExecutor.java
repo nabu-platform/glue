@@ -239,5 +239,10 @@ public class FunctionExecutor extends BaseExecutor implements AssignmentExecutor
 	public void setUseActualPipeline(boolean useActualPipeline) {
 		this.useActualPipeline = useActualPipeline;
 	}
+
+	@Override
+	public Object getDefaultValue() {
+		return null;
+	}
 	
 }

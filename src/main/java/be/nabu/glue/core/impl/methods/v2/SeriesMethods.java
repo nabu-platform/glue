@@ -422,6 +422,9 @@ public class SeriesMethods {
 					}
 					@Override
 					public boolean hasNext() {
+						if (iterators.isEmpty()) {
+							return false;
+						}
 						for (Iterator iterator : iterators) {
 							if (!iterator.hasNext()) {
 								return false;

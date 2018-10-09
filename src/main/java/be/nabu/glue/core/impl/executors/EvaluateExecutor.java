@@ -28,6 +28,7 @@ import be.nabu.glue.utils.ScriptRuntime;
 import be.nabu.glue.utils.ScriptUtils;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.evaluator.api.Operation;
+import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 
 public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor {
 
@@ -237,5 +238,15 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 
 	public void setList(boolean isList) {
 		this.isList = isList;
+	}
+
+	@Override
+	public Object getDefaultValue() {
+		if (this.operation != null) {
+			if (operation.getType() == OperationType.NATIVE && !operation.getParts().isEmpty()) {
+				return operation.getParts().get(0).getContent();
+			}
+		}
+		return null;
 	}
 }
