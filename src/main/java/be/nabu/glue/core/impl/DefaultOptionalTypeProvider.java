@@ -1,5 +1,6 @@
 package be.nabu.glue.core.impl;
 
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
@@ -42,6 +43,9 @@ public class DefaultOptionalTypeProvider implements OptionalTypeProvider {
 		}
 		else if (optionalType.equalsIgnoreCase("bytes")) {
 			targetClass = byte[].class;
+		}
+		else if (optionalType.equalsIgnoreCase("stream")) {
+			targetClass = InputStream.class;
 		}
 		else if (optionalType.equalsIgnoreCase("uuid")) {
 			targetClass = UUID.class;

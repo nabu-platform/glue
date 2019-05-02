@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -67,7 +68,16 @@ public class FileMethods {
 				}
 				for (String key : (Collection<String>) ((ListableContextAccessor) accessor).list(entry)) {
 					Object object = accessor.get(entry, key);
-					if (object != null) {
+					// if we pass in a map, it is presumably from another zip file that we want to rezip
+					if (object instanceof Map) {
+						for (Map.Entry<String, Object> single : ((Map<String, Object>) object).entrySet()) {
+							byte [] content = single.getValue() instanceof byte[] ? (byte[]) single.getValue() : GlueUtils.convert(single.getValue(), byte[].class);
+							ZipEntry zipEntry = new ZipEntry(key + "/" + single.getKey().replaceFirst("^[/]+", ""));
+							zip.putNextEntry(zipEntry);
+							zip.write(content);
+						}
+					}
+					else if (object != null) {
 						byte [] content = object instanceof byte[] ? (byte[]) object : GlueUtils.convert(object, byte[].class);
 						ZipEntry zipEntry = new ZipEntry(key);
 						zip.putNextEntry(zipEntry);

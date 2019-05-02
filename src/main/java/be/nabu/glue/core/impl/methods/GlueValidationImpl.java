@@ -74,12 +74,12 @@ public class GlueValidationImpl implements GlueValidation {
 	}
 
 	@Override
-	public Date getTimestamp() {
-		return timestamp;
+	public String getCode() {
+		return Integer.toString(executor != null && executor.getContext() != null ? executor.getContext().getLineNumber() : 0);
 	}
 
 	@Override
-	public Integer getCode() {
-		return executor != null && executor.getContext() != null ? executor.getContext().getLineNumber() : 0;
+	public Date getCreated() {
+		return timestamp;
 	}
 }
