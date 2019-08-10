@@ -82,6 +82,7 @@ public class FileMethods {
 			URLConnection connection = proxy == null ? url.openConnection() : url.openConnection(proxy);
 			if (url.getUserInfo() != null) {
 				connection.addRequestProperty("Authorization", "Basic " + javax.xml.bind.DatatypeConverter.printBase64Binary(url.getUserInfo().getBytes()));
+				connection.addRequestProperty("Connection", "close");
 			}
 			return connection.getInputStream();
 		}
