@@ -11,22 +11,30 @@ import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.QueryPart.Type;
 import be.nabu.libs.evaluator.api.ListableContextAccessor;
 import be.nabu.libs.evaluator.api.operations.OperationExecutor;
+import be.nabu.libs.types.SimpleTypeWrapperFactory;
 
 public class StructureOperationExecutor implements OperationExecutor {
-
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	
+	private boolean isSimpleType(Object operand) {
+		if (operand == null) {
+			return false;
+		}
+		return SimpleTypeWrapperFactory.getInstance().getWrapper().wrap(operand.getClass()) != null;
+	}
+	
 	@Override
 	public boolean support(Object leftOperand, Type operator, Object rightOperand) {
 		if (leftOperand != null && rightOperand != null && operator == Type.ADD) {
 			if (ContextAccessorFactory.getInstance().getAccessor(leftOperand.getClass()) instanceof ListableContextAccessor 
 					&& ContextAccessorFactory.getInstance().getAccessor(rightOperand.getClass()) instanceof ListableContextAccessor) {
-				ListableContextAccessor left = (ListableContextAccessor) ContextAccessorFactory.getInstance().getAccessor(leftOperand.getClass());
-				ListableContextAccessor right = (ListableContextAccessor) ContextAccessorFactory.getInstance().getAccessor(rightOperand.getClass());
-				
-				List<String> rightKeys = new ArrayList<String>((Collection<String>) right.list(rightOperand));
-				List<String> leftKeys = new ArrayList<String>((Collection<String>) left.list(leftOperand));
 				// we only support the merging of two fully complex types
-				return !rightKeys.isEmpty() && !leftKeys.isEmpty();
+				return !isSimpleType(leftOperand) && !isSimpleType(rightOperand);
+//				ListableContextAccessor left = (ListableContextAccessor) ContextAccessorFactory.getInstance().getAccessor(leftOperand.getClass());
+//				ListableContextAccessor right = (ListableContextAccessor) ContextAccessorFactory.getInstance().getAccessor(rightOperand.getClass());
+//				
+//				List<String> rightKeys = new ArrayList<String>((Collection<String>) right.list(rightOperand));
+//				List<String> leftKeys = new ArrayList<String>((Collection<String>) left.list(leftOperand));
+//				return !rightKeys.isEmpty() && !leftKeys.isEmpty();
 			}
 		}
 		return false;

@@ -52,6 +52,10 @@
 			<groupId>be.nabu.libs.resources</groupId>
 			<artifactId>resources-url</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>be.nabu.libs.types</groupId>
+			<artifactId>types-api</artifactId>
+		</dependency>
 
 		<!-- testing -->
 		<dependency>
@@ -62,6 +66,11 @@
 		<dependency>
 			<groupId>be.nabu.libs.converter</groupId>
 			<artifactId>converter-base</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>be.nabu.libs.types</groupId>
+			<artifactId>types-base</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
