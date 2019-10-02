@@ -92,7 +92,7 @@ public class FileMethods {
 		return IOUtils.toInputStream(((ReadableResource) resource).getReadable());
 	}
 	
-	@GlueMethod(description = "Lists the files matching the given regex in the given directory")
+	@GlueMethod(description = "Lists the files matching the given regex in the given directory", version = 1)
 	public static String [] list(
 			@GlueParam(name = "target", description = "The directory to search in or the object to list from") Object target, 
 			@GlueParam(name = "fileRegex", description = "The file regex to match. If they are matched, they are added to the result list. Pass in null if you are not interested in files") String fileRegex, 

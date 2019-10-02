@@ -1,5 +1,6 @@
 package be.nabu.glue.core.impl.methods.v2;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -38,6 +39,7 @@ import be.nabu.glue.impl.ForkedExecutionContext;
 import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.utils.ScriptRuntime;
 import be.nabu.glue.utils.ScriptUtils;
+import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.evaluator.ContextAccessorFactory;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.QueryPart;
@@ -430,6 +432,24 @@ public class ScriptMethods {
 		}
 		else {
 			return maps;
+		}
+	}
+
+	static InputStream toStream(Object content) throws IOException {
+		if (content instanceof String) {
+			return new ByteArrayInputStream(((String) content).getBytes(ScriptRuntime.getRuntime().getScript().getCharset())); 
+		}
+		else if (content instanceof byte[]) {
+			return new ByteArrayInputStream((byte []) content);
+		}
+		else if (content instanceof InputStream) {
+			return (InputStream) content;
+		}
+		else if (ConverterFactory.getInstance().getConverter().canConvert(content.getClass(), String.class)) {
+			return new ByteArrayInputStream(ConverterFactory.getInstance().getConverter().convert(content, String.class).getBytes(ScriptRuntime.getRuntime().getScript().getCharset())); 
+		}
+		else {
+			return new ByteArrayInputStream(content.toString().getBytes(ScriptRuntime.getRuntime().getScript().getCharset()));
 		}
 	}
 	

@@ -3,18 +3,28 @@ package be.nabu.glue.core.impl.methods.v2;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import be.nabu.glue.annotations.GlueMethod;
+import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.core.impl.GlueUtils;
+import be.nabu.glue.core.impl.providers.SystemMethodProvider;
 import be.nabu.libs.evaluator.ContextAccessorFactory;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 import be.nabu.libs.evaluator.api.ContextAccessor;
 import be.nabu.libs.evaluator.api.ListableContextAccessor;
+import be.nabu.libs.resources.ResourceFactory;
+import be.nabu.libs.resources.api.ReadableResource;
+import be.nabu.libs.resources.api.Resource;
+import be.nabu.libs.resources.api.ResourceContainer;
 import be.nabu.utils.io.IOUtils;
 
 @MethodProviderClass(namespace = "file")
@@ -88,5 +98,76 @@ public class FileMethods {
 		}
 		zip.close();
 		return output.toByteArray();
+	}
+	
+	@GlueMethod(description = "Lists the files matching the given regex in the given directory", version = 2)
+	public static List<String> list(
+			@GlueParam(name = "target", description = "The directory to search in or the object to list from") Object target, 
+			@GlueParam(name = "fileRegex", description = "The file regex to match. If they are matched, they are added to the result list. Pass in null if you are not interested in files") String fileRegex, 
+			@GlueParam(name = "directoryRegex", description = "The directory regex to match. If they are matched, they are added to the result list. Pass in null if you are not interested in directories") String directoryRegex, 
+			@GlueParam(name = "recursive", description = "Whether or not to look recursively", defaultValue = "false") Boolean recursive) throws IOException {
+		if (target == null) {
+			target = SystemMethodProvider.getDirectory();
+		}
+		if (fileRegex == null && directoryRegex == null) {
+			fileRegex = ".*";
+		}
+		if (recursive == null) {
+			recursive = false;
+		}
+		if (target instanceof String) {
+			Resource resource = resolve((String) target);
+			if (resource == null) {
+				return new ArrayList<String>();
+			}
+			return list((ResourceContainer<?>) resource, fileRegex, directoryRegex, recursive, null);
+		}
+		// we assume it's a zip for now
+		else {
+			List<String> files = new ArrayList<String>();
+			ZipInputStream zip = new ZipInputStream(ScriptMethods.toStream(be.nabu.glue.core.impl.methods.ScriptMethods.bytes(target)));
+			try {
+				ZipEntry entry = null;
+				while ((entry = zip.getNextEntry()) != null) {
+					if (entry.getName().replaceAll(".*/([^/]+)$", "$1").matches(fileRegex)) {
+						files.add(entry.getName().replaceAll("^[/]+", ""));
+					}
+				}
+			}
+			finally {
+				zip.close();
+			}
+			return files;
+		}
+	}
+	
+	static List<String> list(ResourceContainer<?> file, String fileRegex, String directoryRegex, boolean recursive, String path) {
+		List<String> results = new ArrayList<String>();
+		for (Resource child : file) {
+			String childPath = path == null ? child.getName() : path + "/" + child.getName();
+			if (fileRegex != null && child instanceof ReadableResource && child.getName().matches(fileRegex)) {
+				results.add(childPath);
+			}
+			if (directoryRegex != null && child instanceof ResourceContainer && child.getName().matches(directoryRegex)) {
+				results.add(childPath);
+			}
+			if (recursive && child instanceof ResourceContainer) {
+				results.addAll(list((ResourceContainer<?>) child, fileRegex, directoryRegex, recursive, childPath));
+			}
+		}
+		return results;
+	}
+	
+	private static Resource resolve(String fileName) throws IOException {
+		try {
+			URI uri = be.nabu.glue.core.impl.methods.FileMethods.uri(fileName);
+			if (ResourceFactory.getInstance().getResolver(uri.getScheme()) == null) {
+				return null;
+			}
+			return ResourceFactory.getInstance().resolve(uri, null);
+		}
+		catch (RuntimeException e) {
+			return null;
+		}
 	}
 }
