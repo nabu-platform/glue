@@ -8,6 +8,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -19,10 +20,13 @@ import java.util.Set;
 import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.api.ExecutionContext;
+import be.nabu.glue.api.Executor;
 import be.nabu.glue.api.MethodDescription;
+import be.nabu.glue.api.OutputFormatter;
 import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.ParserProvider;
 import be.nabu.glue.api.Script;
+import be.nabu.glue.api.runs.GlueValidation;
 import be.nabu.glue.core.api.EnclosedLambda;
 import be.nabu.glue.core.api.Lambda;
 import be.nabu.glue.core.api.MethodProvider;
@@ -54,6 +58,71 @@ import be.nabu.libs.evaluator.base.BaseMethodOperation;
 @MethodProviderClass(namespace = "script")
 public class ScriptMethods {
 
+	public static class CapturingFormatter implements OutputFormatter {
+		private OutputFormatter parent;
+		private StringBuilder builder = new StringBuilder();
+		public CapturingFormatter(OutputFormatter parent) {
+			this.parent = parent;
+		}
+		@Override
+		public void start(Script script) {
+			parent.start(script);
+		}
+		@Override
+		public void before(Executor executor) {
+			parent.before(executor);
+		}
+		@Override
+		public void after(Executor executor) {
+			parent.after(executor);
+		}
+		@Override
+		public void validated(GlueValidation... validations) {
+			parent.validated(validations);
+		}
+		@Override
+		public void print(Object... messages) {
+			if (messages != null) {
+				for (Object object : messages) {
+					if (object instanceof Iterable) {
+						object = SeriesMethods.resolve((Iterable<?>) object);
+					}
+					builder.append(GlueUtils.convert(object, String.class)).append("\n");
+				}
+			}
+		}
+		@Override
+		public void end(Script script, Date started, Date stopped, Exception exception) {
+			parent.end(script, started, stopped, exception);
+		}
+		@Override
+		public boolean shouldExecute(Executor executor) {
+			return parent.shouldExecute(executor);
+		}
+		public OutputFormatter getParent() {
+			return parent;
+		}
+		public String getCaptured() {
+			return builder.toString();
+		}
+	}
+	
+	@GlueMethod(description = "Redirect echo to be captured", version = 2)
+	public static void captureEcho() {
+		final OutputFormatter formatter = ScriptRuntime.getRuntime().getFormatter();
+		ScriptRuntime.getRuntime().setFormatter(new CapturingFormatter(formatter));
+	}
+	
+	@GlueMethod(description = "Release the echo again and get the captured content", version = 2)
+	public static String releaseEcho() {
+		final OutputFormatter formatter = ScriptRuntime.getRuntime().getFormatter();
+		if (formatter instanceof CapturingFormatter) {
+			ScriptRuntime.getRuntime().setFormatter(((CapturingFormatter) formatter).getParent());
+			return ((CapturingFormatter) formatter).getCaptured();
+		}
+		return null;
+	}
+	
 	@GlueMethod(description = "Write content to the standard output", version = 2)
 	public static void echo(Object...original) {
 		if (original != null) {
