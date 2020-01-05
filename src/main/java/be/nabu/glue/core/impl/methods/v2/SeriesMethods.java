@@ -457,6 +457,21 @@ public class SeriesMethods {
 					}
 				};
 			}
+			@Override
+			public String toString() {
+				List<Object> list = new ArrayList<Object>();
+				Iterator iterator = iterator();
+				while (iterator.hasNext()) {
+					Object next = iterator.next();
+					try {
+						list.add(next instanceof Callable ? ((Callable) next).call() : next);
+					}
+					catch (Exception e) {
+						list.add(e);
+					}
+				}
+				return list.toString();
+			}
 		};
 	}
 	

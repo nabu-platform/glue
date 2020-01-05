@@ -138,8 +138,13 @@ public class SystemMethodProvider implements MethodProvider {
 					throw new EvaluationException("Expecting exactly one argument for the 'cd' method");
 				}
 				try {
-					// distinguish between relative & absolute
-					directory = arguments.get(0).startsWith("/") ? URIUtils.normalize(arguments.get(0)) : URIUtils.normalize(URIUtils.getChild(new URI(URIUtils.encodeURI(directory)), arguments.get(0)).getPath());
+					if (arguments.get(0).equals("~")) {
+						directory = System.getProperty("user.home");
+					}
+					else {
+						// distinguish between relative & absolute
+						directory = arguments.get(0).startsWith("/") ? URIUtils.normalize(arguments.get(0)) : URIUtils.normalize(URIUtils.getChild(new URI(URIUtils.encodeURI(directory)), arguments.get(0)).getPath());
+					}
 					if (ScriptRuntime.getRuntime() != null) {
 						ScriptRuntime.getRuntime().getContext().put(CLI_DIRECTORY, directory);	
 					}

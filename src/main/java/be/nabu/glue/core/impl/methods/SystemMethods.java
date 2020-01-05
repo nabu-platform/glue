@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import be.nabu.glue.annotations.GlueParam;
+import be.nabu.glue.core.impl.providers.SystemMethodProvider;
 import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 import be.nabu.utils.io.IOUtils;
 
@@ -20,15 +22,35 @@ public class SystemMethods {
 		return new SystemProperty(key, value);
 	}
 	
-	public static String exec(String directory, String...commands) throws IOException, InterruptedException {
+	public static String bash(String command) throws IOException, InterruptedException {
+		Process process = Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", command }, null, new File(SystemMethodProvider.getDirectory()));
+		process.waitFor();
+		InputStream input = new BufferedInputStream(process.getInputStream());
+		try {
+			byte [] bytes = IOUtils.toBytes(IOUtils.wrap(input));
+			return new String(bytes);
+		}
+		finally {
+			input.close();
+		}
+	}
+	
+	public static String exec(@GlueParam(name = "directory") String directory, @GlueParam(name = "commands") String...commands) throws IOException, InterruptedException {
 		// apparently if you do something like "mvn dependency:tree" in one string, it will fail but if you do "mvn" and "dependency:tree" it fails
 		// this is however annoying to enforce on the user, so do a preliminary split
 		// note that this apparently does auto-quoting, no need to quote spaces etc, this could also explain the above stuff
 		List<String> splittedCommands = new ArrayList<String>();
+		if (commands == null || commands.length == 0) {
+			commands = new String[] { directory };
+			directory = null;
+		}
 		for (String command : commands) {
 			splittedCommands.addAll(Arrays.asList(command.split("(?<!\\\\)[\\s]+")));
 		}
-		Process process = Runtime.getRuntime().exec(splittedCommands.toArray(new String[0]), null, new File(directory));
+		if (directory == null) {
+			directory = SystemMethodProvider.getDirectory();
+		}
+		Process process = Runtime.getRuntime().exec(splittedCommands.toArray(new String[0]), null, directory == null ? null : new File(directory));
 		process.waitFor();
 		InputStream input = new BufferedInputStream(process.getInputStream());
 		try {
@@ -88,6 +110,10 @@ public class SystemMethods {
 
 		public void setValue(String value) {
 			this.value = value;
+		}
+		@Override
+		public String toString() {
+			return key + "=" + value;
 		}
 	}
 }

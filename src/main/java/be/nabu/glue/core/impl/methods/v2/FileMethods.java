@@ -87,6 +87,12 @@ public class FileMethods {
 							zip.write(content);
 						}
 					}
+					else if (object instanceof InputStream) {
+						ZipEntry zipEntry = new ZipEntry(key);
+						zip.putNextEntry(zipEntry);
+						IOUtils.copyBytes(IOUtils.wrap((InputStream) object), IOUtils.wrap(zip));
+						((InputStream) object).close();
+					}
 					else if (object != null) {
 						byte [] content = object instanceof byte[] ? (byte[]) object : GlueUtils.convert(object, byte[].class);
 						ZipEntry zipEntry = new ZipEntry(key);

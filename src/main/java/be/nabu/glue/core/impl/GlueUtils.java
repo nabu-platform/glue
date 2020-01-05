@@ -312,7 +312,9 @@ public class GlueUtils {
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static Object calculate(Lambda lambda, ScriptRuntime runtime, List parameters) {
-		if (lambda.getDescription().getParameters().size() < parameters.size()) {
+		int size = lambda.getDescription().getParameters().size();
+		// if the last one is a list, allow it
+		if (size < parameters.size() && (size == 0 || !lambda.getDescription().getParameters().get(size - 1).isList())) {
 			parameters = parameters.subList(0, lambda.getDescription().getParameters().size());
 		}
 		// resolve any parameters that themselves are lazy
