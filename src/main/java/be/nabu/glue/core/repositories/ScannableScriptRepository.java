@@ -91,7 +91,7 @@ public class ScannableScriptRepository implements ResourceScriptRepository, Grou
 
 	@Override
 	public Script getScript(String name) {
-		return getScripts().get(name);
+		return getScripts() == null ? null : getScripts().get(name);
 	}
 
 	private Map<String, Script> getScripts() {
@@ -147,7 +147,8 @@ public class ScannableScriptRepository implements ResourceScriptRepository, Grou
 			descriptions.put(script, new SimpleMethodDescription(script.getNamespace(), script.getName(), script.getRoot().getContext().getComment(), ScriptUtils.getInputs(script), ScriptUtils.getOutputs(script)));
 		}
 		catch (Exception e) {
-			// ignore
+			System.err.println("Could not get description for: " + script.getNamespace() + "." + script.getName());
+			e.printStackTrace();
 		}
 	}
 
