@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import be.nabu.glue.api.MethodDescription;
+import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ParserProvider;
 import be.nabu.glue.api.Script;
@@ -144,7 +145,10 @@ public class ScannableScriptRepository implements ResourceScriptRepository, Grou
 
 	private void buildDescription(Map<Script, MethodDescription> descriptions, Script script) {
 		try {
-			descriptions.put(script, new SimpleMethodDescription(script.getNamespace(), script.getName(), script.getRoot().getContext().getComment(), ScriptUtils.getInputs(script), ScriptUtils.getOutputs(script)));
+			descriptions.put(script, new SimpleMethodDescription(script.getNamespace(), script.getName(), 
+				script.getRoot() == null ? null : script.getRoot().getContext().getComment(), 
+				script.getRoot() == null ? new ArrayList<ParameterDescription>() : ScriptUtils.getInputs(script), 
+				script.getRoot() == null ? new ArrayList<ParameterDescription>() : ScriptUtils.getOutputs(script)));
 		}
 		catch (Exception e) {
 			System.err.println("Could not get description for: " + script.getNamespace() + "." + script.getName());
