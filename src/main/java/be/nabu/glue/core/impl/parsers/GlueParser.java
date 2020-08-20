@@ -408,8 +408,10 @@ public class GlueParser implements Parser {
 					line = lineToBeProcessed;
 					// check if there is a variable assignment on the line
 					// the first regex checks only for the variable name while the second allows for an optional type
-					if (line.matches("(?s)^[\\w]+[\\s?]*=.*") || line.matches("(?s)^[\\w.]*([\\s]*\\[\\]|)[\\s]+[\\w]+[\\s?]*=.*")) {
-						index = line.indexOf('=');
+					index = indexOf(line, '=', true);
+					if (index >= 0) {
+//					if (line.matches("(?s)^[\\w]+[\\s?]*=.*") || line.matches("(?s)^[\\w.]*([\\s]*\\[\\]|)[\\s]+[\\w]+[\\s?]*=.*")) {
+//						index = line.indexOf('=');
 						variableName = line.substring(0, index).trim();
 						line = line.substring(index + 1).trim();
 						// if the variablename ends with a "?" you wrote something like "myvar ?= test" which means only overwrite it if it doesn't exist yet
@@ -418,7 +420,8 @@ public class GlueParser implements Parser {
 							variableName = variableName.substring(0, variableName.length() - 1).trim();
 						}
 						// if there is a space, you are probably defining a type
-						index = variableName.lastIndexOf(' ');
+//						index = variableName.lastIndexOf(' ');
+						index = indexOf(variableName, ' ', false);
 						if (index > 0) {
 							type = variableName.substring(0, index).trim();
 							if (type.endsWith("[]")) {
@@ -432,7 +435,35 @@ public class GlueParser implements Parser {
 						}
 					}
 					Operation<ExecutionContext> operation = analyzer.analyze(GlueQueryParser.getInstance().parse(line));
-					EvaluateExecutor evaluateExecutor = new EvaluateExecutor(executorGroups.peek(), context, repository, null, variableName, type, operation, overwriteIfExists);
+					Operation<ExecutionContext> variableAccessOperation = null;
+					Operation<ExecutionContext> indexAccessOperation = null;
+					if (variableName != null) {
+						index = indexOf(variableName, '/', true);
+						// we have variable access
+						if (index >= 0) {
+							String parent = variableName.substring(0, index);
+							variableName = variableName.substring(index + 1);
+							variableAccessOperation = analyzer.analyze(GlueQueryParser.getInstance().parse(parent));
+						}
+						
+						index = indexOf(variableName, '[', true);
+						if (index >= 0) {
+							// we strip the starting [
+							String variableIndex = variableName.substring(index + 1);
+							// it should now end with a "]" or you made a typo (likely)
+							if (!variableIndex.endsWith("]")) {
+								throw new ParseException("Could not parse variable index: " + variableName, lineNumber);
+							}
+							// strip the final ]
+							else {
+								variableIndex = variableIndex.substring(0, variableIndex.length() - 1);
+							}
+							variableName = variableName.substring(0, index);
+							
+							indexAccessOperation = analyzer.analyze(GlueQueryParser.getInstance().parse(variableIndex));
+						}
+					}
+					EvaluateExecutor evaluateExecutor = new EvaluateExecutor(executorGroups.peek(), context, repository, null, variableName, type, operation, overwriteIfExists, variableAccessOperation, indexAccessOperation);
 					evaluateExecutor.setOperationProvider(operationProvider);
 					evaluateExecutor.setList(mustBeArray);
 					executorGroups.peek().getChildren().add(evaluateExecutor);
@@ -450,6 +481,32 @@ public class GlueParser implements Parser {
 			root = executorGroups.pop();
 		}
 		return root;
+	}
+	
+	public static int indexOf(String line, char character, boolean first) {
+		int depth = 0;
+		boolean inString = false;
+		int position = -1;
+		for (int i = 0; i < line.length(); i++) {
+			char charAt = line.charAt(i);
+			if (depth == 0 && charAt == character && !inString) {
+				position = i;
+				if (first) {
+					return position;
+				}
+			}
+			// strings also count as depth
+			else if (charAt == '[' || charAt == '(') {
+				depth++;
+			}
+			else if (charAt == ']' || charAt == ')') {
+				depth--;
+			}
+			else if ((charAt == '\'' || charAt == '"') && (i == 0 || line.charAt(i - 1) != '\\')) {
+				inString = !inString;
+			}
+		}
+		return position;
 	}
 	
 	private int getCommentIndex(String content, int currentIndex) {

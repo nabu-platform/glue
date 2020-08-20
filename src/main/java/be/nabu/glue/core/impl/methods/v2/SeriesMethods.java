@@ -34,10 +34,10 @@ import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 
 @MethodProviderClass(namespace = "series")
 public class SeriesMethods {
-	
+	// small retrofits were done to support modifying the list, like wrapping an array list around the arrays.aslist...
 	@GlueMethod(returns = "series", description = "This method creates a series out of a number of objects", version = 2)
 	public static Iterable<?> series(@GlueParam(name = "content", description = "The objects to put in the series") Object...objects) {
-		return objects == null ? new ArrayList<Object>() : Arrays.asList(objects);
+		return objects == null ? new ArrayList<Object>() : new ArrayList<Object>(Arrays.asList(objects));
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -815,7 +815,7 @@ public class SeriesMethods {
 			generator = new LambdaSeriesGenerator((Lambda) series);
 		}
 		else if (series instanceof Object[]) {
-			return Arrays.asList((Object[]) series);
+			return new ArrayList<Object>(Arrays.asList((Object[]) series));
 		}
 		else {
 			throw new IllegalArgumentException("Can not unfold into a series");

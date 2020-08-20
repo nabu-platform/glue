@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import be.nabu.glue.OptionalTypeProviderFactory;
@@ -27,15 +28,19 @@ import be.nabu.glue.impl.TransactionalCloseable;
 import be.nabu.glue.utils.ScriptRuntime;
 import be.nabu.glue.utils.ScriptUtils;
 import be.nabu.libs.converter.ConverterFactory;
+import be.nabu.libs.evaluator.ContextAccessorFactory;
+import be.nabu.libs.evaluator.EvaluationException;
+import be.nabu.libs.evaluator.api.ContextAccessor;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
+import be.nabu.libs.evaluator.api.WritableContextAccessor;
 
 public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor {
 
 	private static final boolean ALLOW_STRUCTURE_TYPES = Boolean.parseBoolean(System.getProperty("structure.allow.types", "true"));
 	
 	private String variableName;
-	private Operation<ExecutionContext> operation, rewrittenOperation;
+	private Operation<ExecutionContext> operation, rewrittenOperation, variableAccessOperation, indexAccessOperation;
 	private boolean overwriteIfExists;
 	private boolean autocastIfOptional = false;
 	private boolean generated = false;
@@ -47,13 +52,15 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 
 	private ScriptRepository repository;
 	
-	public EvaluateExecutor(ExecutorGroup parent, ExecutorContext context, ScriptRepository repository, Operation<ExecutionContext> condition, String variableName, String optionalType, Operation<ExecutionContext> operation, boolean overwriteIfExists) throws ParseException {
+	public EvaluateExecutor(ExecutorGroup parent, ExecutorContext context, ScriptRepository repository, Operation<ExecutionContext> condition, String variableName, String optionalType, Operation<ExecutionContext> operation, boolean overwriteIfExists, Operation<ExecutionContext> variableAccessOperation, Operation<ExecutionContext> indexAccessOperation) throws ParseException {
 		super(parent, context, condition);
 		this.repository = repository;
 		this.variableName = variableName;
 		this.optionalType = optionalType;
 		this.operation = operation;
 		this.overwriteIfExists = overwriteIfExists;
+		this.variableAccessOperation = variableAccessOperation;
+		this.indexAccessOperation = indexAccessOperation;
 		if (optionalType != null) {
 			optionalTypeProvider = getTypeProvider(repository, null);
 			converter = optionalTypeProvider.getConverter(optionalType);
@@ -81,97 +88,194 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	public void execute(ExecutionContext context) throws ExecutionException {
-		if (variableName == null || context.getPipeline().get(variableName) == null || overwriteIfExists || (variableName != null && autocastIfOptional && !overwriteIfExists && context.getPipeline().get(variableName) != null)) {
+		String variableName = this.variableName;
+		
+		List<Object> targets = new ArrayList<Object>();
+		// if we have a variable access inside the variable name, we are accessing something deeper down
+		if (variableAccessOperation != null) {
 			try {
-				Object value = allowNamedParameters ? getRewrittenOperation().evaluate(context) : operation.evaluate(context);
-				if (value instanceof Closeable) {
-					ScriptRuntime.getRuntime().addTransactionable(new TransactionalCloseable((Closeable) value));
+				Object target = variableAccessOperation.evaluate(context);
+				if (target instanceof Object[]) {
+					targets.addAll(Arrays.asList((Object[]) target));
 				}
-				if (variableName != null) {
-					// in this specific scenario we assume it is an optional assign and a value was passed in
-					// we will attempt to cast the existing value to the type of the optionally assigned value as this is closest to what the script wanted
-					if (autocastIfOptional && !overwriteIfExists && context.getPipeline().get(variableName) != null) {
-						if (value != null) {
-							Object current = context.getPipeline().get(variableName);
-							if (current != null) {
-								context.getPipeline().put(variableName, ConverterFactory.getInstance().getConverter().convert(current, value.getClass()));
+				else if (target instanceof Collection) {
+					targets.addAll((Collection) target);
+				}
+				else if (target instanceof Iterable) {
+					for (Object single : (Iterable) target) {
+						targets.add(single);
+					}
+				}
+				else if (target != null) {
+					targets.add(target);
+				}
+			}
+			catch (EvaluationException e) {
+				throw new ExecutionException("Failed to execute variable access operation: " + variableAccessOperation, e);
+			}
+		}
+		else {
+			targets.add(context);
+		}
+		Object value = null;
+		boolean evaluated = false;
+		
+		Object index = null;
+		if (indexAccessOperation != null) {
+			try {
+				index = indexAccessOperation.evaluate(context);
+			}
+			catch (EvaluationException e) {
+				throw new ExecutionException("Failed to execute index access operation: " + indexAccessOperation, e);
+			}
+			if (index == null) {
+				throw new ExecutionException("The index '" + indexAccessOperation + "' is null");
+			}
+			// we set the variablename to the index!
+			// we should end up on the collectioncontextaccessor (normally?)
+			variableName = index.toString();
+		}
+		
+		for (Object target : targets) {
+			ContextAccessor accessor = ContextAccessorFactory.getInstance().getAccessor(target.getClass());
+			if (!(accessor instanceof WritableContextAccessor)) {
+				throw new ExecutionException("Could not access target context for writing: " + target.getClass());
+			}
+			WritableContextAccessor writer = (WritableContextAccessor) accessor;
+			
+			// if we have indexed access, we do things a bit differently...
+			if (index != null) {
+				try {
+					Object currentCollection = writer.get(target, this.variableName);
+					// if we don't have a collection yet, we instantiate one (currently only list is supported!)
+					if (currentCollection == null) {
+						currentCollection = new ArrayList();
+						writer.set(target, this.variableName, currentCollection);
+					}
+					// if we have an iterable that is not a collection, we likely have a lazy list
+					// it must be resolved to perform indexed access...
+					else if (currentCollection instanceof Iterable && !(currentCollection instanceof Collection)) {
+						ArrayList newCollection = new ArrayList();
+						for (Object single : (Iterable) currentCollection) {
+							newCollection.add(single == null ? null : GlueUtils.resolveSingle(single));
+						}
+						currentCollection = newCollection;
+						// must update it...
+						writer.set(target, this.variableName, currentCollection);
+					}
+					// we update the target to point to the collection!
+					accessor = ContextAccessorFactory.getInstance().getAccessor(currentCollection.getClass());
+					if (!(accessor instanceof WritableContextAccessor)) {
+						throw new ExecutionException("Could not access target context for collection writing: " + currentCollection.getClass());
+					}
+					writer = (WritableContextAccessor) accessor;
+					target = currentCollection;
+				}
+				catch (EvaluationException e) {
+					throw new ExecutionException("Can not access the collection", e);
+				}
+			}
+			
+			try {
+				if (variableName == null || writer.get(target, variableName) == null || overwriteIfExists || (variableName != null && autocastIfOptional && !overwriteIfExists && writer.get(target, variableName) != null)) {
+					try {
+						if (!evaluated) {
+							value = allowNamedParameters ? getRewrittenOperation().evaluate(context) : operation.evaluate(context);
+							evaluated = true;
+						}
+						if (value instanceof Closeable) {
+							ScriptRuntime.getRuntime().addTransactionable(new TransactionalCloseable((Closeable) value));
+						}
+						if (variableName != null) {
+							// in this specific scenario we assume it is an optional assign and a value was passed in
+							// we will attempt to cast the existing value to the type of the optionally assigned value as this is closest to what the script wanted
+							if (autocastIfOptional && !overwriteIfExists && writer.get(target, variableName) != null) {
+								if (value != null) {
+									Object current = writer.get(target, variableName);
+									if (current != null) {
+										writer.set(target, variableName, ConverterFactory.getInstance().getConverter().convert(current, value.getClass()));
+									}
+								}
+							}
+							else {
+								writer.set(target, variableName, value);
 							}
 						}
 					}
-					else {
-						context.getPipeline().put(variableName, value);
+					catch (Exception e) {
+						throw new ExecutionException("Failed to execute: " + operation, e);
 					}
+				}
+				// it is possible the type can only be resolved at runtime because it is a lambda
+				OptionalTypeConverter converter = this.converter;
+				if (optionalType != null && converter == null) {
+					converter = getTypeProvider(repository, context.getPipeline()).getConverter(optionalType);
+					if (converter == null) {
+						throw new ExecutionException("Unknown type: " + optionalType);
+					}
+				}
+				// convert if necessary
+				if (variableName != null && converter != null && writer.get(target, variableName) != null) {
+					// for arrays, loop over the items
+					if (isList && writer.get(target, variableName) instanceof Object[]) {
+						Object [] items = (Object[]) writer.get(target, variableName);
+						Object [] targetItems = (Object[]) Array.newInstance(converter.getComponentType(), items.length);
+						for (int i = 0; i < items.length; i++) {
+							targetItems[i] = converter.convert(items[i]);
+						}
+						writer.set(target, variableName, targetItems);
+					}
+					else if (isList && writer.get(target, variableName) instanceof Collection) {
+						Collection items = (Collection) writer.get(target, variableName);
+						Collection targetItems = (Collection) new ArrayList(items.size());
+						for (Object item : items) {
+							targetItems.add(converter.convert(item));
+						}
+						writer.set(target, variableName, targetItems);
+					}
+					else if (isList && writer.get(target, variableName) instanceof Iterable) {
+						final Iterable items = (Iterable) writer.get(target, variableName);
+						final OptionalTypeConverter finalConverter = converter;
+						writer.set(target, variableName, new CollectionIterable() {
+							@Override
+							public Iterator iterator() {
+								return new Iterator() {
+									private Iterator parent = items.iterator();
+									@Override
+									public boolean hasNext() {
+										return parent.hasNext();
+									}
+									@Override
+									public Object next() {
+										Object next = parent.next();
+										return next == null ? null : finalConverter.convert(next);
+									}
+									
+								};
+							}
+						});
+					}
+					else {
+						writer.set(target, variableName, converter.convert(writer.get(target, variableName)));
+					}
+				}
+				// this is only valid pre-version 2
+				if (GlueUtils.getVersion().contains(1.0)) {
+					// make it an array if neccessary
+					if (isList && writer.get(target, variableName) != null && !(writer.get(target, variableName) instanceof Object[]) && !(writer.get(target, variableName) instanceof Collection)) {
+						writer.set(target, variableName, ScriptMethods.array(writer.get(target, variableName)));
+					}
+				}
+				// otherwise, make it an iterable if requested
+				else if (isList && writer.get(target, variableName) != null && !(writer.get(target, variableName) instanceof Iterable)) {
+					ArrayList list = new ArrayList();
+					list.add(writer.get(target, variableName));
+					writer.set(target, variableName, list);
 				}
 			}
 			catch (Exception e) {
-				throw new ExecutionException("Failed to execute: " + operation, e);
+				throw new ExecutionException("Could not update " + target, e);
 			}
-		}
-		// it is possible the type can only be resolved at runtime because it is a lambda
-		OptionalTypeConverter converter = this.converter;
-		if (optionalType != null && converter == null) {
-			converter = getTypeProvider(repository, context.getPipeline()).getConverter(optionalType);
-			if (converter == null) {
-				throw new ExecutionException("Unknown type: " + optionalType);
-			}
-		}
-		// convert if necessary
-		if (variableName != null && converter != null && context.getPipeline().get(variableName) != null) {
-			// for arrays, loop over the items
-			if (isList && context.getPipeline().get(variableName) instanceof Object[]) {
-				Object [] items = (Object[]) context.getPipeline().get(variableName);
-				Object [] targetItems = (Object[]) Array.newInstance(converter.getComponentType(), items.length);
-				for (int i = 0; i < items.length; i++) {
-					targetItems[i] = converter.convert(items[i]);
-				}
-				context.getPipeline().put(variableName, targetItems);
-			}
-			else if (isList && context.getPipeline().get(variableName) instanceof Collection) {
-				Collection items = (Collection) context.getPipeline().get(variableName);
-				Collection targetItems = (Collection) new ArrayList(items.size());
-				for (Object item : items) {
-					targetItems.add(converter.convert(item));
-				}
-				context.getPipeline().put(variableName, targetItems);
-			}
-			else if (isList && context.getPipeline().get(variableName) instanceof Iterable) {
-				final Iterable items = (Iterable) context.getPipeline().get(variableName);
-				final OptionalTypeConverter finalConverter = converter;
-				context.getPipeline().put(variableName, new CollectionIterable() {
-					@Override
-					public Iterator iterator() {
-						return new Iterator() {
-							private Iterator parent = items.iterator();
-							@Override
-							public boolean hasNext() {
-								return parent.hasNext();
-							}
-							@Override
-							public Object next() {
-								Object next = parent.next();
-								return next == null ? null : finalConverter.convert(next);
-							}
-							
-						};
-					}
-				});
-			}
-			else {
-				context.getPipeline().put(variableName, converter.convert(context.getPipeline().get(variableName)));
-			}
-		}
-		// this is only valid pre-version 2
-		if (GlueUtils.getVersion().contains(1.0)) {
-			// make it an array if neccessary
-			if (isList && context.getPipeline().get(variableName) != null && !(context.getPipeline().get(variableName) instanceof Object[]) && !(context.getPipeline().get(variableName) instanceof Collection)) {
-				context.getPipeline().put(variableName, ScriptMethods.array(context.getPipeline().get(variableName)));
-			}
-		}
-		// otherwise, make it an iterable if requested
-		else if (isList && context.getPipeline().get(variableName) != null && !(context.getPipeline().get(variableName) instanceof Iterable)) {
-			ArrayList list = new ArrayList();
-			list.add(context.getPipeline().get(variableName));
-			context.getPipeline().put(variableName, list);
 		}
 	}
 
@@ -249,4 +353,21 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 		}
 		return null;
 	}
+
+	public Operation<ExecutionContext> getVariableAccessOperation() {
+		return variableAccessOperation;
+	}
+
+	public void setVariableAccessOperation(Operation<ExecutionContext> variableAccessOperation) {
+		this.variableAccessOperation = variableAccessOperation;
+	}
+
+	public Operation<ExecutionContext> getIndexAccessOperation() {
+		return indexAccessOperation;
+	}
+
+	public void setIndexAccessOperation(Operation<ExecutionContext> indexAccessOperation) {
+		this.indexAccessOperation = indexAccessOperation;
+	}
+	
 }

@@ -85,8 +85,15 @@ public class GlueFormatter implements Formatter {
 				if (evaluateExecutor.getOptionalType() != null) {
 					stringToPrint += evaluateExecutor.getOptionalType() + " ";
 				}
+				// we don't want whitespace at the end as we want the variable name to follow immediately
+				if (evaluateExecutor.getVariableAccessOperation() != null && evaluateExecutor.getVariableName() != null) {
+					stringToPrint += evaluateExecutor.getVariableAccessOperation().toString();
+				}
 				if (evaluateExecutor.getVariableName() != null) {
 					stringToPrint += evaluateExecutor.getVariableName();
+					if (evaluateExecutor.getIndexAccessOperation() != null) {
+						stringToPrint += "[" + evaluateExecutor.getIndexAccessOperation().toString() + "]";
+					}
 					if (evaluateExecutor.isOverwriteIfExists()) {
 						stringToPrint += " = ";
 					}
