@@ -20,13 +20,16 @@ import be.nabu.glue.core.api.Lambda;
 import be.nabu.glue.core.api.MethodProvider;
 import be.nabu.glue.core.impl.operations.GlueOperationProvider;
 import be.nabu.glue.utils.ScriptRuntime;
+import be.nabu.libs.evaluator.ContextAccessorFactory;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.PathAnalyzer;
 import be.nabu.libs.evaluator.QueryPart;
 import be.nabu.libs.evaluator.QueryPart.Type;
+import be.nabu.libs.evaluator.api.ContextAccessor;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.api.OperationProvider;
 import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
+import be.nabu.libs.evaluator.impl.VariableOperation;
 
 abstract public class BaseExecutor implements Executor {
 
@@ -148,13 +151,32 @@ abstract public class BaseExecutor implements Executor {
 				ScriptRuntime runtime = ScriptRuntime.getRuntime();
 				if (runtime != null) {
 					Object object = null;
-					// this allows access to nested lambdas as well
-					if (operation.getParts().get(0).getContent() instanceof Operation) {
+					
+					// at this point the full operation could be for example:
+					// create()/doSomething()
+					// we would have to run the create() to get to the definition of doSomething
+					// in the end, we call create() twice: once to resolve doSomething and later on again
+					// in the initial phase, we resolve the fullname to the pipeline, assuming it was directly on the pipeline
+					// so "doSomething()" would work, but "a/doSomething()" would not
+					// now we try at least to resolve recursively if a / is found but we take care not to execute the entire operation
+					// this at least allows for a/doSomething()
+					// anything more extreme though and we can't solve it at this point
+					// we can't use context access as it won't resolve lambdas for us, we _need_ to run the operation, but we _must not_ have unwanted side-effects
+					// this means currently we _can not_ do named parameter access to lambdas being accessed complexly:
+					// create()/doSomething(a: 1)
+					// that will throw an exception because we can't find the definition of doSomething
+					// you can however do:
+					// create()/doSomething(1)
+					// and 
+					// a = create()
+					// a/doSomething(a: 1)
+					if (fullName.contains("/") && !fullName.contains("(") && !fullName.contains("[") && operation.getParts().get(0).getContent() instanceof Operation) {
 						try {
 							object = ((Operation<ExecutionContext>) operation.getParts().get(0).getContent()).evaluate(runtime.getExecutionContext());
 						}
 						catch (EvaluationException e) {
-							throw new RuntimeException("Could not execute: "+ operation.getParts().get(0).getContent(), e);
+							e.printStackTrace();
+							throw new RuntimeException("Can not resolve: " + fullName, e);
 						}
 					}
 					else {
