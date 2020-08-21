@@ -143,10 +143,23 @@ abstract public class BaseExecutor implements Executor {
 			if (operation instanceof DescribedOperation) {
 				description = ((DescribedOperation<?>) operation).getMethodDescription();
 			}
+			// try to get dynamic description
 			if (description == null) {
 				ScriptRuntime runtime = ScriptRuntime.getRuntime();
 				if (runtime != null) {
-					Object object = runtime.getExecutionContext().getPipeline().get(fullName);
+					Object object = null;
+					// this allows access to nested lambdas as well
+					if (operation.getParts().get(0).getContent() instanceof Operation) {
+						try {
+							object = ((Operation<ExecutionContext>) operation.getParts().get(0).getContent()).evaluate(runtime.getExecutionContext());
+						}
+						catch (EvaluationException e) {
+							throw new RuntimeException("Could not execute: "+ operation.getParts().get(0).getContent(), e);
+						}
+					}
+					else {
+						object = runtime.getExecutionContext().getPipeline().get(fullName);
+					}
 					if (object instanceof Lambda) {
 						description = ((Lambda) object).getDescription();
 					}
