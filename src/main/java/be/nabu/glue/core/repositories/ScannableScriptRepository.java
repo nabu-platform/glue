@@ -146,7 +146,7 @@ public class ScannableScriptRepository implements ResourceScriptRepository, Grou
 	private void buildDescription(Map<Script, MethodDescription> descriptions, Script script) {
 		try {
 			descriptions.put(script, new SimpleMethodDescription(script.getNamespace(), script.getName(), 
-				script.getRoot() == null ? null : script.getRoot().getContext().getComment(), 
+				script.getRoot() == null || script.getRoot().getContext() == null ? null : script.getRoot().getContext().getComment(), 
 				script.getRoot() == null ? new ArrayList<ParameterDescription>() : ScriptUtils.getInputs(script), 
 				script.getRoot() == null ? new ArrayList<ParameterDescription>() : ScriptUtils.getOutputs(script)));
 		}

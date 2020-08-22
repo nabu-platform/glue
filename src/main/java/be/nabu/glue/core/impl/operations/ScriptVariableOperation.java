@@ -22,6 +22,8 @@ import be.nabu.glue.core.impl.LambdaImpl;
 import be.nabu.glue.core.impl.methods.v2.SeriesMethods;
 import be.nabu.glue.impl.SimpleMethodDescription;
 import be.nabu.glue.impl.SimpleParameterDescription;
+import be.nabu.libs.converter.ConverterFactory;
+import be.nabu.libs.converter.api.Converter;
 import be.nabu.libs.evaluator.ContextAccessorFactory;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.MultipleContextAccessor;
@@ -188,16 +190,25 @@ public class ScriptVariableOperation<T> extends VariableOperation<T> {
 		public Object evaluate(ExecutionContext context) throws EvaluationException {
 			Object instance = context.getPipeline().get("$instance");
 			List parameters = new ArrayList();
+			Converter converter = ConverterFactory.getInstance().getConverter();
+			int i = 0;
 			for (ParameterDescription parameter : description.getParameters()) {
 				Object e = context.getPipeline().get(parameter.getName());
 				if (parameter.isVarargs() && e instanceof Iterable) {
 					e = SeriesMethods.resolve((Iterable) e);
+					// convert to the correct type!
+					List result = new ArrayList();
+					for (Object single : (Collection) e) {
+						result.add(converter.convert(single, method.getParameters()[method.getParameterCount() - 1].getType().getComponentType()));
+					}
+					e = result;
 					Object newInstance = Array.newInstance(method.getParameters()[method.getParameterCount() - 1].getType().getComponentType(), ((Collection) e).size());
 					parameters.add(((Collection) e).toArray((Object[]) newInstance));
 				}
 				else {
-					parameters.add(e);
+					parameters.add(converter.convert(e, method.getParameters()[i].getType()));
 				}
+				i++;
 			}
 			try {
 				return method.invoke(instance, parameters.toArray());
