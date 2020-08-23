@@ -206,7 +206,13 @@ public class ScriptVariableOperation<T> extends VariableOperation<T> {
 					parameters.add(((Collection) e).toArray((Object[]) newInstance));
 				}
 				else {
-					parameters.add(converter.convert(e, method.getParameters()[i].getType()));
+					// if you passed in a lambda, we likely want to convert it to an interface, check if we can proxy it
+					if (e instanceof Lambda && method.getParameters()[i].getType().isInterface()) {
+						parameters.add(LambdaProxy.newInstance(method.getParameters()[i].getType(), (Lambda) e));
+					}
+					else {
+						parameters.add(converter.convert(e, method.getParameters()[i].getType()));
+					}
 				}
 				i++;
 			}
