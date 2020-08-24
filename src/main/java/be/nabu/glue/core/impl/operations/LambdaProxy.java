@@ -10,6 +10,7 @@ import be.nabu.glue.core.api.Lambda;
 import be.nabu.glue.core.impl.GlueUtils;
 import be.nabu.glue.impl.SimpleExecutionEnvironment;
 import be.nabu.glue.utils.ScriptRuntime;
+import be.nabu.libs.converter.ConverterFactory;
 
 public class LambdaProxy {
 	
@@ -30,7 +31,14 @@ public class LambdaProxy {
 			for (Lambda lambda : lambdas) {
 				if (lambda.getDescription().getParameters().size() == method.getParameterCount()) {
 					ScriptRuntime runtime = new ScriptRuntime(null, new SimpleExecutionEnvironment("java"), false, new HashMap<String, Object>());
-					return GlueUtils.calculate(lambda, runtime, Arrays.asList(args));
+					Object result = GlueUtils.calculate(lambda, runtime, Arrays.asList(args));
+					if (result != null && !method.getReturnType().isAssignableFrom(result.getClass())) {
+						result = ConverterFactory.getInstance().getConverter().convert(result, method.getReturnType());
+						if (result == null) {
+							throw new IllegalArgumentException("Can not convert lambda output to: " + method.getReturnType());
+						}
+					}
+					return result;
 				}
 			}
 			// if we don't implement the tostring, it will return null, which is very confusing when outputting debug information :P
