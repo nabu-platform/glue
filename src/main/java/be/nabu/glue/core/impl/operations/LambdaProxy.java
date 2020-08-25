@@ -88,7 +88,14 @@ public class LambdaProxy {
 				String name = method.getName().substring("get".length());
 				if (!name.isEmpty()) {
 					name = name.substring(0, 1).toLowerCase() + name.substring(1);
-					return accessor.get(object, name);
+					Object result = accessor.get(object, name);
+					if (result != null && !method.getReturnType().isAssignableFrom(result.getClass())) {
+						Object converted = ConverterFactory.getInstance().getConverter().convert(result, method.getReturnType());
+						if (converted == null) {
+							throw new IllegalArgumentException("Can not convert lambda output to: " + method.getReturnType());
+						}
+						return converted;
+					}
 				}
 			}
 			if (method.getName().equals("toString") && method.getParameterCount() == 0) {
