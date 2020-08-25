@@ -11,6 +11,8 @@ import be.nabu.glue.core.impl.GlueUtils;
 import be.nabu.glue.impl.SimpleExecutionEnvironment;
 import be.nabu.glue.utils.ScriptRuntime;
 import be.nabu.libs.converter.ConverterFactory;
+import be.nabu.libs.evaluator.ContextAccessorFactory;
+import be.nabu.libs.evaluator.api.ContextAccessor;
 
 public class LambdaProxy {
 	
@@ -26,6 +28,7 @@ public class LambdaProxy {
 			this.lambdas = lambdas;
 		}
 		
+		@SuppressWarnings("rawtypes")
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 			for (Lambda lambda : lambdas) {
@@ -33,9 +36,22 @@ public class LambdaProxy {
 					ScriptRuntime runtime = new ScriptRuntime(null, new SimpleExecutionEnvironment("java"), false, new HashMap<String, Object>());
 					Object result = GlueUtils.calculate(lambda, runtime, Arrays.asList(args));
 					if (result != null && !method.getReturnType().isAssignableFrom(result.getClass())) {
-						result = ConverterFactory.getInstance().getConverter().convert(result, method.getReturnType());
-						if (result == null) {
-							throw new IllegalArgumentException("Can not convert lambda output to: " + method.getReturnType());
+						// check if we have a good conversion path
+						Object converted = ConverterFactory.getInstance().getConverter().convert(result, method.getReturnType());
+						if (converted == null) {
+							// if we don't, check that we have a context accessor and the return value is a (bean-compatible) interface
+							if (method.getReturnType().isInterface()) {
+								ContextAccessor accessor = ContextAccessorFactory.getInstance().getAccessor(result.getClass());
+								if (accessor != null) {
+									return newBeanInstance(method.getReturnType(), accessor, result);
+								}
+								else {
+									throw new IllegalArgumentException("Can not convert lambda output to: " + method.getReturnType());
+								}
+							}
+						}
+						else {
+							result = converted;
 						}
 					}
 					return result;
@@ -47,5 +63,39 @@ public class LambdaProxy {
 			}
 			return null;
 		}
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <T> T newBeanInstance(Class<T> target, ContextAccessor accessor, Object object) {
+		return (T) Proxy.newProxyInstance(target.getClassLoader(), new Class[] { target }, new BeanInvocationHandler(accessor, object));
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public static class BeanInvocationHandler implements InvocationHandler {
+		private ContextAccessor accessor;
+		private Object object;
+		
+		public BeanInvocationHandler(ContextAccessor accessor, Object object) {
+			this.accessor = accessor;
+			this.object = object;
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+			// a getter!
+			if (method.getName().startsWith("get") && method.getParameterCount() == 0) {
+				String name = method.getName().substring("get".length());
+				if (!name.isEmpty()) {
+					name = name.substring(0, 1).toLowerCase() + name.substring(1);
+					return accessor.get(object, name);
+				}
+			}
+			if (method.getName().equals("toString") && method.getParameterCount() == 0) {
+				return "Dynamic Bean Accessor for: " + object;
+			}
+			return null;
+		}
+		
 	}
 }
