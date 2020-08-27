@@ -94,8 +94,9 @@ public class LambdaProxy {
 						if (converted == null) {
 							throw new IllegalArgumentException("Can not convert lambda output to: " + method.getReturnType());
 						}
-						return converted;
+						result = converted;
 					}
+					return result;
 				}
 			}
 			if (method.getName().equals("toString") && method.getParameterCount() == 0) {
