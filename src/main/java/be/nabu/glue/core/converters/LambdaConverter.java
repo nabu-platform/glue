@@ -8,7 +8,8 @@ public class LambdaConverter implements Converter {
 
 	@Override
 	public <T> T convert(Object instance, Class<T> targetClass) {
-		return instance instanceof Lambda && targetClass.isInterface() ? LambdaProxy.newInstance(targetClass, (Lambda) instance) : null;
+		// we try to convert it to the lambda interface itself!
+		return instance instanceof Lambda && targetClass.isInterface() && !targetClass.isAssignableFrom(instance.getClass()) ? LambdaProxy.newInstance(targetClass, (Lambda) instance) : null;
 	}
 
 	@Override
