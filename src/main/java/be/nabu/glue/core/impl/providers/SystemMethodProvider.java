@@ -41,10 +41,15 @@ public class SystemMethodProvider implements MethodProvider {
 
 	private static List<String> predefined = Arrays.asList("system.exec", "system.linux", "system.input", "system.newProperty");
 	
+	private boolean allowCatchAll = false;
+	
 	@Override
 	public Operation<ExecutionContext> resolve(String name) {
 		if (!predefined.contains(name) && name.matches("^system\\.[\\w]+$")) {
 			return new CLIOperation(name.substring("system.".length()));
+		}
+		else if (allowCatchAll && !name.contains(".")) {
+			return new CLIOperation(name);
 		}
 		return null;
 	}
@@ -317,5 +322,13 @@ public class SystemMethodProvider implements MethodProvider {
 			closed = true;
 			input.close();
 		}
+	}
+
+	public boolean isAllowCatchAll() {
+		return allowCatchAll;
+	}
+
+	public void setAllowCatchAll(boolean allowCatchAll) {
+		this.allowCatchAll = allowCatchAll;
 	}
 }

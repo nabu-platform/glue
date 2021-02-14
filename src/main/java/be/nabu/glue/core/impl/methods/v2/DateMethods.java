@@ -45,6 +45,10 @@ public class DateMethods {
 		return GlueUtils.wrap(GlueUtils.cast(new ObjectHandler() {
 			@Override
 			public Object handle(Object single) {
+				// if we have only numbers, we assume it is a timestamp
+				if (((String) single).matches("^[0-9]+$")) {
+					return new Date(Long.parseLong((String) single));
+				}
 				for (String regex : dateFormats.keySet()) {
 					if (((String) single).matches(regex)) {
 						SimpleDateFormat formatter = new SimpleDateFormat(dateFormats.get(regex));

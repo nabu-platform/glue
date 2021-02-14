@@ -131,4 +131,7 @@ public class CustomDate implements Plus, Minus, Comparable<CustomDate> {
 		return date.compareTo(other.date);
 	}
 
+	public long getTime() {
+		return date.getTime();
+	}
 }
