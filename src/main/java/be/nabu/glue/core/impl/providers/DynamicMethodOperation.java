@@ -181,6 +181,20 @@ public class DynamicMethodOperation extends BaseOperation {
 		Operation<ExecutionContext> operation = this.operation;
 		if (operation == null && !(((List<QueryPart>) getParts()).get(0).getContent() instanceof Operation)) {
 			String fullName = (String) ((List<QueryPart>) getParts()).get(0).getContent();
+			// if it is not a namespaced name, we check the imports (if any)
+			if (fullName.indexOf('.') < 0) {
+				ScriptRuntime runtime = ScriptRuntime.getRuntime();
+				if (runtime != null) {
+					List<String> imports = runtime.getImports();
+					// we run backwards meaning we take the latest imports firsts, this allows you to "reimport" something
+					for (int i = imports.size() - 1; i >= 0; i--) {
+						String entry = imports.get(i);
+						if (entry.endsWith("." + fullName)) {
+							fullName = entry;
+						}
+					}
+				}
+			}
 			operation = getOperation(fullName);
 			if (operation != null) {
 				for (QueryPart part : ((List<QueryPart>) getParts())) {

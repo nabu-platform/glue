@@ -66,6 +66,9 @@ public class ScriptMethodProvider implements MethodProvider {
 			else if ("curry".equals(name) || "script.curry".equals(name)) {
 				return new CurryOperation();
 			}
+			else if ("import".equals(name) || "script.import".equals(name)) {
+				return new ImportOperation();
+			}
 			else if (repository != null && repository.getScript(name) != null) {
 				return new ScriptOperation(repository.getScript(name));
 			}
@@ -462,6 +465,27 @@ public class ScriptMethodProvider implements MethodProvider {
 		@Override
 		public void finish() throws ParseException {
 			// do nothing
+		}
+	}
+	
+	public static class ImportOperation extends BaseMethodOperation<ExecutionContext> {
+		@Override
+		public void finish() throws ParseException {
+			// do nothing
+		}
+		@SuppressWarnings("unchecked")
+		@Override
+		public Object evaluate(ExecutionContext context) throws EvaluationException {
+			for (int i = 1; i < getParts().size(); i++) {
+				Object content = getParts().get(i).getContent();
+				if (content instanceof Operation) {
+					content = ((Operation<ExecutionContext>) content).evaluate(context);
+				}
+				if (content != null) {
+					ScriptRuntime.getRuntime().getImports().add(content.toString());
+				}
+			}
+			return null;
 		}
 	}
 	

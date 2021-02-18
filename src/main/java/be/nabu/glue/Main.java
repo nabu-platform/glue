@@ -357,7 +357,7 @@ public class Main {
 			if (includeLocal) {
 				ResourceContainer<?> localContainer = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(new File("").toURI(), null);
 				if (localContainer != null) {
-					repository.add(new ScannableScriptRepository(repository, localContainer, new GlueParserProvider(), charset, false));
+					repository.add(new ScannableScriptRepository(repository, localContainer, new GlueParserProvider(), charset, new Boolean(getArgument("recurse-local", "false", arguments))));
 				}
 			}
 			// try a dedicated "GLUEPATH" variable first because the general "PATH" variable tends to be very big (at least when searching recursively) and slows down the startup of glue

@@ -24,6 +24,7 @@ import be.nabu.glue.api.Executor;
 import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.OutputFormatter;
 import be.nabu.glue.api.ParameterDescription;
+import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ParserProvider;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.api.runs.GlueValidation;
@@ -36,6 +37,7 @@ import be.nabu.glue.core.impl.LambdaImpl;
 import be.nabu.glue.core.impl.LambdaMethodProvider.LambdaExecutionOperation;
 import be.nabu.glue.core.impl.operations.GlueOperationProvider;
 import be.nabu.glue.core.impl.operations.ScriptVariableOperation.LambdaJavaAccessor;
+import be.nabu.glue.core.impl.parsers.GlueParser;
 import be.nabu.glue.core.impl.parsers.GlueParserProvider;
 import be.nabu.glue.core.impl.providers.ScriptMethodProvider.DecoratorOperation;
 import be.nabu.glue.core.impl.providers.ScriptMethodProvider.ScriptOperation;
@@ -52,6 +54,7 @@ import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 import be.nabu.libs.evaluator.api.ContextAccessor;
 import be.nabu.libs.evaluator.api.ListableContextAccessor;
 import be.nabu.libs.evaluator.api.Operation;
+import be.nabu.libs.evaluator.api.OperationProvider;
 import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
 
@@ -426,6 +429,27 @@ public class ScriptMethods {
 		return null;
 	}
 
+	@GlueMethod(description = "Figure out where a function is coming from", version = 2)
+	public static List<String> whereis(String name) {
+		List<String> results = new ArrayList<String>();
+		Parser parser = ScriptRuntime.getRuntime().getScript().getParser();
+		if (parser instanceof GlueParser) {
+			OperationProvider<ExecutionContext> operationProvider = ((GlueParser) parser).getOperationProvider();
+			if (operationProvider instanceof GlueOperationProvider) {
+				List<MethodProvider> methodProviders = ((GlueOperationProvider) operationProvider).getMethodProviders();
+				if (methodProviders != null) {
+					for (MethodProvider provider : methodProviders) {
+						Operation<ExecutionContext> resolve = provider.resolve(name);
+						if (resolve != null) {
+							results.add(provider.getClass().getName());
+						}
+					}
+				}
+			}
+		}
+		return results;
+	}
+	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@GlueMethod(version = 2)
 	public static Object map(Object...objects) {
