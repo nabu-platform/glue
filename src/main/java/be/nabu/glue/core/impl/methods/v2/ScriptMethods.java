@@ -345,6 +345,8 @@ public class ScriptMethods {
 		return GlueUtils.calculate(lambda, ScriptRuntime.getRuntime(), resolved);
 	}
 	
+	// TODO: should maybe retrofit the resolving of non-namespaced names to match the resolving added to DynamicMethodOperation?
+	// this includes adhering to imports, prioritizing package-level scripts etc
 	@GlueMethod(description = "Allows you to make a lambda of any function", version = 2)
 	public static Lambda function(String name, Object context) throws EvaluationException {
 		if (context == null) {

@@ -19,6 +19,7 @@ import be.nabu.glue.core.impl.LambdaMethodProvider;
 import be.nabu.glue.impl.ForkedExecutionContext;
 import be.nabu.glue.impl.TransactionalCloseable;
 import be.nabu.glue.utils.ScriptRuntime;
+import be.nabu.glue.utils.ScriptUtils;
 import be.nabu.libs.evaluator.EvaluationException;
 import be.nabu.libs.evaluator.QueryPart;
 import be.nabu.libs.evaluator.api.Operation;
@@ -181,21 +182,61 @@ public class DynamicMethodOperation extends BaseOperation {
 		Operation<ExecutionContext> operation = this.operation;
 		if (operation == null && !(((List<QueryPart>) getParts()).get(0).getContent() instanceof Operation)) {
 			String fullName = (String) ((List<QueryPart>) getParts()).get(0).getContent();
+			// let's resolve it initially
+			operation = getOperation(fullName);
 			// if it is not a namespaced name, we check the imports (if any)
 			if (fullName.indexOf('.') < 0) {
-				ScriptRuntime runtime = ScriptRuntime.getRuntime();
-				if (runtime != null) {
-					List<String> imports = runtime.getImports();
-					// we run backwards meaning we take the latest imports firsts, this allows you to "reimport" something
-					for (int i = imports.size() - 1; i >= 0; i--) {
-						String entry = imports.get(i);
-						if (entry.endsWith("." + fullName)) {
-							fullName = entry;
+				// if we resolved a lambda, we don't check imports though, you might override that with a local lambda (your choice!)
+				if (!isDynamic) {
+					ScriptRuntime runtime = ScriptRuntime.getRuntime();
+					// we need a runtime to resolve imports
+					if (runtime != null) {
+						Operation<ExecutionContext> explicitMatch = null;
+						Operation<ExecutionContext> starredMatch = null;
+						List<String> imports = runtime.getImports();
+						// we run backwards meaning we take the latest imports firsts, this allows you to "reimport" something
+						// note that if you do a starred import _after_ a specific import, the specific one still wins atm
+						// so import("math2.sum") followed by import("math.*") will still take the math2.sum one!
+						for (int i = imports.size() - 1; i >= 0; i--) {
+							String entry = imports.get(i);
+							// we found an exact match, reresolve it!
+							if (entry.endsWith("." + fullName)) {
+								fullName = entry;
+								explicitMatch = getOperation(entry);
+								// if you did an explicit import and we can't find it, we should throw an exception
+								if (explicitMatch == null) {
+									throw new ParseException("Can not resolve import: " + entry, 0);
+								}
+								// otherwise, we stop the lookin'!
+								else {
+									break;
+								}
+							}
+							// a wildcard import, we can try it...
+							else if (starredMatch == null && entry.endsWith(".*")) {
+								// strip the star and add the name (leave the dot)
+								starredMatch = getOperation(entry.substring(0, entry.length() - 1) + fullName);
+							}
+						}
+						if (explicitMatch != null) {
+							operation = explicitMatch;
+						}
+						else if (starredMatch != null) {
+							operation = starredMatch;
+						}
+						// we attempt a package lookup (if relevant)
+						else {
+							String namespace = runtime.getScript().getNamespace();
+							if (namespace != null) {
+								Operation<ExecutionContext> packageMatch = getOperation(namespace + "." + fullName);
+								if (packageMatch != null) {
+									operation = packageMatch;
+								}
+							}
 						}
 					}
 				}
 			}
-			operation = getOperation(fullName);
 			if (operation != null) {
 				for (QueryPart part : ((List<QueryPart>) getParts())) {
 					operation.add(new QueryPart(part.getType(), part.getContent()));
