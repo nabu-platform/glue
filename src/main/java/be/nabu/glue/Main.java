@@ -62,6 +62,7 @@ public class Main {
 		boolean duration = new Boolean(getArgument("duration", "false", arguments));
 		boolean printReport = new Boolean(getArgument("report", "false", arguments));
 		boolean useMarkdown = new Boolean(getArgument("markdown", "false", arguments));
+		boolean sandboxed = new Boolean(getArgument("sandbox", "false", arguments));
 		
 		// currently we default to version 2
 		String allVersion = getArgument("version", "1-2", arguments);
@@ -70,9 +71,20 @@ public class Main {
 			System.setProperty("version", allVersion);
 		}
 		
+		// also put them in the system properties
+		for (String argument : arguments) {
+			int index = argument.indexOf('=');
+			if (index > 0) {
+				System.setProperty(argument.substring(0, index), argument.substring(index + 1));
+			}
+		}
+		
 //		debug |= trace;
 		MultipleRepository repository = buildRepository(charset, arguments);
-		repository.add(new TargetedScriptRepository(repository, new URI("classpath:/shell"), null, new GlueParserProvider(), charset, "glue"));
+		GlueParserProvider parserProvider = new GlueParserProvider();
+		parserProvider.setSandboxed(sandboxed);
+		
+		repository.add(new TargetedScriptRepository(repository, new URI("classpath:/shell"), null, parserProvider, charset, "glue"));
 		
 		List<String> commands = getCommands(arguments);
 		if (new Boolean(getArgument("man", "false", arguments))) {
@@ -148,6 +160,9 @@ public class Main {
 			
 			SimpleExecutionEnvironment environment = new SimpleExecutionEnvironment(environmentName);
 			setArguments(environment, arguments);
+			if (sandboxed) {
+				environment.getParameters().put("sandboxed", "true");
+			}
 			ScriptRuntime runtime = new ScriptRuntime(
 				script,
 				environment, 
@@ -352,12 +367,15 @@ public class Main {
 	
 	public static MultipleRepository buildRepository(Charset charset, boolean includeLocal, String...arguments) throws IOException, URISyntaxException {
 		MultipleRepository repository = new MultipleRepository(null);
+		boolean sandboxed = new Boolean(getArgument("sandbox", "false", arguments));
+		GlueParserProvider parserProvider = new GlueParserProvider();
+		parserProvider.setSandboxed(sandboxed);
 		if (ResourceFactory.getInstance().getResolver("file") != null) {
 			// add the current directory so you can go to a directory and execute it there
 			if (includeLocal) {
 				ResourceContainer<?> localContainer = (ResourceContainer<?>) ResourceFactory.getInstance().resolve(new File("").toURI(), null);
 				if (localContainer != null) {
-					repository.add(new ScannableScriptRepository(repository, localContainer, new GlueParserProvider(), charset, new Boolean(getArgument("recurse-local", "false", arguments))));
+					repository.add(new ScannableScriptRepository(repository, localContainer, parserProvider, charset, new Boolean(getArgument("recurse-local", "false", arguments))));
 				}
 			}
 			// try a dedicated "GLUEPATH" variable first because the general "PATH" variable tends to be very big (at least when searching recursively) and slows down the startup of glue
@@ -376,7 +394,7 @@ public class Main {
 					System.err.println("The directory " + uri + " does not exist");
 				}
 				else {
-					repository.add(new ScannableScriptRepository(repository, container, new GlueParserProvider(), charset));
+					repository.add(new ScannableScriptRepository(repository, container, parserProvider, charset));
 				}
 			}
 		}
@@ -384,17 +402,17 @@ public class Main {
 			System.out.println("WARNING: To pick up scripts on the file system you need to include the project 'resources-file'");
 		}
 		if (new Boolean(getArgument("classpath", "true", arguments))) {
-			repository.add(new TargetedScriptRepository(repository, new URI("classpath:/scripts"), null, new GlueParserProvider(), charset, "glue"));
+			repository.add(new TargetedScriptRepository(repository, new URI("classpath:/scripts"), null, parserProvider, charset, "glue"));
 		}
 		if (new Boolean(getArgument("remote", "false", arguments))) {
 			// the default remote repository
-			repository.add(new TargetedScriptRepository(repository, new URI("https://raw.githubusercontent.com/nablex/scripts/master"), null, new GlueParserProvider(), charset, "glue"));
+			repository.add(new TargetedScriptRepository(repository, new URI("https://raw.githubusercontent.com/nablex/scripts/master"), null, parserProvider, charset, "glue"));
 		}
 		// you can configure your own remote repositories
 		String repositories = getArgument("repositories", null, arguments);
 		if (repositories != null) {
 			for (String remoteRepository : repositories.split(",")) {
-				repository.add(new TargetedScriptRepository(repository, new URI(remoteRepository), null, new GlueParserProvider(), charset, "glue"));		
+				repository.add(new TargetedScriptRepository(repository, new URI(remoteRepository), null, parserProvider, charset, "glue"));		
 			}
 		}
 		return repository;

@@ -46,17 +46,18 @@ import be.nabu.utils.io.api.WritableContainer;
 @MethodProviderClass(namespace = "file")
 public class FileMethods {
 
+	@GlueMethod(restricted = true)
 	public static Date modified(@GlueParam(name = "fileName", description = "The name of the file to read") String fileName) throws IOException {
 		Resource resource = resolve(fileName);
 		return resource instanceof TimestampedResource ? ((TimestampedResource) resource).getLastModified() : null;
 	}
 	
-	@GlueMethod(description = "Returns the contents of the given file")
+	@GlueMethod(description = "Returns the contents of the given file", restricted = true)
 	public static InputStream read(@GlueParam(name = "fileName", description = "The name of the file to read") String fileName) throws IOException {
 		return read(fileName, true);
 	}
 	
-	@GlueMethod(description = "Returns the contents of the given file")
+	@GlueMethod(description = "Returns the contents of the given file", restricted = true)
 	public static InputStream read(@GlueParam(name = "fileName", description = "The name of the file to read") String fileName, @GlueParam(name = "tryURL", description = "Whether or not to try default URL logic") boolean tryURL) throws IOException {
 		if (fileName == null) {
 			return null;
@@ -92,7 +93,7 @@ public class FileMethods {
 		return IOUtils.toInputStream(((ReadableResource) resource).getReadable());
 	}
 	
-	@GlueMethod(description = "Lists the files matching the given regex in the given directory", version = 1)
+	@GlueMethod(description = "Lists the files matching the given regex in the given directory", version = 1, restricted = true)
 	public static String [] list(
 			@GlueParam(name = "target", description = "The directory to search in or the object to list from") Object target, 
 			@GlueParam(name = "fileRegex", description = "The file regex to match. If they are matched, they are added to the result list. Pass in null if you are not interested in files") String fileRegex, 
@@ -158,7 +159,7 @@ public class FileMethods {
 	 * @param overwriteIfExists
 	 * @throws IOException
 	 */
-	@GlueMethod(version = 1)
+	@GlueMethod(version = 1, restricted = true)
 	public static void merge(String fromDirectory, String toDirectory, boolean recursive, boolean overwriteIfExists) throws IOException {
 		Resource from = resolve(fromDirectory);
 		Resource to = resolve(toDirectory);
@@ -224,7 +225,7 @@ public class FileMethods {
 	 * @throws IOException
 	 */
 	@SuppressWarnings("unchecked")
-	@GlueMethod(description = "Writes the content to the given file")
+	@GlueMethod(description = "Writes the content to the given file", restricted = true)
 	public static void write(@GlueParam(name = "target", description = "The file to write to") Object target, @GlueParam(name = "content", description = "The content to write to the file") Object content) throws IOException {
 		if (content != null) {
 			InputStream input = ScriptMethods.toStream(content);
@@ -267,6 +268,7 @@ public class FileMethods {
 		}
 	}
 	
+	@GlueMethod(restricted = true)
 	public static WritableContainer<ByteBuffer> output(@GlueParam(name = "fileName") String fileName) throws IOException {
 		Resource target = resolve(fileName);
 		if (target == null) {
@@ -278,6 +280,7 @@ public class FileMethods {
 		return ((WritableResource) target).getWritable();
 	}
 	
+	@GlueMethod(restricted = true)
 	public static boolean exists(String target) throws IOException {
 		return resolve(target) != null;
 	}
@@ -286,6 +289,7 @@ public class FileMethods {
 	 * Delete a file, this will delete recursively if its a directory
 	 * @throws IOException 
 	 */
+	@GlueMethod(restricted = true)
 	public static void delete(String...fileNames) throws IOException {
 		if (fileNames != null && fileNames.length > 0) {
 			for (String fileName : fileNames) {
@@ -313,6 +317,7 @@ public class FileMethods {
 		}
 	}
 
+	@GlueMethod(restricted = true)
 	public static URI uri(String fileName) throws IOException {
 		fileName = fileName.replace('\\', '/');
 		// we need a scheme, this should ignore c: etc...
@@ -353,7 +358,7 @@ public class FileMethods {
 	 * 		<filename>=<content>
 	 * They are differentiated by a best effort
 	 */
-	@GlueMethod(description = "This method will zip all the given files", returns = "The bytes representing the zip file", version = 1)
+	@GlueMethod(description = "This method will zip all the given files", returns = "The bytes representing the zip file", version = 1, restricted = true)
 	public static byte [] zip(@GlueParam(name = "fileNames", description = "You can pass in actual filenames e.g. 'test.txt' or mapped filenames e.g. 'other.txt=test.txt' or mapped string content e.g. 'something.txt=this is the text that goes in here!'") String...fileNames) throws IOException {
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		ZipOutputStream zip = new ZipOutputStream(output);
@@ -409,7 +414,7 @@ public class FileMethods {
 		return output.toByteArray();
 	}
 
-	@GlueMethod(description = "Retrieves a specific file from a zip", returns = "The content of the file in bytes")
+	@GlueMethod(description = "Retrieves a specific file from a zip", returns = "The content of the file in bytes", restricted = true)
 	public static Object unzip(@GlueParam(name = "zipContent", description = "The content of the zip file") Object content, @GlueParam(name = "fileName", description = "The filename to find") String fileName) throws IOException {
 		if (fileName == null) {
 			Map<String, byte[]> entries = new HashMap<String, byte[]>();
@@ -452,10 +457,12 @@ public class FileMethods {
 		}
 	}
 	
+	@GlueMethod(restricted = true)
 	public static byte [] gunzip(@GlueParam(name = "zipContent") Object content) throws IOException {
 		return ScriptMethods.bytes(new GZIPInputStream(ScriptMethods.toStream(ScriptMethods.bytes(content))));
 	}
 	
+	@GlueMethod(restricted = true)
 	public static void open(String name) throws IOException {
 		Desktop.getDesktop().browse(uri(name));
 	}

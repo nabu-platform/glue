@@ -49,7 +49,7 @@ public class FileMethods {
 //	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	@GlueMethod(description = "This method will zip all the given files", returns = "The bytes representing the zip file", version = 2)
+	@GlueMethod(description = "This method will zip all the given files", returns = "The bytes representing the zip file", version = 2, restricted = true)
 	public static byte [] zip(Object...original) throws IOException, EvaluationException {
 		if (original == null || original.length == 0) {
 			return null;
@@ -106,7 +106,7 @@ public class FileMethods {
 		return output.toByteArray();
 	}
 	
-	@GlueMethod(description = "Lists the files matching the given regex in the given directory", version = 2)
+	@GlueMethod(description = "Lists the files matching the given regex in the given directory", version = 2, restricted = true)
 	public static List<String> list(
 			@GlueParam(name = "target", description = "The directory to search in or the object to list from") Object target, 
 			@GlueParam(name = "fileRegex", description = "The file regex to match. If they are matched, they are added to the result list. Pass in null if you are not interested in files") String fileRegex, 

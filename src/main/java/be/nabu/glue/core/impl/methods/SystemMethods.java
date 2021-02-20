@@ -1,17 +1,19 @@
 package be.nabu.glue.core.impl.methods;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
+import be.nabu.glue.api.InputProvider;
 import be.nabu.glue.core.impl.providers.SystemMethodProvider;
+import be.nabu.glue.impl.StandardInputProvider;
+import be.nabu.glue.utils.ScriptRuntime;
 import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 import be.nabu.utils.io.IOUtils;
 
@@ -22,6 +24,7 @@ public class SystemMethods {
 		return new SystemProperty(key, value);
 	}
 	
+	@GlueMethod(restricted = true)
 	public static String bash(String command) throws IOException, InterruptedException {
 		Process process = Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", command }, null, new File(SystemMethodProvider.getDirectory()));
 		process.waitFor();
@@ -35,6 +38,7 @@ public class SystemMethods {
 		}
 	}
 	
+	@GlueMethod(restricted = true)
 	public static String exec(@GlueParam(name = "directory") String directory, @GlueParam(name = "commands") String...commands) throws IOException, InterruptedException {
 		// apparently if you do something like "mvn dependency:tree" in one string, it will fail but if you do "mvn" and "dependency:tree" it fails
 		// this is however annoying to enforce on the user, so do a preliminary split
@@ -62,21 +66,11 @@ public class SystemMethods {
 		}
 	}
 
+	@GlueMethod(restricted = true)
 	public static String input(String message, Boolean secret) throws IOException {
-		if (message != null) {
-			System.out.print(message);
-		}
-		if (System.console() != null) {
-			if (secret != null && secret) {
-				return new String(System.console().readPassword());
-			}
-			else {
-				return System.console().readLine();
-			}
-		}
-		else {
-			return new BufferedReader(new InputStreamReader(System.in)).readLine();
-		}
+		ScriptRuntime runtime = ScriptRuntime.getRuntime();
+		InputProvider inputProvider = runtime == null ? new StandardInputProvider() : runtime.getInputProvider();
+		return inputProvider.input(message, secret != null && secret);
 	}
 
 	public static boolean linux() {

@@ -75,6 +75,7 @@ public class ForEachExecutor extends SequenceExecutor {
 				if (!allowVariableReuse && context.getPipeline().get(temporaryVariable) != null) {
 					throw new ExecutionException("The variable " + temporaryVariable + " is already taken, it can not be reused");
 				}
+				boolean sandboxed = "true".equals(context.getExecutionEnvironment().getParameters().get("sandboxed"));
 				int index = 0;
 				for (Object element : elements) {
 					context.getPipeline().put(temporaryVariable, element);
@@ -85,6 +86,10 @@ public class ForEachExecutor extends SequenceExecutor {
 						break;
 					}
 					else if (ScriptRuntime.getRuntime().isAborted()) {
+						break;
+					}
+					// in sandbox mode, we don't do infinite!
+					if (sandboxed && index > 1000) {
 						break;
 					}
 				}

@@ -62,7 +62,7 @@ public class ParallelMethods {
 	private static ForkJoinPool pool = new ForkJoinPool();
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	@GlueMethod(description = "Runs the given lambda asynchronously. Any additional parameters are given to the lambda, if they are a future they are resolved first", version = 2)
+	@GlueMethod(description = "Runs the given lambda asynchronously. Any additional parameters are given to the lambda, if they are a future they are resolved first", version = 2, restricted = true)
 	public static Future run(final Lambda lambda, Object...objects) {
 		final List<?> resolved = SeriesMethods.resolve(GlueUtils.toSeries(objects));
 		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
@@ -96,7 +96,7 @@ public class ParallelMethods {
 	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	@GlueMethod(description = "Waits for the given futures to end and returns the result", version = 2)
+	@GlueMethod(description = "Waits for the given futures to end and returns the result", version = 2, restricted = true)
 	public static Object wait(Object...objects) throws InterruptedException, ExecutionException {
 		List result = new ArrayList();
 		Iterable<?> series = GlueUtils.toSeries(objects);

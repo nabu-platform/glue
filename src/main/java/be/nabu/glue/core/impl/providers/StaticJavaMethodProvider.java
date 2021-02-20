@@ -14,7 +14,7 @@ import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.MethodDescription;
 import be.nabu.glue.api.ParameterDescription;
-import be.nabu.glue.core.api.MethodProvider;
+import be.nabu.glue.core.api.SandboxableMethodProvider;
 import be.nabu.glue.core.api.StaticMethodFactory;
 import be.nabu.glue.core.impl.GlueUtils;
 import be.nabu.glue.impl.SimpleMethodDescription;
@@ -24,12 +24,13 @@ import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.impl.MethodOperation;
 import be.nabu.libs.evaluator.impl.MethodOperation.MethodFilter;
 
-public class StaticJavaMethodProvider implements MethodProvider {
+public class StaticJavaMethodProvider implements SandboxableMethodProvider {
 	
 	private Collection<Class<?>> methodClasses;
 	private List<MethodDescription> descriptions;
 	private boolean includeDeprecated = Boolean.parseBoolean(System.getProperty("include.deprecated", "false"));
 	private Object context;
+	private boolean sandboxed;
 	
 	public StaticJavaMethodProvider() {
 		// auto construct
@@ -75,11 +76,19 @@ public class StaticJavaMethodProvider implements MethodProvider {
 	@Override
 	public Operation<ExecutionContext> resolve(String name) {
 		MethodOperation<ExecutionContext> methodOperation = new MethodOperation<ExecutionContext>(getMethodClasses());
+		// don't allow random access to java classes in sandbox mode
+		if (sandboxed) {
+			methodOperation.setAllowAnyClass(false);
+		}
 		methodOperation.setContext(context);
 		methodOperation.setMethodFilter(new MethodFilter() {
 			@Override
 			public boolean isAllowed(Method method) {
 				GlueMethod methodAnnotation = method.getAnnotation(GlueMethod.class);
+				// restricted methods are not allowed in sandbox mode
+				if (methodAnnotation != null && methodAnnotation.restricted() && sandboxed) {
+					return false;
+				}
 				Double version = methodAnnotation == null ? null : methodAnnotation.version();
 				MethodProviderClass annotation = method.getDeclaringClass().getAnnotation(MethodProviderClass.class);
 				String namespace = annotation == null || annotation.namespace() == null || annotation.namespace().isEmpty() ? method.getDeclaringClass().getName() : annotation.namespace();
@@ -174,6 +183,16 @@ public class StaticJavaMethodProvider implements MethodProvider {
 			}
 		}
 		return descriptions;
+	}
+
+	@Override
+	public boolean isSandboxed() {
+		return sandboxed;
+	}
+
+	@Override
+	public void setSandboxed(boolean sandboxed) {
+		this.sandboxed = sandboxed;
 	}
 	
 }

@@ -220,9 +220,11 @@ public class SeriesMethods {
 	public static List<?> resolve(Iterable<?> iterable) {
 		List<Object> objects = new ArrayList<Object>();
 		ForkJoinPool pool = null;
+		boolean sandboxed = "true".equals(ScriptRuntime.getRuntime().getExecutionContext().getExecutionEnvironment().getParameters().get("sandboxed"));
+		long counter = 0;
 		for (final Object single : iterable) {
 			if (single instanceof Callable) {
-				if (GlueUtils.useParallelism()) {
+				if (!sandboxed && GlueUtils.useParallelism()) {
 					if (pool == null) {
 						pool = new ForkJoinPool();
 					}
@@ -251,6 +253,10 @@ public class SeriesMethods {
 			}
 			else {
 				objects.add(single);
+			}
+			counter++;
+			if (sandboxed && counter > 1000) {
+				break;
 			}
 		}
 		if (pool != null) {

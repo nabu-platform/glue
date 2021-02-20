@@ -4,6 +4,7 @@ import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ParserProvider;
 import be.nabu.glue.api.ScriptRepository;
 import be.nabu.glue.core.api.MethodProvider;
+import be.nabu.glue.core.api.SandboxableMethodProvider;
 import be.nabu.glue.core.impl.LambdaMethodProvider;
 import be.nabu.glue.core.impl.methods.v2.ControlMethodProvider;
 import be.nabu.glue.core.impl.operations.GlueOperationProvider;
@@ -14,6 +15,7 @@ import be.nabu.glue.core.spi.SPIMethodProvider;
 
 public class GlueParserProvider implements ParserProvider {
 
+	private boolean sandboxed;
 	private MethodProvider[] methodProviders;
 
 	public GlueParserProvider(MethodProvider...methodProviders) {
@@ -50,7 +52,21 @@ public class GlueParserProvider implements ParserProvider {
 		providers[providers.length - 3] = new StaticJavaMethodProvider();
 		providers[providers.length - 2] = new SystemMethodProvider();
 		providers[providers.length - 1] = new ControlMethodProvider();
+		
+		// set sandbox mode if relevant
+		for (int i = 0; i < providers.length; i++) {
+			if (providers[i] instanceof SandboxableMethodProvider) {
+				((SandboxableMethodProvider) providers[i]).setSandboxed(sandboxed);
+			}
+		}
 		return providers;
 	}
 
+	public boolean isSandboxed() {
+		return sandboxed;
+	}
+
+	public void setSandboxed(boolean sandboxed) {
+		this.sandboxed = sandboxed;
+	}
 }

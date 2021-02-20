@@ -20,7 +20,7 @@ import java.util.Map;
 
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.MethodDescription;
-import be.nabu.glue.core.api.MethodProvider;
+import be.nabu.glue.core.api.SandboxableMethodProvider;
 import be.nabu.glue.core.impl.methods.ScriptMethods;
 import be.nabu.glue.core.impl.methods.ShellMethods;
 import be.nabu.glue.core.impl.methods.StringMethods;
@@ -35,16 +35,21 @@ import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
 import be.nabu.libs.resources.URIUtils;
 
-public class SystemMethodProvider implements MethodProvider {
+public class SystemMethodProvider implements SandboxableMethodProvider {
 
 	public static final String CLI_DIRECTORY = "cli.directory";
 
 	private static List<String> predefined = Arrays.asList("system.exec", "system.linux", "system.input", "system.newProperty");
 	
+	private boolean sandboxed;
 	private boolean allowCatchAll = false;
 	
 	@Override
 	public Operation<ExecutionContext> resolve(String name) {
+		// no system interaction at all during sandbox mode, too many ways that can go sideways
+		if (sandboxed) {
+			return null;
+		}
 		if (!predefined.contains(name) && name.matches("^system\\.[\\w]+$")) {
 			return new CLIOperation(name.substring("system.".length()));
 		}
@@ -331,4 +336,14 @@ public class SystemMethodProvider implements MethodProvider {
 	public void setAllowCatchAll(boolean allowCatchAll) {
 		this.allowCatchAll = allowCatchAll;
 	}
+
+	@Override
+	public boolean isSandboxed() {
+		return sandboxed;
+	}
+	@Override
+	public void setSandboxed(boolean sandboxed) {
+		this.sandboxed = sandboxed;
+	}
+	
 }
