@@ -67,10 +67,10 @@ public class SystemMethods {
 	}
 
 	@GlueMethod(restricted = true)
-	public static String input(String message, Boolean secret) throws IOException {
+	public static String input(String message, Boolean secret, String defaultAnswer) throws IOException {
 		ScriptRuntime runtime = ScriptRuntime.getRuntime();
 		InputProvider inputProvider = runtime == null ? new StandardInputProvider() : runtime.getInputProvider();
-		return inputProvider.input(message, secret != null && secret);
+		return inputProvider.input(message, secret != null && secret, defaultAnswer);
 	}
 
 	public static boolean linux() {

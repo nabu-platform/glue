@@ -39,6 +39,8 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 
 	private static final boolean ALLOW_STRUCTURE_TYPES = Boolean.parseBoolean(System.getProperty("structure.allow.types", "true"));
 	
+	public static String DEFAULT_VARIABLE_NAME_PARAMETER = "defaultVariableName";
+	
 	private String variableName;
 	private Operation<ExecutionContext> operation, rewrittenOperation, variableAccessOperation, indexAccessOperation;
 	private boolean overwriteIfExists;
@@ -89,6 +91,10 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 	@Override
 	public void execute(ExecutionContext context) throws ExecutionException {
 		String variableName = this.variableName;
+		// in some circumstances you want to keep track of the last calculation you did (e.g. interactive mode). this means we capture any result if no variable name given
+		if (variableName == null) {
+			variableName = context.getExecutionEnvironment().getParameters().get(DEFAULT_VARIABLE_NAME_PARAMETER);
+		}
 		
 		List<Object> targets = new ArrayList<Object>();
 		// if we have a variable access inside the variable name, we are accessing something deeper down
