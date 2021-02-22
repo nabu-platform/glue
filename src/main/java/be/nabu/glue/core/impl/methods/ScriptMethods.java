@@ -179,9 +179,17 @@ public class ScriptMethods {
 			: System.getProperty(name, System.getenv(name));
 	}
 	
-	public static String environment(String name, String defaultValue) {
+	public static String environment(String name, Object defaultValue) {
 		String value = environment(name);
-		return value == null ? defaultValue : value;
+		if (value == null && defaultValue != null) {
+			if (defaultValue instanceof Lambda) {
+				defaultValue = GlueUtils.calculate((Lambda) defaultValue, ScriptRuntime.getRuntime().fork(true), Arrays.asList(name));
+			}
+			if (defaultValue != null) {
+				value = GlueUtils.convert(defaultValue, String.class);
+			}
+		}
+		return value;
 	}
 	
 	@GlueMethod(version = 1)
