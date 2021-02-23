@@ -20,6 +20,7 @@ import java.util.Map;
 
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.MethodDescription;
+import be.nabu.glue.api.StreamProvider;
 import be.nabu.glue.core.api.SandboxableMethodProvider;
 import be.nabu.glue.core.impl.methods.ScriptMethods;
 import be.nabu.glue.core.impl.methods.ShellMethods;
@@ -223,12 +224,19 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 			}
 		}
 		
+		final StreamProvider streamProvider = ScriptRuntime.getRuntime().getStreamProvider();
 		Process process;
 		if (redirectIO) {
 //			processBuilder.inheritIO();
 			processBuilder.redirectInput(inputContents != null && !inputContents.isEmpty() ? Redirect.PIPE : Redirect.INHERIT);
 			processBuilder.redirectError(Redirect.INHERIT);
 			processBuilder.redirectOutput(Redirect.INHERIT);
+			process = processBuilder.start();
+		}
+		else if (streamProvider != null) {
+			processBuilder.redirectInput(Redirect.PIPE);
+			processBuilder.redirectOutput(Redirect.PIPE);
+			processBuilder.redirectError(Redirect.PIPE);
 			process = processBuilder.start();
 		}
 		else {
@@ -245,21 +253,30 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 				output.close();
 			}
 		}
-		CopyStream inputStream = null, errorStream = null;
+		CopyStream inputStream = null, errorStream = null, outputStream = null;
 		ByteArrayOutputStream inputResult = null, errorResult = null;
-		Thread inputThread = null, errorThread = null;
+		Thread inputThread = null, errorThread = null, outputThread = null;
 		try {
 			// if we are not redirecting I/O to emulate system behavior, capture the content in a separate thread
 			if (!redirectIO) {
 				errorResult = new ByteArrayOutputStream();
-				errorStream = new CopyStream(process.getErrorStream(), errorResult);
+				errorStream = new CopyStream(process.getErrorStream(), streamProvider == null ? errorResult : streamProvider.getErrorStream());
 				errorThread = new Thread(errorStream);
 				errorThread.start();
 				
 				inputResult = new ByteArrayOutputStream();
-				inputStream = new CopyStream(process.getInputStream(), inputResult);
+				inputStream = new CopyStream(process.getInputStream(), streamProvider == null ? inputResult : streamProvider.getOutputStream());
 				inputThread = new Thread(inputStream);
 				inputThread.start();
+
+				// there is currently no way (with blocking I/O) to cleanly stop this without killing the input stream
+				// if coming from for instance a socket, this...sucks
+				if (streamProvider != null) {
+					outputStream = new CopyStream(streamProvider.getInputStream(), process.getOutputStream());
+					outputStream.setProcess(process);
+					outputThread = new Thread(outputStream);
+					outputThread.start();
+				}
 			}
 			process.waitFor();
 		}
@@ -271,7 +288,7 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 			return Integer.toString(process.exitValue());
 		}
 		else {
-
+			// we wait for the process to complete?
 			inputThread.join();
 			errorThread.join();
 			
@@ -302,19 +319,35 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 		private InputStream input;
 		private OutputStream output;
 		private boolean closed;
-		private BufferedInputStream buffered;
+		private Process process;
 		public CopyStream(InputStream input, OutputStream output) {
 			this.input = input;
 			this.output = output;
-			this.buffered = new BufferedInputStream(input);
 		}
 		@Override
 		public void run() {
 			byte [] buffer = new byte[4096];
 			int read = 0;
 			try {
-				while((read = buffered.read(buffer)) > 0) {
+				String quitSignal = "^SIGINT";
+				int length = quitSignal.length();
+				while((read = input.read(buffer)) > 0) {
+					if (process != null && read >= length) {
+						try {
+							if (new String(buffer, 0, read, "ASCII").trim().endsWith(quitSignal)) {
+								process.destroyForcibly();
+								break;
+							}
+						}
+						catch (Exception e) {
+							// do nothing
+						}
+					}
 					output.write(buffer, 0, read);
+				}
+				// if the input was closed and we have a process, stop it
+				if (process != null) {
+					process.destroyForcibly();
 				}
 				closed = true;
 			}
@@ -326,6 +359,12 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 		public void close() throws IOException {
 			closed = true;
 			input.close();
+		}
+		public Process getProcess() {
+			return process;
+		}
+		public void setProcess(Process process) {
+			this.process = process;
 		}
 	}
 
