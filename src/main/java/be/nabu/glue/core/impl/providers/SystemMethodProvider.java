@@ -322,7 +322,7 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 	}
 	
 	public static class NonBlockingCopyStream extends CopyStream {
-		private boolean closed, closeForReal;
+		private boolean closed;
 		public NonBlockingCopyStream(InputStream input, OutputStream output) {
 			super(input, output);
 		}
@@ -333,32 +333,23 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 			try {
 				String quitSignal = "^SIGINT";
 				int length = quitSignal.length();
-				int available = 0;
-				while(!closed) {
-					available = input.available();
-					if (available > 0) {
-						read = input.read(buffer);
-						if (process != null && read >= length) {
-							try {
-								if (new String(buffer, 0, read, "ASCII").trim().endsWith(quitSignal)) {
-									process.destroyForcibly();
-									break;
-								}
-							}
-							catch (Exception e) {
-								// do nothing
-							}
-						}
-						output.write(buffer, 0, read);
+				while (!closed) {
+					read = input.read(buffer);
+					if (read < 0) {
+						break;
 					}
-					else {
+					if (process != null && read >= length) {
 						try {
-							Thread.sleep(100);
+							if (new String(buffer, 0, read, "ASCII").trim().endsWith(quitSignal)) {
+								process.destroyForcibly();
+								break;
+							}
 						}
-						catch (InterruptedException e) {
-							break;
+						catch (Exception e) {
+							// do nothing
 						}
 					}
+					output.write(buffer, 0, read);
 				}
 				// if the input was closed and we have a process, stop it
 				if (process != null) {
@@ -375,9 +366,7 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 			// unset process so it doesn't get forcibly killed
 			process = null;
 			closed = true;
-			if (closeForReal) {
-				super.close();
-			}
+			super.close();
 		}
 	}
 	
