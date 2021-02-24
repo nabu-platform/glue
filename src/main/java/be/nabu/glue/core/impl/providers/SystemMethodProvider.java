@@ -252,8 +252,7 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 				output.close();
 			}
 		}
-		CopyStream inputStream = null, errorStream = null;
-		NonBlockingCopyStream outputStream = null;
+		CopyStream inputStream = null, errorStream = null, outputStream = null;
 		ByteArrayOutputStream inputResult = null, errorResult = null;
 		Thread inputThread = null, errorThread = null, outputThread = null;
 		try {
@@ -272,7 +271,9 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 				// there is currently no way (with blocking I/O) to cleanly stop this without killing the input stream
 				// if coming from for instance a socket, this...sucks
 				if (streamProvider != null) {
-					outputStream = new NonBlockingCopyStream(streamProvider.getInputStream(), process.getOutputStream());
+					outputStream = streamProvider.isBlocking() 
+						? new NonBlockingCopyStream(streamProvider.getInputStream(), process.getOutputStream()) 
+						: new CopyStream(streamProvider.getInputStream(), process.getOutputStream());
 					outputStream.setProcess(process);
 					outputThread = new Thread(outputStream);
 					outputThread.start();
@@ -320,14 +321,10 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 		}
 	}
 	
-	public static class NonBlockingCopyStream implements Runnable, Closeable {
-		private InputStream input;
-		private OutputStream output;
+	public static class NonBlockingCopyStream extends CopyStream {
 		private boolean closed, closeForReal;
-		private Process process;
 		public NonBlockingCopyStream(InputStream input, OutputStream output) {
-			this.input = input;
-			this.output = output;
+			super(input, output);
 		}
 		@Override
 		public void run() {
@@ -379,22 +376,16 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 			process = null;
 			closed = true;
 			if (closeForReal) {
-				input.close();
+				super.close();
 			}
-		}
-		public Process getProcess() {
-			return process;
-		}
-		public void setProcess(Process process) {
-			this.process = process;
 		}
 	}
 	
 	public static class CopyStream implements Runnable, Closeable {
-		private InputStream input;
-		private OutputStream output;
-		private boolean closed;
-		private Process process;
+		protected InputStream input;
+		protected OutputStream output;
+		protected boolean closed;
+		protected Process process;
 		public CopyStream(InputStream input, OutputStream output) {
 			this.input = input;
 			this.output = output;
