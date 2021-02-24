@@ -1,6 +1,5 @@
 package be.nabu.glue.core.impl.providers;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -253,7 +252,8 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 				output.close();
 			}
 		}
-		CopyStream inputStream = null, errorStream = null, outputStream = null;
+		CopyStream inputStream = null, errorStream = null;
+		NonBlockingCopyStream outputStream = null;
 		ByteArrayOutputStream inputResult = null, errorResult = null;
 		Thread inputThread = null, errorThread = null, outputThread = null;
 		try {
@@ -272,7 +272,7 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 				// there is currently no way (with blocking I/O) to cleanly stop this without killing the input stream
 				// if coming from for instance a socket, this...sucks
 				if (streamProvider != null) {
-					outputStream = new CopyStream(streamProvider.getInputStream(), process.getOutputStream());
+					outputStream = new NonBlockingCopyStream(streamProvider.getInputStream(), process.getOutputStream());
 					outputStream.setProcess(process);
 					outputThread = new Thread(outputStream);
 					outputThread.start();
@@ -282,6 +282,11 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 		}
 		catch (InterruptedException e) {
 			// do nothing
+		}
+
+		// the process ended, let's quit it!
+		if (outputStream != null) {
+			outputStream.close();
 		}
 		
 		if (redirectIO) {
@@ -312,6 +317,76 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 				}
 			}
 			return result;
+		}
+	}
+	
+	public static class NonBlockingCopyStream implements Runnable, Closeable {
+		private InputStream input;
+		private OutputStream output;
+		private boolean closed, closeForReal;
+		private Process process;
+		public NonBlockingCopyStream(InputStream input, OutputStream output) {
+			this.input = input;
+			this.output = output;
+		}
+		@Override
+		public void run() {
+			byte [] buffer = new byte[4096];
+			int read = 0;
+			try {
+				String quitSignal = "^SIGINT";
+				int length = quitSignal.length();
+				int available = 0;
+				while(!closed) {
+					available = input.available();
+					if (available > 0) {
+						read = input.read(buffer);
+						if (process != null && read >= length) {
+							try {
+								if (new String(buffer, 0, read, "ASCII").trim().endsWith(quitSignal)) {
+									process.destroyForcibly();
+									break;
+								}
+							}
+							catch (Exception e) {
+								// do nothing
+							}
+						}
+						output.write(buffer, 0, read);
+					}
+					else {
+						try {
+							Thread.sleep(100);
+						}
+						catch (InterruptedException e) {
+							break;
+						}
+					}
+				}
+				// if the input was closed and we have a process, stop it
+				if (process != null) {
+					process.destroyForcibly();
+				}
+				closed = true;
+			}
+			catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		@Override
+		public void close() throws IOException {
+			// unset process so it doesn't get forcibly killed
+			process = null;
+			closed = true;
+			if (closeForReal) {
+				input.close();
+			}
+		}
+		public Process getProcess() {
+			return process;
+		}
+		public void setProcess(Process process) {
+			this.process = process;
 		}
 	}
 	
