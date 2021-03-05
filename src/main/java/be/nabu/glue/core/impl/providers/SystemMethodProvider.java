@@ -92,6 +92,7 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 			List<byte []> inputBytes = new ArrayList<byte[]>();
 			boolean redirectIO = false;
 			boolean includeError = false;
+			boolean explicitlyReturnOutput = false;
 			for (int i = 1; i < getParts().size(); i++) {
 				Operation<ExecutionContext> argumentOperation = (Operation<ExecutionContext>) getParts().get(i).getContent();
 				// if you have a lesser then (e.g. 1<), you can redirect an input to it
@@ -116,6 +117,7 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 					Object output = argumentOperation.getParts().get(2).getContent().toString();
 					if (argumentOperation.getParts().get(0).getContent().toString().equals("1")) {
 						redirectIO = "system".equals(output);
+						explicitlyReturnOutput = "output".equals(output);
 					}
 					else if (argumentOperation.getParts().get(0).getContent().toString().equals("2")) {
 						includeError = "stream".equals(output);
@@ -170,7 +172,7 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 			else {
 				arguments.add(0, command);
 				try {
-					return exec(directory, arguments.toArray(new String[arguments.size()]), inputBytes, systemProperties, redirectIO, includeError).trim();
+					return exec(directory, arguments.toArray(new String[arguments.size()]), inputBytes, systemProperties, redirectIO, includeError, explicitlyReturnOutput).trim();
 				}
 				catch (IOException e) {
 					throw new EvaluationException(e);
@@ -194,7 +196,7 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 		}
 	}
 	
-	public static String exec(String directory, String [] commands, List<byte[]> inputContents, List<SystemProperty> systemProperties, boolean redirectIO, boolean includeError) throws IOException, InterruptedException {
+	public static String exec(String directory, String [] commands, List<byte[]> inputContents, List<SystemProperty> systemProperties, boolean redirectIO, boolean includeError, boolean explicitlyReturnOutput) throws IOException, InterruptedException {
 		if (!directory.endsWith("/")) {
 			directory += "/";
 		}
@@ -232,7 +234,7 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 			processBuilder.redirectOutput(Redirect.INHERIT);
 			process = processBuilder.start();
 		}
-		else if (streamProvider != null) {
+		else if (streamProvider != null && !explicitlyReturnOutput) {
 			processBuilder.redirectInput(Redirect.PIPE);
 			processBuilder.redirectOutput(Redirect.PIPE);
 			processBuilder.redirectError(Redirect.PIPE);

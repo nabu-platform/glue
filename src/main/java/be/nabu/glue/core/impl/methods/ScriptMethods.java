@@ -26,6 +26,7 @@ import be.nabu.glue.annotations.GlueMethod;
 import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutionException;
+import be.nabu.glue.api.ExecutorContext;
 import be.nabu.glue.api.ExecutorGroup;
 import be.nabu.glue.api.Script;
 import be.nabu.glue.core.api.EnclosedLambda;
@@ -190,6 +191,24 @@ public class ScriptMethods {
 			}
 		}
 		return value;
+	}
+	
+	public static String annotation(String name, Object defaultValue) throws IOException, ParseException {
+		ScriptRuntime runtime = ScriptRuntime.getRuntime();
+		String result = null;
+		if (defaultValue instanceof Lambda) {
+			defaultValue = GlueUtils.calculate((Lambda) defaultValue, ScriptRuntime.getRuntime().fork(true), Arrays.asList(name));
+		}
+		if (defaultValue != null) {
+			result = GlueUtils.convert(defaultValue, String.class);
+		}
+		if (runtime != null && runtime.getScript() != null && runtime.getScript().getRoot() != null) {
+			ExecutorContext context = runtime.getScript().getRoot().getContext();
+			if (context != null && context.getAnnotations() != null) {
+				result = context.getAnnotations().get(name);
+			}
+		}
+		return result;
 	}
 	
 	@GlueMethod(version = 1)

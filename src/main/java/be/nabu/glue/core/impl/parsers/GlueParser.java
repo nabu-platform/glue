@@ -409,6 +409,10 @@ public class GlueParser implements Parser {
 					// check if there is a variable assignment on the line
 					// the first regex checks only for the variable name while the second allows for an optional type
 					index = indexOf(line, '=', true);
+					// if the equals is followed by another equals, we don't mean it as an assignment
+					if (index >= 0 && line.indexOf('=', index + 1) == index + 1) {
+						index = -1;
+					}
 					if (index >= 0) {
 //					if (line.matches("(?s)^[\\w]+[\\s?]*=.*") || line.matches("(?s)^[\\w.]*([\\s]*\\[\\]|)[\\s]+[\\w]+[\\s?]*=.*")) {
 //						index = line.indexOf('=');

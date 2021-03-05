@@ -1,5 +1,9 @@
 package be.nabu.glue.core.impl;
 
+import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -363,5 +367,25 @@ public class GlueUtils {
 			}
 			
 		}, new HashMap<String, Object>());
+	}
+	
+	public static InputStream toStream(Object content) throws IOException {
+		InputStream input;
+		if (content instanceof String) {
+			input = be.nabu.glue.core.impl.methods.FileMethods.read((String) content);
+			if (input == null) {
+				throw new FileNotFoundException("Can not resolve the content of: " + content);
+			}
+		}
+		else if (content instanceof byte[]) {
+			input = new ByteArrayInputStream((byte []) content);
+		}
+		else if (content instanceof InputStream) {
+			input = (InputStream) content;
+		}
+		else {
+			throw new IllegalArgumentException("Can not figure out the type of content");
+		}
+		return input;
 	}
 }
