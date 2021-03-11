@@ -413,6 +413,10 @@ public class GlueParser implements Parser {
 					if (index >= 0 && line.indexOf('=', index + 1) == index + 1) {
 						index = -1;
 					}
+					// if the equals sign has a "!" in front of it, it is just a boolean expression
+					if (index > 0 && line.charAt(index - 1) == '!') {
+						index = -1;
+					}
 					if (index >= 0) {
 //					if (line.matches("(?s)^[\\w]+[\\s?]*=.*") || line.matches("(?s)^[\\w.]*([\\s]*\\[\\]|)[\\s]+[\\w]+[\\s?]*=.*")) {
 //						index = line.indexOf('=');
