@@ -22,6 +22,8 @@ import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 import be.nabu.libs.evaluator.api.ContextAccessor;
 import be.nabu.libs.evaluator.api.ListableContextAccessor;
 import be.nabu.libs.resources.ResourceFactory;
+import be.nabu.libs.resources.ResourceReadableContainer;
+import be.nabu.libs.resources.ResourceUtils;
 import be.nabu.libs.resources.api.ReadableResource;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
@@ -48,6 +50,7 @@ public class FileMethods {
 //		return null;
 //	}
 	
+	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@GlueMethod(description = "This method will zip all the given files", returns = "The bytes representing the zip file", version = 2, restricted = true)
 	public static byte [] zip(Object...original) throws IOException, EvaluationException {
@@ -61,14 +64,35 @@ public class FileMethods {
 			// if you pass in a string, we assume it is a filepath
 			// since the filepath should probably not be fully copied to the zip, we take only the filename
 			if (entry instanceof String) {
-				InputStream input = be.nabu.glue.core.impl.methods.FileMethods.read((String) entry);
-				try {
-					ZipEntry zipEntry = new ZipEntry(((String) entry).replaceAll("^.*/([^/]+)$", "$1"));
-					zip.putNextEntry(zipEntry);
-					zip.write(IOUtils.toBytes(IOUtils.wrap(input)));
+				Resource resolve = resolve((String) entry);
+				// you have passed in a folder, recursively zip
+				if (resolve instanceof ResourceContainer) {
+					List<String> listInternal = listInternal((ResourceContainer<?>) resolve, ".*", null, true, null, false, "");
+					for (String file : listInternal) {
+						Resource child = ResourceUtils.resolve(resolve, file);
+						if (child instanceof ReadableResource) {
+							ZipEntry zipEntry = new ZipEntry(file);
+							zip.putNextEntry(zipEntry);
+							ResourceReadableContainer container = new ResourceReadableContainer((ReadableResource) child);
+							try {
+								zip.write(IOUtils.toBytes(container));
+							}
+							finally {
+								container.close();
+							}
+						}
+					}
 				}
-				finally {
-					input.close();
+				else {
+					InputStream input = be.nabu.glue.core.impl.methods.FileMethods.read((String) entry);
+					try {
+						ZipEntry zipEntry = new ZipEntry(((String) entry).replaceAll("^.*/([^/]+)$", "$1"));
+						zip.putNextEntry(zipEntry);
+						zip.write(IOUtils.toBytes(IOUtils.wrap(input)));
+					}
+					finally {
+						input.close();
+					}
 				}
 			}
 			else {
@@ -111,7 +135,8 @@ public class FileMethods {
 			@GlueParam(name = "target", description = "The directory to search in or the object to list from") Object target, 
 			@GlueParam(name = "fileRegex", description = "The file regex to match. If they are matched, they are added to the result list. Pass in null if you are not interested in files") String fileRegex, 
 			@GlueParam(name = "directoryRegex", description = "The directory regex to match. If they are matched, they are added to the result list. Pass in null if you are not interested in directories") String directoryRegex, 
-			@GlueParam(name = "recursive", description = "Whether or not to look recursively", defaultValue = "false") Boolean recursive) throws IOException {
+			@GlueParam(name = "recursive", description = "Whether or not to look recursively", defaultValue = "false") Boolean recursive,
+			@GlueParam(name = "absolute", description = "Whether or not to look recursively", defaultValue = "false") Boolean absolute) throws IOException {
 		if (target == null) {
 			target = SystemMethodProvider.getDirectory();
 		}
@@ -126,7 +151,8 @@ public class FileMethods {
 			if (resource == null) {
 				return new ArrayList<String>();
 			}
-			return list((ResourceContainer<?>) resource, fileRegex, directoryRegex, recursive, null);
+			String fullPath = ResourceUtils.getURI(resource).getPath();
+			return listInternal((ResourceContainer<?>) resource, fileRegex, directoryRegex, recursive, null, absolute != null && absolute, fullPath);
 		}
 		// we assume it's a zip for now
 		else {
@@ -147,18 +173,19 @@ public class FileMethods {
 		}
 	}
 	
-	static List<String> list(ResourceContainer<?> file, String fileRegex, String directoryRegex, boolean recursive, String path) {
+	static List<String> listInternal(ResourceContainer<?> file, String fileRegex, String directoryRegex, boolean recursive, String path, boolean absolute, String rootPath) {
 		List<String> results = new ArrayList<String>();
 		for (Resource child : file) {
 			String childPath = path == null ? child.getName() : path + "/" + child.getName();
+			String fullPath = (rootPath + "/" + childPath).replaceAll("[/]{2,}", "/");
 			if (fileRegex != null && child instanceof ReadableResource && child.getName().matches(fileRegex)) {
-				results.add(childPath);
+				results.add(absolute ? fullPath : childPath);
 			}
 			if (directoryRegex != null && child instanceof ResourceContainer && child.getName().matches(directoryRegex)) {
-				results.add(childPath);
+				results.add(absolute ? fullPath : childPath);
 			}
 			if (recursive && child instanceof ResourceContainer) {
-				results.addAll(list((ResourceContainer<?>) child, fileRegex, directoryRegex, recursive, childPath));
+				results.addAll(listInternal((ResourceContainer<?>) child, fileRegex, directoryRegex, recursive, childPath, absolute, rootPath));
 			}
 		}
 		return results;
