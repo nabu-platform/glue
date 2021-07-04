@@ -170,6 +170,12 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 				return directory;
 			}
 			else {
+				// dashes are often used in system commands but not supported by the glue parser
+				// to allow arbitrary stuff, you can use the eval command where the first parameter is assumed to be the actual system command
+				// for example system.eval("apt-get", "update")
+				if (command.equals("eval")) {
+					command = arguments.remove(0);
+				}
 				arguments.add(0, command);
 				try {
 					return exec(directory, arguments.toArray(new String[arguments.size()]), inputBytes, systemProperties, redirectIO, includeError, explicitlyReturnOutput).trim();
@@ -225,7 +231,7 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 			}
 		}
 		
-		final StreamProvider streamProvider = ScriptRuntime.getRuntime().getStreamProvider();
+		final StreamProvider streamProvider = explicitlyReturnOutput ? null : ScriptRuntime.getRuntime().getStreamProvider();
 		Process process;
 		if (redirectIO) {
 //			processBuilder.inheritIO();
@@ -234,7 +240,7 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 			processBuilder.redirectOutput(Redirect.INHERIT);
 			process = processBuilder.start();
 		}
-		else if (streamProvider != null && !explicitlyReturnOutput) {
+		else if (streamProvider != null) {
 			processBuilder.redirectInput(Redirect.PIPE);
 			processBuilder.redirectOutput(Redirect.PIPE);
 			processBuilder.redirectError(Redirect.PIPE);
