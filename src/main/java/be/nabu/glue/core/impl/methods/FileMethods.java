@@ -242,7 +242,7 @@ public class FileMethods {
 						resource = ResourceUtils.touch(uri((String) target), null);
 					}
 					if (!(resource instanceof WritableResource)) {
-						throw new IOException("Can not write to: " + resource);
+						throw new IOException("Can not write to: " + resource + " (" + target + ")");
 					}
 					output = ((WritableResource) resource).getWritable();
 				}

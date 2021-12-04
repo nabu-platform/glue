@@ -106,9 +106,11 @@ public class FileMethods {
 					if (object instanceof Map) {
 						for (Map.Entry<String, Object> single : ((Map<String, Object>) object).entrySet()) {
 							byte [] content = single.getValue() instanceof byte[] ? (byte[]) single.getValue() : GlueUtils.convert(single.getValue(), byte[].class);
-							ZipEntry zipEntry = new ZipEntry(key + "/" + single.getKey().replaceFirst("^[/]+", ""));
-							zip.putNextEntry(zipEntry);
-							zip.write(content);
+							if (content != null) {
+								ZipEntry zipEntry = new ZipEntry(key + "/" + single.getKey().replaceFirst("^[/]+", ""));
+								zip.putNextEntry(zipEntry);
+								zip.write(content);
+							}
 						}
 					}
 					else if (object instanceof InputStream) {
