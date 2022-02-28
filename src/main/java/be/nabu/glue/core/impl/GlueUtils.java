@@ -27,6 +27,9 @@ import be.nabu.glue.utils.ScriptRuntime;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.converter.api.Converter;
 import be.nabu.libs.evaluator.EvaluationException;
+import be.nabu.libs.evaluator.QueryParser;
+import be.nabu.libs.evaluator.QueryPart;
+import be.nabu.libs.evaluator.QueryPart.Type;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
 
 public class GlueUtils {
@@ -53,6 +56,84 @@ public class GlueUtils {
 	@SuppressWarnings("rawtypes")
 	public static Iterable resolve(final Iterable iterable) {
 		return iterable instanceof CallResolvingIterable ? iterable : new CallResolvingIterable(iterable);
+	}
+	
+	public static String toSql(String rule, String tableName) throws ParseException {
+		// we can only use single quotes, quote nesting is not feasible
+		rule = rule.replace('"', '\'');
+		List<QueryPart> parts = QueryParser.getInstance().parse(rule);
+		StringBuilder builder = new StringBuilder();
+		for (int i = 0; i < parts.size(); i++) {
+			QueryPart part = parts.get(i);
+			switch (part.getType()) {
+				case LOGICAL_OR:
+					builder.append(" or ");
+				break;
+				case LOGICAL_AND:
+					builder.append(" and ");
+				break;
+				case NOT_EQUALS:
+					if (parts.get(i + 1).getType() == Type.NULL) {
+						builder.append(" is not null");
+						i++;
+					}
+					else {
+						builder.append(" <> ");
+					}
+				break;
+				case EQUALS:
+					if (parts.get(i + 1).getType() == Type.NULL) {
+						builder.append(" is null");
+						i++;
+					}
+					else {
+						builder.append(" = ");
+					}
+				break;
+				case NOT_MATCHES:
+					builder.append(" not");
+				case MATCHES:
+					String content = parts.get(i + 1).getToken().getContent();
+					// we want case insensitive
+					if (content.contains("(?i)")) {
+						content = content.replace("(?i)", "");
+						builder.append(" ilike ");
+					}
+					else {
+						builder.append(" like ");
+					}
+					// only basic regexes allowed
+					content = content.replace(".*", "%");
+					// does not matter here
+					content = content.replace("(?m)", "");
+					builder.append(content);
+					i++;
+				break;
+				case VARIABLE:
+					String variableName = part.getToken().getContent();
+					variableName = variableName.replaceAll("([A-Z]{1,})", "_$1").toLowerCase();
+					if (variableName.startsWith("_")) {
+						variableName = variableName.substring(1);
+					}
+					if (tableName != null) {
+						builder.append(tableName + ".");
+					}
+					builder.append(variableName);
+				break;
+				// quotes are maintained
+//				case STRING:
+//					builder.append("'" + part.getToken().getContent() + "'");
+//				break;
+				default:
+					builder.append(part.getToken().getContent());
+				// in glue we generally do "in" on a variable which can't work here
+				// or we create a list of some sort (series, split,...) which is too much work to do for now
+//				case IN:
+//					builder.append(" any");
+//				break;
+			}
+		}
+		return builder.toString();
 	}
 	
 	@SuppressWarnings("rawtypes")

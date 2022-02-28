@@ -74,7 +74,7 @@ public class ScannableScriptRepository implements ResourceScriptRepository, Grou
 							descriptions.put(existing, this.descriptions.get(existing));
 						}
 					}
-					else {
+					else if (child instanceof ReadableResource) {
 						Script script = new ResourceScript(this, charset, namespace, child.getName(), (ReadableResource) child, parser);
 						scripts.put(ScriptUtils.getFullName(script), script);
 						buildDescription(descriptions, script);

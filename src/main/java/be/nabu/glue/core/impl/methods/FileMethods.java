@@ -218,6 +218,53 @@ public class FileMethods {
 		}
 	}
 	
+	public static boolean writable(@GlueParam(name = "target", description = "The file to write to") Object target) throws IOException {
+		if (target instanceof WritableContainer) {
+			return true;
+		}
+		else if (target instanceof String) {
+			Resource resource = resolve((String) target);
+			// if the resource exists, check that we can write to it
+			if (resource != null) {
+				return resource instanceof WritableResource;	
+			}
+			URI uri = uri((String) target);
+			while (resource == null && !"/".equals(uri.getPath())) {
+				// otherwise, check that the parent is manageable
+				uri = URIUtils.getParent(uri);
+				resource = ResourceFactory.getInstance().resolve(uri, null);
+				// if the resource exists and it can be managed, it is OK
+				if (resource instanceof ManageableContainer) {
+					return true;
+				}
+			}
+			return false;
+		}
+		else if (target instanceof OutputStream) {
+			return true;
+		}
+		else {
+			throw new IllegalArgumentException("Can not write to target: " + target);
+		}
+	}
+	
+	// copy from the writable, maybe too quick & dirty?
+	public static boolean readable(@GlueParam(name = "target", description = "The file to read from") Object target) throws IOException {
+		if (target instanceof ReadableContainer) {
+			return true;
+		}
+		else if (target instanceof String) {
+			Resource resource = resolve((String) target);
+			return resource instanceof ReadableResource;
+		}
+		else if (target instanceof InputStream) {
+			return true;
+		}
+		else {
+			throw new IllegalArgumentException("Can not write to target: " + target);
+		}
+	}
+	
 	/**
 	 * Write the content to a given file
 	 * @param fileName
