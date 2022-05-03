@@ -130,25 +130,42 @@ public class SeriesMethods {
 	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static long position(final Lambda lambda, Object...objects) {
-		Iterable<?> series = GlueUtils.toSeries(objects);
-		ScriptRuntime runtime = ScriptRuntime.getRuntime();
-		boolean includeIndex = lambda.getDescription().getParameters().size() == 2;
-		long index = 0;
-		for (Object object : series) {
-			object = GlueUtils.resolveSingle(object);
-			List parameters = new ArrayList();
-			parameters.add(object);
-			if (includeIndex) {
-				parameters.add(index);
+	public static long position(final Object input, Object...objects) {
+		if (input instanceof Lambda) {
+			Iterable<?> series = GlueUtils.toSeries(objects);
+			ScriptRuntime runtime = ScriptRuntime.getRuntime();
+			Lambda lambda = (Lambda) input;
+			boolean includeIndex = lambda.getDescription().getParameters().size() == 2;
+			long index = 0;
+			for (Object object : series) {
+				object = GlueUtils.resolveSingle(object);
+				List parameters = new ArrayList();
+				parameters.add(object);
+				if (includeIndex) {
+					parameters.add(index);
+				}
+				Boolean calculate = (Boolean) GlueUtils.calculate(lambda, runtime, parameters);
+				if (calculate != null && calculate) {
+					return index;
+				}
+				index++;
 			}
-			Boolean calculate = (Boolean) GlueUtils.calculate(lambda, runtime, parameters);
-			if (calculate != null && calculate) {
-				return index;
-			}
-			index++;
+			return -1;
 		}
-		return -1;
+		else {
+			Iterable<?> series = GlueUtils.toSeries(objects);
+			int index = 0;
+			for (Object object : series) {
+				if (object == null && input == null) {
+					return index;
+				}
+				else if (input != null && input.equals(object)) {
+					return index;
+				}
+				index++;
+			}
+			return -1;
+		}
 	}
 	
 	@SuppressWarnings("rawtypes")
