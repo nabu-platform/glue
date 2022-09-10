@@ -235,6 +235,9 @@ public class SeriesMethods {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@GlueMethod(returns = "series", description = "This method resolves a potentially lazy series", version = 2)
 	public static List<?> resolve(Iterable<?> iterable) {
+		if (iterable == null) {
+			return null;
+		}
 		List<Object> objects = new ArrayList<Object>();
 		ForkJoinPool pool = null;
 		boolean sandboxed = "true".equals(ScriptRuntime.getRuntime().getExecutionContext().getExecutionEnvironment().getParameters().get("sandboxed"));

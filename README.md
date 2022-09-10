@@ -1,3 +1,20 @@
+# Known issues
+
+When you do this:
+
+```
+a = "test[0]"
+b = structure()
+b[/a] = 5
+```
+
+In this case, structure() will create a Map. The map context accessor has no special handling and will simply add a field called "test[0]".
+However, when b is derived from somewhere else (e.g. xml objectify) it might contain a mapcontent, a structure,...
+This will use the complex accessor which will actually recognize the array syntax and create an array with the first element being 5.
+
+This discrepancy has to be resolved. The logic used by the complex should be the default.
+If verbatim sets are necessary that do not interpret, we can add a function for that.
+
 # What is it?
 
 Glue is a simplistic optionally typed functional scripting language based on a more complex fully typed service oriented language.
