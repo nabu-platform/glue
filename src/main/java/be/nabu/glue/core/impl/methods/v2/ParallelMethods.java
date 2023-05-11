@@ -1,6 +1,7 @@
 package be.nabu.glue.core.impl.methods.v2;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -11,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import be.nabu.glue.annotations.GlueMethod;
+import be.nabu.glue.annotations.GlueParam;
 import be.nabu.glue.core.api.Lambda;
 import be.nabu.glue.core.impl.GlueUtils;
 import be.nabu.glue.utils.ScriptRuntime;
@@ -95,9 +97,94 @@ public class ParallelMethods {
 		};
 	}
 	
+	/**
+	 * You can wait until a specific condition returns something other than null or false
+	 * This means you can never send back "false" in an until, but it outweighs the ease of use when thinking of it as a filter lambda
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static Future until(final Lambda lambda, final @GlueParam(name = "interval") Long interval, final @GlueParam(name = "timeout") Long duration, @GlueParam(name = "parameters") Object...objects) {
+		final List<?> resolved = SeriesMethods.resolve(GlueUtils.toSeries(objects));
+		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
+		final CallableImpl callable = new CallableImpl(runtime, resolved, lambda);
+		final Date started = new Date();
+		final ForkJoinTask submit = pool.submit(callable);
+		return new Future() {
+			// start with the original submit
+			private Future lastFuture = submit;
+			private Object result;
+			private CallableImpl lastCallable = callable;
+			@Override
+			public boolean cancel(boolean mayInterruptIfRunning) {
+				if (mayInterruptIfRunning) {
+					lastCallable.abort();
+				}
+				return lastFuture.cancel(mayInterruptIfRunning);
+			}
+			@Override
+			public boolean isCancelled() {
+				return lastFuture.isCancelled();
+			}
+			@Override
+			public boolean isDone() {
+				return lastFuture.isDone();
+			}
+			private long getRemainder() {
+				if (duration != null) {
+					long passed = new Date().getTime() - started.getTime();
+					return passed > duration ? 0 : duration - passed;
+				}
+				return -1l;
+			}
+			@Override
+			public Object get() throws InterruptedException, ExecutionException {
+				// wait a year by default!
+				try {
+					return get(365, TimeUnit.DAYS);
+				}
+				catch (TimeoutException e) {
+					throw new ExecutionException(e);
+				}
+			}
+			@Override
+			public Object get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+				while (result == null) {
+					long remainder = getRemainder();
+					long millis = unit.toMillis(timeout);
+					if (remainder == 0) {
+						throw new TimeoutException();
+					}
+					else if (remainder >= 0 && remainder < millis) {
+						millis = remainder;
+					}
+					result = lastFuture.get(millis, TimeUnit.MILLISECONDS);
+					if (result instanceof Boolean && !(Boolean) result) {
+						result = null;
+					}
+					if (result == null) {
+						if (interval != null && interval > 0) {
+							Thread.sleep(interval);
+						}
+						// if we have a remainder (so _some_ timeout)
+						if (remainder > 0) {
+							// check how much we have remaining
+							remainder = getRemainder();
+							// if we have none remaining, we shouldn't start a new cycle
+							if (remainder == 0) {
+								throw new TimeoutException();
+							}
+						}
+						lastCallable = new CallableImpl(runtime, resolved, lambda);
+						lastFuture = pool.submit(lastCallable);
+					}
+				}
+				return result;
+			}
+		};
+	}
+	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@GlueMethod(description = "Waits for the given futures to end and returns the result", version = 2, restricted = true)
-	public static Object wait(Object...objects) throws InterruptedException, ExecutionException {
+	public static Object wait(@GlueParam(name = "futures") Object...objects) throws InterruptedException, ExecutionException {
 		List result = new ArrayList();
 		Iterable<?> series = GlueUtils.toSeries(objects);
 		for (Object object : series) {

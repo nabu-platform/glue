@@ -1,0 +1,19 @@
+# The issue at hand was: if we do a non-numeric query on an array that does not exist (so is null), then we return null instead of an empty list
+# This breaks the expection that a query always returns a list (instead of a single item, null can be considered a single item)
+# It also breaks nested searches where you have an array with nested arrays that you want to search, this means the parent array merger adds "null" to its resultset instead of nothing if the child array does not exist
+# Note that this testcase can only be run if you include the glue-series module
+@tag=test
+
+test1 = structure(
+        name: "test1")
+
+test2 = structure(
+        name: "test2",
+        values:series(structure(key: "testKey")))
+
+all = series(test1, test2)
+
+result = all/values[key == "testKey"]
+
+confirmEquals("Check that there is 1 results instead of 2 (one of which is null)", 1, size(result))
+
