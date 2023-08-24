@@ -6,6 +6,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -24,12 +25,14 @@ import be.nabu.glue.core.impl.GlueUtils;
 import be.nabu.glue.core.impl.MultipleOptionalTypeProvider;
 import be.nabu.glue.core.impl.StructureTypeProvider;
 import be.nabu.glue.core.impl.methods.ScriptMethods;
+import be.nabu.glue.core.impl.parsers.GlueParserProvider;
 import be.nabu.glue.impl.TransactionalCloseable;
 import be.nabu.glue.utils.ScriptRuntime;
 import be.nabu.glue.utils.ScriptUtils;
 import be.nabu.libs.converter.ConverterFactory;
 import be.nabu.libs.evaluator.ContextAccessorFactory;
 import be.nabu.libs.evaluator.EvaluationException;
+import be.nabu.libs.evaluator.QueryPart;
 import be.nabu.libs.evaluator.api.ContextAccessor;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
@@ -51,6 +54,7 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 	private boolean isList = false;
 	private OptionalTypeProvider optionalTypeProvider;
 	private OptionalTypeConverter converter;
+	private boolean createNonExistentParents = true;
 
 	private ScriptRepository repository;
 	
@@ -114,6 +118,70 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 				}
 				else if (target != null) {
 					targets.add(target);
+				}
+				// if we have no target, we should probably create one
+				else if (createNonExistentParents) {
+					Object current = context.getPipeline();
+					List<QueryPart> parts = new ArrayList<QueryPart>(variableAccessOperation.getParts());
+					for (int i = 0; i < parts.size(); i++) {
+						QueryPart part = parts.get(i);
+						// if we are accessing a variable, create it if it doesn't exist
+						// if we are followed by an operation accessor, this should be a list
+						if (part.getType() == QueryPart.Type.VARIABLE) {
+							ContextAccessor accessor = ContextAccessorFactory.getInstance().getAccessor(current.getClass());
+							if (accessor == null) {
+								throw new IllegalArgumentException("No accessor found for: " + current.getClass());
+							}
+							String localName = part.getContent().toString().replaceAll("^[/]+", "");
+							Object object = accessor.get(current, localName);
+							if (object == null) {
+								if (accessor instanceof WritableContextAccessor) {
+									object = i == parts.size() - 1 || parts.get(i + 1).getType() != QueryPart.Type.OPERATION ? new HashMap<String, Object>() : new ArrayList<Object>();
+									((WritableContextAccessor) accessor).set(current, localName, object);
+								}
+								else {
+									throw new IllegalArgumentException("Can not create " + localName + ", it is not a writable context");
+								}
+							}
+							current = object;
+						}
+						// the operation accessor can assume that the variable operator in the previous part has already been executed, so the "current" is pointing to the list already
+						else {
+							String content = part.getContent().toString().replaceAll("^[/]+", "");
+							Integer index;
+							// if we have pure indexed access, we need to make sure the index exists (fill with nulls if necessary)
+							if (content.matches("^[0-9]+$")) {
+								index = Integer.parseInt(content);
+							}
+							// otherwise we hope that it is a variable available on the pipeline and that points to a numeric identifier
+							else {
+								Object object = context.getPipeline().get(content);
+								if (object == null) {
+									throw new IllegalArgumentException("Can not resolve '" + content + "' in " + variableAccessOperation);
+								}
+								index = Integer.parseInt(object.toString());
+							}
+							// currently rather restrictive to only support list but hey...
+							if (!(current instanceof List)) {
+								throw new IllegalArgumentException("Not an editable list '" + content + "': " + current);
+							}
+							Object object = index >= ((List) current).size() ? null : ((List) current).get(index);
+							if (object == null) {
+								object = new HashMap<String, Object>();
+								for (int j = ((List) current).size(); j < index; j++) {
+									((List) current).add(null);	
+								}
+								if (index == ((List) current).size()) {
+									((List) current).add(object);
+								}
+								else {
+									((List) current).set(index, object);
+								}
+							}
+							current = object;
+						}
+					}
+					targets.add(current);
 				}
 			}
 			catch (EvaluationException e) {

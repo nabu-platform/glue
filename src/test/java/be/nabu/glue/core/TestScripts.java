@@ -14,10 +14,13 @@ import be.nabu.glue.core.impl.parsers.GlueParserProvider;
 import be.nabu.glue.core.repositories.TargetedScriptRepository;
 import be.nabu.glue.impl.SimpleExecutionEnvironment;
 import be.nabu.glue.utils.ScriptRuntime;
+import be.nabu.libs.evaluator.impl.VariableOperation;
 
 public class TestScripts extends TestCase {
 	public void test() throws IOException, ParseException, URISyntaxException {
 		System.setProperty("version", "1-2");
+		VariableOperation.alwaysUseConcatenationForDollarIndex = false;
+		VariableOperation.neverUseConcatenationForDollarIndex = false;
 		ScriptRepository repository = new TargetedScriptRepository(null, new URI("classpath:/scripts"), null, new GlueParserProvider(), Charset.forName("UTF-8"), "glue");
 		Script script = repository.getScript("testAll");
 		ScriptRuntime runtime = new ScriptRuntime(

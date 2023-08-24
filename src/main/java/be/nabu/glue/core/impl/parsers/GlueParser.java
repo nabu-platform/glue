@@ -446,7 +446,8 @@ public class GlueParser implements Parser {
 					Operation<ExecutionContext> variableAccessOperation = null;
 					Operation<ExecutionContext> indexAccessOperation = null;
 					if (variableName != null) {
-						index = indexOf(variableName, '/', true);
+						// allow nested access for example my/test/field, we want "field" to be the variable, "my/test" to be the accessor
+						index = indexOf(variableName, '/', false);
 						// we have variable access
 						if (index >= 0) {
 							String parent = variableName.substring(0, index);
@@ -454,6 +455,7 @@ public class GlueParser implements Parser {
 							variableAccessOperation = analyzer.analyze(GlueQueryParser.getInstance().parse(parent));
 						}
 						
+						// indexes inside of the accessor should be automatically resolved, indexes on the actual variable not so much
 						index = indexOf(variableName, '[', true);
 						if (index >= 0) {
 							// we strip the starting [

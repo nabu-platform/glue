@@ -27,6 +27,7 @@ import be.nabu.glue.api.ParameterDescription;
 import be.nabu.glue.api.Parser;
 import be.nabu.glue.api.ParserProvider;
 import be.nabu.glue.api.Script;
+import be.nabu.glue.api.runs.GlueAttachment;
 import be.nabu.glue.api.runs.GlueValidation;
 import be.nabu.glue.core.api.EnclosedLambda;
 import be.nabu.glue.core.api.Lambda;
@@ -35,6 +36,7 @@ import be.nabu.glue.core.impl.GlueUtils;
 import be.nabu.glue.core.impl.GlueUtils.ObjectHandler;
 import be.nabu.glue.core.impl.LambdaImpl;
 import be.nabu.glue.core.impl.LambdaMethodProvider.LambdaExecutionOperation;
+import be.nabu.glue.core.impl.methods.GlueAttachmentImpl;
 import be.nabu.glue.core.impl.operations.GlueOperationProvider;
 import be.nabu.glue.core.impl.operations.ScriptVariableOperation.LambdaJavaAccessor;
 import be.nabu.glue.core.impl.parsers.GlueParser;
@@ -174,6 +176,27 @@ public class ScriptMethods {
 			exception = exception.getCause();
 		}
 		return exception;
+	}
+	
+	public static final String ATTACHMENT = "$attachment";
+	
+	@SuppressWarnings("unchecked")
+	public static void attach(@GlueParam(name = "name") String name, @GlueParam(name = "content") byte[] content, @GlueParam(name = "contentType") String contentType) {
+		ScriptRuntime runtime = ScriptRuntime.getRuntime();
+		if (!runtime.getContext().containsKey(ATTACHMENT)) {
+			runtime.getContext().put(ATTACHMENT, new ArrayList<GlueAttachment>());
+		}
+		List<GlueAttachment> attachments = (List<GlueAttachment>) runtime.getContext().get(ATTACHMENT);
+		
+		GlueAttachment attachment = new GlueAttachmentImpl(runtime.getExecutionContext().getCurrent(), name, content, contentType);
+		attachments.add(attachment);
+		runtime.getFormatter().attached(attachment);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static List<GlueAttachment> attachments() {
+		ScriptRuntime runtime = ScriptRuntime.getRuntime();
+		return (List<GlueAttachment>) runtime.getContext().get(ATTACHMENT);
 	}
 	
 	@GlueMethod(description = "Return the resource as a stream", version = 2)
