@@ -15,7 +15,7 @@ public class EncryptionMethods {
 	
 	public static final String CONFIGURATION_CRYPT_KEY = "be.nabu.utils.security.crypt.key";
 	
-	public Object encrypt(String password, @GlueParam(name = "series") Object object) {
+	public static Object encrypt(String password, @GlueParam(name = "series") Object object) {
 		final String finalPassword = getPassword(password);
 		return GlueUtils.wrap(new ObjectHandler() {
 			@Override
@@ -32,7 +32,7 @@ public class EncryptionMethods {
 		}, false, object);
 	}
 	
-	public Object decrypt(String password, @GlueParam(name = "series") Object object) {
+	public static Object decrypt(String password, @GlueParam(name = "series") Object object) {
 		final String finalPassword = getPassword(password);
 		return GlueUtils.wrap(new ObjectHandler() {
 			@Override
@@ -49,14 +49,11 @@ public class EncryptionMethods {
 		}, false, object);
 	}
 	
-	private String getPassword(String password) {
+	private static String getPassword(String password) {
 		if (password == null) {
 			password = System.getProperty(CONFIGURATION_CRYPT_KEY, "changeit");
 		}
 		return password;
 	}
 	
-		
-	
-
 }
