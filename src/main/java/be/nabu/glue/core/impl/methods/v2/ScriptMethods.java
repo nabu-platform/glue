@@ -443,13 +443,24 @@ public class ScriptMethods {
 
 	@GlueMethod(description = "Returns the keys available in this object", version = 2)
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static Collection<String> keys(Object object) {
+	public static Collection<String> keys(Object object, Boolean hasValue) throws EvaluationException {
 		if (object == null) {
 			return null;
 		}
 		ContextAccessor accessor = ContextAccessorFactory.getInstance().getAccessor(object.getClass());
 		if (accessor instanceof ListableContextAccessor) {
-			return ((ListableContextAccessor) accessor).list(object);
+			Collection<String> list = ((ListableContextAccessor) accessor).list(object);
+			// if you want to limit the keys to only those that actually have a value
+			if (hasValue != null && hasValue) {
+				List<String> filtered = new ArrayList<String>();
+				for (String single : list) {
+					if (accessor.hasValue(object, single)) {
+						filtered.add(single);
+					}
+				}
+				return filtered;
+			}
+			return list;
 		}
 		return null;
 	}

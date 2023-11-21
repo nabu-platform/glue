@@ -307,33 +307,42 @@ public class ScriptMethods {
 	}
 	
 	@SuppressWarnings({ "rawtypes", "unused" })
-	public static int size(Object object) {
-		if (object == null) {
+	public static int size(Object...object) {
+		if (object == null || object.length == 0) {
 			return 0;
 		}
-		else if (object instanceof byte[]) {
-			return ((byte[]) object).length;
-		}
-		else if (object instanceof Object[]) {
-			return ((Object[]) object).length;
-		}
-		else if (object instanceof String) {
-			return ((String) object).length();
-		}
-		else if (object instanceof Collection) {
-			return ((Collection<?>) object).size();
-		}
-		else if (object instanceof Map) {
-			return ((Map<?, ?>) object).size();
-		}
-		else if (object instanceof Iterable) {
-			int counter = 0;
-			for (Object child : (Iterable) object) {
-				counter++;
+		// if we have exactly one object, check if it's a special one
+		else if (object.length == 1) {
+			if (object[0] instanceof byte[]) {
+				return ((byte[]) object[0]).length;
 			}
-			return counter;
+			else if (object[0] instanceof Object[]) {
+				return ((Object[]) object[0]).length;
+			}
+			else if (object[0] instanceof String) {
+				return ((String) object[0]).length();
+			}
+			else if (object[0] instanceof Collection) {
+				return ((Collection<?>) object[0]).size();
+			}
+			else if (object[0] instanceof Map) {
+				return ((Map<?, ?>) object[0]).size();
+			}
+			else if (object[0] instanceof Iterable) {
+				int counter = 0;
+				for (Object child : (Iterable) object[0]) {
+					counter++;
+				}
+				return counter;
+			}
+			// nothing special
+			else {
+				return 1;
+			}
 		}
-		throw new IllegalArgumentException("Can not get the size of " + object);
+		else {
+			return object.length;
+		}
 	}
 	
 	@GlueMethod(version = 1)

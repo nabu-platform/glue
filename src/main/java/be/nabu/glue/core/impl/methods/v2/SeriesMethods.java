@@ -180,13 +180,14 @@ public class SeriesMethods {
 					private Iterator parent = series.iterator();
 					private Object next = null;
 					private boolean hasNext = false;
+					private int index = 0;
 					@Override
 					public boolean hasNext() {
 						if (!hasNext) {
 							if (parent.hasNext()) {
 								while (parent.hasNext() && !hasNext) {
 									Object nextFromParent = parent.next();
-									Boolean calculated = (Boolean) GlueUtils.calculate(lambda, runtime, Arrays.asList(nextFromParent));
+									Boolean calculated = (Boolean) GlueUtils.calculate(lambda, runtime, Arrays.asList(nextFromParent, index++));
 									if (calculated != null && calculated) {
 										next = nextFromParent;
 										hasNext = true;
@@ -615,7 +616,7 @@ public class SeriesMethods {
 	
 	@SuppressWarnings("rawtypes")
 	@GlueMethod(description = "Stops a series when a certain condition is met", version = 2)
-	public static CollectionIterable<?> until(final Lambda lambda, Object...original) {
+	public static CollectionIterable<?> to(final Lambda lambda, Object...original) {
 		final Iterable<?> iterable = GlueUtils.toSeries(original);
 		final ScriptRuntime runtime = ScriptRuntime.getRuntime().fork(true);
 		return new CollectionIterable() {
