@@ -1,0 +1,11 @@
+test = series()
+# not sure which one this will pick, might be add(object) or add(index, object)
+add = function("add", test)
+# this will pick the overloaded version with 1 argument: add(object)
+add = function("add(1)", test)
+# this will pick the overloaded version with 2 argument: add(int, object)
+otherAdd = function("add(2)", test)
+add("test")
+confirmEquals("Check that it was added correctly", 1, size(test))
+
+console("------------------here!")

@@ -114,8 +114,27 @@ public class ScriptVariableOperation<T> extends VariableOperation<T> {
 				synchronized(methods) {
 					if (!methods.containsKey(clazz)) {
 						Map<String, Lambda> classMethods = new HashMap<String, Lambda>();
+						// we want to know which methods are not uniquely named but are overloaded
+						// we want to generate additional aliases for them
+						// for example ArrayList.add, it has a version with only the thing to add and one with an index
+						// it is _random_ which order they appear in (or may just depend on java version etc) so we can't actually know which version we will get when we just ask for the "add" method
+						// assuming the overload is only on amount of parameters and not types, we want to inject additional aliases for those overloaded methods that can be used to get the correct one
+						// like add(1) and add(2)
+						// if we ever want to support overloads with types we might need additional aliases like add(int,string)
+						Map<String, Integer> methodCounts = new HashMap<String, Integer>();
+						for (Method method : clazz.getMethods()) {
+							if (!methodCounts.containsKey(method.getName())) {
+								methodCounts.put(method.getName(), 1);
+							}
+							else {
+								methodCounts.put(method.getName(), methodCounts.get(method.getName()) + 1);
+							}
+						}
 						for (Method method : clazz.getMethods()) {
 							classMethods.put(method.getName(), toLambda(method));
+							if (methodCounts.get(method.getName()) > 1) {
+								classMethods.put(method.getName() + "(" + method.getParameterCount() + ")", toLambda(method));
+							}
 						}
 						methods.put(clazz, classMethods);
 					}

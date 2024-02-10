@@ -93,7 +93,7 @@ public class DynamicMethodOperation extends BaseOperation {
 					}
 					return postProcess(GlueUtils.calculate((Lambda) result, ScriptRuntime.getRuntime(), parameters));
 				}
-				throw new EvaluationException("Could not resolve a lambda: " + ((List<QueryPart>) getParts()).get(0).getContent());
+				throw new EvaluationException("Could not resolve a lambda: " + ((List<QueryPart>) getParts()).get(0).getContent() + " (resolved: " + result + ")");
 			}
 			else {
 				throw new EvaluationException("Could not resolve a method with the name: " + ((List<QueryPart>) getParts()).get(0).getContent());
