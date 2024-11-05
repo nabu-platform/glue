@@ -26,6 +26,10 @@ public class IterableOperationExecutor implements OperationExecutor {
 		else if (rightOperand instanceof Iterable && leftOperand instanceof Boolean && (operator == QueryPart.Type.EQUALS || operator == QueryPart.Type.NOT_EQUALS)) {
 			return true;
 		}
+		// return all the entries that exist in all (intersect) or any (union)
+//		else if (leftOperand instanceof Iterable && rightOperand instanceof Iterable && (operator == QueryPart.Type.BITWISE_AND || operator == QueryPart.Type.BITWISE_OR)) {
+//			return true;
+//		}
 		return (leftOperand instanceof Iterable || rightOperand instanceof Iterable) && operator != QueryPart.Type.IN && operator != QueryPart.Type.NOT_IN
 				&& operator != QueryPart.Type.EQUALS && operator != QueryPart.Type.NOT_EQUALS && operator != QueryPart.Type.NOT;
 	}
