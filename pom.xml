@@ -1,17 +1,15 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>be.nabu.glue</groupId>
 	<artifactId>glue</artifactId>
-	<version>${be.nabu.glue-glue-version}</version>
+	<version>1.20</version>
 	<name>glue</name>
 	<url>https://github.com/nablex/glue</url>
-	
 	<parent>
 		<groupId>be.nabu</groupId>
 		<artifactId>core</artifactId>
 		<version>1.0-SNAPSHOT</version>
 	</parent>
-
 	<build>
 		<plugins>
 			<plugin>
@@ -60,8 +58,6 @@
 			<groupId>be.nabu.libs.types</groupId>
 			<artifactId>types-api</artifactId>
 		</dependency>
-
-		<!-- testing -->
 		<dependency>
 			<groupId>be.nabu.libs.resources</groupId>
 			<artifactId>resources-classpath</artifactId>
