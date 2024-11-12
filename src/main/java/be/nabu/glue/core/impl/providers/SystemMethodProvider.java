@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.MethodDescription;
@@ -56,7 +58,7 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 
 	public static final String CLI_DIRECTORY = "cli.directory";
 
-	private static List<String> predefined = Arrays.asList("system.exec", "system.linux", "system.input", "system.newProperty");
+	private static List<String> predefined = Arrays.asList("system.exec", "system.linux", "system.newProperty", "system.input"); 
 	
 	private boolean sandboxed;
 	private boolean allowCatchAll = false;
@@ -194,8 +196,31 @@ public class SystemMethodProvider implements SandboxableMethodProvider {
 					command = arguments.remove(0);
 				}
 				arguments.add(0, command);
+				// we still split the commands, either because you only passed in a regular string or want to do something like "system.mvn('clean install')"
+				// we only split the FIRST command because you do want to be able to pass in strings that do not have quotes as parameters, e.g.
+				// system.git("commit", "-a", "-m", myMessageWithWhitespace)
+				List<String> splittedCommands = new ArrayList<String>();
+				if (!arguments.isEmpty()) {
+					Pattern pattern = Pattern.compile("'[^\']+'|\"[^\"]+\"");
+					for (String argument : arguments) {
+						Matcher matcher = pattern.matcher(argument);
+						int last = 0;
+						while (matcher.find()) {
+							splittedCommands.addAll(Arrays.asList(argument.substring(last, matcher.start()).split("[\\s]+")));
+							splittedCommands.add(argument.substring(matcher.start() + 1, matcher.end() - 1));
+							last = matcher.end() + 1;
+						}
+						if (last < argument.length()) {
+							splittedCommands.addAll(Arrays.asList(argument.substring(last).split("[\\s]+")));
+						}
+						break;
+					}
+					if (arguments.size() >= 2) {
+						splittedCommands.addAll(arguments.subList(1, arguments.size()));
+					}
+				}
 				try {
-					return exec(directory, arguments.toArray(new String[arguments.size()]), inputBytes, systemProperties, redirectIO, includeError, explicitlyReturnOutput).trim();
+					return exec(directory, splittedCommands.toArray(new String[splittedCommands.size()]), inputBytes, systemProperties, redirectIO, includeError, explicitlyReturnOutput).trim();
 				}
 				catch (IOException e) {
 					throw new EvaluationException(e);
