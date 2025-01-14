@@ -89,13 +89,17 @@ public class FunctionExecutor extends BaseExecutor implements AssignmentExecutor
 
 	@Override
 	public void execute(ExecutionContext context) throws ExecutionException {
-		Script script = getScript(ScriptRuntime.getRuntime().getScript());
+		Script parentScript = ScriptRuntime.getRuntime().getScript();
 		try {
 			Object object = context.getPipeline().get(variableName);
 			if (overwriteIfExists || object == null) {
 				Map<String, Object> captured = useActualPipeline ? context.getPipeline() : new HashMap<String, Object>(context.getPipeline());
 				Lambda lambda = new LambdaImpl(
-					new SimpleMethodDescription(script.getNamespace(), script.getName(), getContext().getComment(), getInputs(), getOutputs()), 
+					// @2024-12-13: in the past we added the hashCode() to the variablename to ensure uniqueness
+					// however it does not appear to be necessary because we don't actually register the name anywhere so it doesn't have to be unique?
+					// the problem is, when it _is_ unique _and_ it is running in the nabu context, lambda's will generate new metric series for each instance (!)
+					// this, on high frequency scripts like diffing in cdm can cause a massive constant increase in the amount of AtomicLong arrays (1000 longs each) which eventually leads to GC death
+					new SimpleMethodDescription(parentScript.getNamespace(), parentScript.getName() + "$" + variableName, getContext().getComment(), getInputs(), getOutputs()), 
 					new FunctionOperation(getSequence(), useActualPipeline ? context.getPipeline() : null), 
 					captured,
 					useActualPipeline
