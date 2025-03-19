@@ -113,13 +113,29 @@ public class DateMethods {
 		return GlueUtils.wrap(GlueUtils.cast(new ObjectHandler() {
 			@Override
 			public Object handle(Object single) {
+				String dateToParse = (String) single;
+				String formatToUse = format;
+				if (formatToUse == null) {
+					if (dateToParse.matches("[0-9]{4}")) {
+						formatToUse = "yyyy";
+					}
+					else if (dateToParse.matches("[0-9]{4}-[0-9]{2}")) {
+						formatToUse = "yyyy-MM";
+					}
+					else if (dateToParse.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}")) {
+						formatToUse = "yyyy-MM-dd";
+					}
+					else {
+						formatToUse = "yyyy-MM-dd'T'HH:mm:ss.SSS";
+					}
+				}
 				SimpleDateFormat formatter = new SimpleDateFormat(
-					format == null ? "yyyy-MM-dd'T'HH:mm:ss.SSS" : format, 
+						formatToUse, 
 					language == null ? Locale.getDefault() : new Locale(language)
 				);
 				formatter.setTimeZone(timezone == null ? TimeZone.getDefault() : timezone);
 				try {
-					return formatter.parse((String) single);
+					return formatter.parse(dateToParse);
 				}
 				catch (ParseException e) {
 					throw new RuntimeException(e);
