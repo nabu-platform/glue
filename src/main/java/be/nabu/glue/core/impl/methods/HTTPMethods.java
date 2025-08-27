@@ -114,6 +114,11 @@ public class HTTPMethods {
 		public void setCode(int code) {
 			this.code = code;
 		}
+		
+		@Override
+		public String toString() {
+			return "[" + code + "]" + (content == null ? "" : " " + new String(content));
+		}
 	}
 	
 	public static String headerToField(String headerName) {

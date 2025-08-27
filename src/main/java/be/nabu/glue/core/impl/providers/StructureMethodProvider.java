@@ -45,6 +45,7 @@ import be.nabu.libs.evaluator.api.ListableContextAccessor;
 import be.nabu.libs.evaluator.api.Operation;
 import be.nabu.libs.evaluator.api.OperationProvider.OperationType;
 import be.nabu.libs.evaluator.base.BaseMethodOperation;
+import be.nabu.libs.types.ComplexContentWrapperFactory;
 
 @MethodProviderClass(namespace = "script")
 public class StructureMethodProvider implements MethodProvider {

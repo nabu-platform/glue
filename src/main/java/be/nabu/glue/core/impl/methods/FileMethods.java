@@ -486,6 +486,9 @@ public class FileMethods {
 			try {
 				ZipEntry entry = null;
 				while ((entry = zip.getNextEntry()) != null) {
+					if (entry.isDirectory()) {
+						continue;
+					}
 					entries.put(entry.getName(), IOUtils.toBytes(IOUtils.wrap(zip)));
 				}
 				return entries;

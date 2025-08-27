@@ -19,6 +19,7 @@ package be.nabu.glue.core.impl.methods.v2;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -56,17 +57,36 @@ public class HTTPMethods {
 				connection.setRequestProperty(be.nabu.glue.core.impl.methods.HTTPMethods.fieldToHeader(key), value);
 			}
 		}
-		if (request != null && (method.equalsIgnoreCase("POST") || method.equalsIgnoreCase("PUT"))) {
+		if (request != null) {
 			connection.setDoOutput(true);
-			connection.getOutputStream().write(be.nabu.glue.core.impl.methods.ScriptMethods.bytes(request));
+			OutputStream outputStream = connection.getOutputStream();
+			outputStream.write(be.nabu.glue.core.impl.methods.ScriptMethods.bytes(request));
+			outputStream.flush();
 		}
-		InputStream stream = connection.getInputStream();
 		try {
-			byte [] response = IOUtils.toBytes(IOUtils.wrap(stream));
-			return new HTTPResult(connection.getResponseCode(), connection.getHeaderFields(), response);
+			InputStream stream = connection.getInputStream();
+			try {
+				byte [] response = IOUtils.toBytes(IOUtils.wrap(stream));
+				return new HTTPResult(connection.getResponseCode(), connection.getHeaderFields(), response);
+			}
+			finally {
+				stream.close();
+			}
 		}
-		finally {
-			stream.close();
+		catch (Exception e) {
+			InputStream stream = connection.getErrorStream();
+			if (stream != null) {
+				try {
+					byte [] response = IOUtils.toBytes(IOUtils.wrap(stream));
+					return new HTTPResult(connection.getResponseCode(), connection.getHeaderFields(), response);
+				}
+				finally {
+					stream.close();
+				}
+			}
+			else {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 }

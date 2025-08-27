@@ -155,6 +155,8 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 								if (accessor instanceof WritableContextAccessor) {
 									object = i == parts.size() - 1 || parts.get(i + 1).getType() != QueryPart.Type.OPERATION ? new HashMap<String, Object>() : new ArrayList<Object>();
 									((WritableContextAccessor) accessor).set(current, localName, object);
+									// the accessor might transform the object (e.g. wrap it in a MapContent), update the object to resolving any transformation
+									object = accessor.get(current, localName);
 								}
 								else {
 									throw new IllegalArgumentException("Can not create " + localName + ", it is not a writable context");
