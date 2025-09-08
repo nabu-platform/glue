@@ -157,6 +157,9 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 									((WritableContextAccessor) accessor).set(current, localName, object);
 									// the accessor might transform the object (e.g. wrap it in a MapContent), update the object to resolving any transformation
 									object = accessor.get(current, localName);
+									if (object == null) {
+										throw new IllegalStateException("Could not retrieve set object for: " + localName);
+									}
 								}
 								else {
 									throw new IllegalArgumentException("Can not create " + localName + ", it is not a writable context");
@@ -200,6 +203,9 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 							current = object;
 						}
 					}
+					if (current == null) {
+						throw new IllegalStateException("No current value for: " + context.getPipeline() + " " + parts);
+					}
 					targets.add(current);
 				}
 			}
@@ -208,6 +214,9 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 			}
 		}
 		else {
+			if (context == null) {
+				throw new IllegalStateException("Could not get context");
+			}
 			targets.add(context);
 		}
 		Object value = null;
