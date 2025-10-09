@@ -17,6 +17,7 @@
 
 package be.nabu.glue.core.impl.methods.v2;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,6 +34,26 @@ import be.nabu.libs.evaluator.annotations.MethodProviderClass;
 
 @MethodProviderClass(namespace = "string")
 public class StringMethods {
+
+	private static final Pattern DIACRITICS_AND_FRIENDS = 
+	        Pattern.compile("[\\p{InCombiningDiacriticalMarks}\\p{IsLm}\\p{IsSk}]+");
+	
+	@GlueMethod(description = "Normalize the characters in a string to remove special characters")
+	public static Object normalize(@GlueParam(name = "string", description = "The string(s) to be padded") Object...original) {
+		return GlueUtils.wrap(GlueUtils.cast(new ObjectHandler() {
+			@Override
+			public Object handle(Object single) {
+				if (single == null) {
+					return null;
+				}
+				// decompose characters into base characters and combining marks
+				// for example é becomes e and ´
+				String normalized = Normalizer.normalize(single.toString(), Normalizer.Form.NFD);
+				// remove the combining marks
+				return DIACRITICS_AND_FRIENDS.matcher(normalized).replaceAll("");
+			}
+		}, String.class), true, original);
+	}
 	
 	@GlueMethod(description = "Adds the given pad to the given string(s) on the right until they reach the required length", returns = "The padded string(s)", version = 2)
 	public static Object padRight(
