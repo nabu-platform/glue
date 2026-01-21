@@ -499,8 +499,12 @@ public class GlueParser implements Parser {
 			}
 		}
 		catch (ParseException e) {
-			e.printStackTrace();
-			throw new ParseException("Could not parse line " + (lineNumber + 1) + " [" + line + "]: " + e.getMessage(), lineNumber);
+			// This is our central point for wrapping exceptions with line/column info.
+			// As per the analysis, any ParseException that reaches here is a legitimate error.
+			String detailedMessage = "Could not parse line " + (lineNumber + 1) + " [" + line.trim() + "]: " + e.getMessage();
+			// Calculate the column based on the original line's indentation plus the offset within the trimmed part.
+			int errorColumn = getDepth(line) + e.getErrorOffset();
+			throw new GlueParseException(detailedMessage, e.getErrorOffset(), lineNumber, errorColumn, lineNumber, errorColumn + 1);
 		}
 		// there can be multiple elements on the stack at the end if you stopped the script in for example an "if" element
 		ExecutorGroup root = executorGroups.isEmpty() ? new SequenceExecutor(null, null, null) : null;
