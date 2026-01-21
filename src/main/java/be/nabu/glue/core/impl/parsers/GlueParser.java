@@ -88,10 +88,15 @@ public class GlueParser implements Parser {
 	
 	@Override
 	public ExecutorGroup parse(Reader reader) throws IOException, ParseException {
+		return parse(reader, true);
+	}
+	
+	public ExecutorGroup parse(Reader reader, boolean failfast) throws IOException, ParseException {
 		ReadableContainer<CharBuffer> container = IOUtils.wrap(reader);
 		container = IOUtils.bufferReadable(container, IOUtils.newCharBuffer(409600, true));
 		String line = null;
 		int lineNumber = -1;
+		int startingLineNumber = lineNumber;
 		Stack<ExecutorGroup> executorGroups = new Stack<ExecutorGroup>();
 		StringBuilder lineComment = new StringBuilder();
 		StringBuilder lineDescription = new StringBuilder();
@@ -103,13 +108,16 @@ public class GlueParser implements Parser {
 		int lastPosition = 0;
 		// keeps track of the "offset" of the depth over the script
 		int depthOffset = -1;
-		try {
-			while ((line = readLine(pushback)) != null) {
+		GlueParseException mainException = null;
+		while ((line = readLine(pushback)) != null) {
+			try {
 				// add 1 for the linefeed that separates the last line and this line except if we are at the start
 				// the line feeds are generated deterministically by the glue formatter, they are not system dependent
 				int currentPosition = lastPosition + (lastPosition == 0 ? 0 : 1) + line.length();
 				
 				lineNumber++;
+				// capture starting line number for correct reporting
+				startingLineNumber = lineNumber;
 				// don't reduce depth if it is empty or a comment 
 				if (line.trim().isEmpty() && codeHasBegun) {
 					continue;
@@ -497,14 +505,26 @@ public class GlueParser implements Parser {
 				}
 				lastPosition = currentPosition;
 			}
+			catch (ParseException e) {
+				// This is our central point for wrapping exceptions with line/column info.
+				// As per the analysis, any ParseException that reaches here is a legitimate error.
+				String detailedMessage = "Could not parse line " + (startingLineNumber + 1) + " [" + line.trim() + "]: " + e.getMessage();
+				// Calculate the column based on the original line's indentation plus the offset within the trimmed part.
+				int errorColumn = getDepth(line) + e.getErrorOffset();
+				GlueParseException glueParseException = new GlueParseException(detailedMessage, e.getErrorOffset(), startingLineNumber, errorColumn, lineNumber, errorColumn + 1);
+				if (mainException == null) {
+					mainException = glueParseException;
+				}
+				else {
+					mainException.addSuppressed(glueParseException);
+				}
+				if (failfast) {
+					throw mainException;
+				}
+			}
 		}
-		catch (ParseException e) {
-			// This is our central point for wrapping exceptions with line/column info.
-			// As per the analysis, any ParseException that reaches here is a legitimate error.
-			String detailedMessage = "Could not parse line " + (lineNumber + 1) + " [" + line.trim() + "]: " + e.getMessage();
-			// Calculate the column based on the original line's indentation plus the offset within the trimmed part.
-			int errorColumn = getDepth(line) + e.getErrorOffset();
-			throw new GlueParseException(detailedMessage, e.getErrorOffset(), lineNumber, errorColumn, lineNumber, errorColumn + 1);
+		if (mainException != null) {
+			throw mainException;
 		}
 		// there can be multiple elements on the stack at the end if you stopped the script in for example an "if" element
 		ExecutorGroup root = executorGroups.isEmpty() ? new SequenceExecutor(null, null, null) : null;

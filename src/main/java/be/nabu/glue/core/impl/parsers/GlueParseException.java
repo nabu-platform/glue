@@ -1,6 +1,8 @@
 package be.nabu.glue.core.impl.parsers;
 
 import java.text.ParseException;
+import java.util.Collections;
+import java.util.List;
 
 public class GlueParseException extends ParseException {
 
@@ -24,10 +26,19 @@ public class GlueParseException extends ParseException {
         initCause(original);
         this.startLine = startLine;
         this.startColumn = startColumn;
-        
-        // We don't have end info, so we'll default to a single character range
         this.endLine = startLine;
         this.endColumn = startColumn + 1;
+    }
+
+    /**
+     * Constructor for creating a container exception for multiple parsing errors.
+     */
+    public GlueParseException(String message, List<GlueParseException> suppressedErrors) {
+        super(message, -1); // No single error offset for a multi-error exception
+        this.startLine = -1;
+        this.startColumn = -1;
+        this.endLine = -1;
+        this.endColumn = -1;
     }
 
     public int getStartLine() {
@@ -45,4 +56,5 @@ public class GlueParseException extends ParseException {
     public int getEndColumn() {
         return endColumn;
     }
+
 }
