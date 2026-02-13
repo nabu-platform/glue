@@ -1,7 +1,6 @@
 package be.nabu.glue.core.impl.parsers;
 
 import java.text.ParseException;
-import java.util.Collections;
 import java.util.List;
 
 public class GlueParseException extends ParseException {

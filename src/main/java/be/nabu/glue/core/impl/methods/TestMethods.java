@@ -132,13 +132,32 @@ public class TestMethods {
 			}
 		}
 		if (!checked) {
-			result = (expected == null && actual == null) || (expected != null && expected.equals(actual));
+//			result = (expected == null && actual == null) || (expected != null && expected.equals(actual));
+			result = isEqual(expected, actual);
 			if (invert) {
 				result = !result;
 			}
 			check(message, result, result ? stringify(expected) : stringify(expected) + (invert ? " = " : " != ") + stringify(actual), fail);
 		}
 		return result;
+	}
+	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static boolean isEqual(Object expected, Object actual) {
+		if (expected == null && actual == null) {
+			return true;
+		}
+		else if (expected != null && actual != null) {
+			// bigdecimal....................................
+			if (expected instanceof Comparable && actual instanceof Comparable && expected.getClass().isAssignableFrom(actual.getClass())) {
+				int compareTo = ((Comparable) expected).compareTo(actual);
+				if (compareTo == 0) {
+					return true;
+				}
+			}
+			return expected.equals(actual);
+		}
+		return false;
 	}
 	
 	private static String preprocess(String actual) {
