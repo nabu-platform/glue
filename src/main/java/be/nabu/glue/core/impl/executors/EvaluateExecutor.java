@@ -122,15 +122,30 @@ public class EvaluateExecutor extends BaseExecutor implements AssignmentExecutor
 		if (variableAccessOperation != null) {
 			try {
 				Object target = variableAccessOperation.evaluate(context);
+				// Projected assignments can contain null branches whose cardinality is unknown.
+				// We can not know whether a missing branch is an empty collection or a singular
+				// object that should be created. Throwing a descriptive exception would avoid
+				// guessing, but would also reject useful broadcasts with other resolved targets.
+				// Apply the assignment to resolved targets and skip ambiguous null branches.
 				if (target instanceof Object[]) {
-					targets.addAll(Arrays.asList((Object[]) target));
+					for (Object single : (Object[]) target) {
+						if (single != null) {
+							targets.add(single);
+						}
+					}
 				}
 				else if (target instanceof Collection) {
-					targets.addAll((Collection) target);
+					for (Object single : (Collection) target) {
+						if (single != null) {
+							targets.add(single);
+						}
+					}
 				}
 				else if (target instanceof Iterable) {
 					for (Object single : (Iterable) target) {
-						targets.add(single);
+						if (single != null) {
+							targets.add(single);
+						}
 					}
 				}
 				else if (target != null) {

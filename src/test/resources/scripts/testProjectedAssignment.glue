@@ -1,0 +1,15 @@
+resolvedAttachment = structure(name: "resolved.txt")
+assets = array(
+	structure(attachments: resolvedAttachment),
+	structure())
+a = structure(assets: assets)
+
+# Missing projected branches have unknown cardinality. Rather than throwing for the entire
+# broadcast or guessing what to create, resolved targets are updated and null targets skipped.
+a/assets/attachments/content = "updated"
+confirmEquals("Update resolved projected target", "updated", resolvedAttachment/content)
+
+missingAssets = array(structure(action: "collect"))
+missing = structure(assets: missingAssets)
+# If every projected target is null, the same policy makes the assignment a no-op.
+missing/assets/attachments/content = "ignored"
