@@ -23,6 +23,10 @@
 	</build>
 	<dependencies>
 		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>be.nabu.utils</groupId>
 			<artifactId>utils-io</artifactId>
 		</dependency>

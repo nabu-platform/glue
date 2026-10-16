@@ -65,7 +65,7 @@ public class SwitchExecutor extends BaseExecutor implements ExecutorGroup {
 			context.getPipeline().put(variableName, toMatch == null ? true : getRewrittenToMatch().evaluate(context));
 			for (Executor child : children) {
 				if (child.shouldExecute(context)) {
-					child.execute(context);
+					SequenceExecutor.executeChild(child, context);
 					break;
 				}
 			}

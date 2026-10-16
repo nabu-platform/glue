@@ -21,6 +21,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import be.nabu.glue.api.ExecutionContext;
 import be.nabu.glue.api.ExecutionException;
 import be.nabu.glue.api.Executor;
@@ -33,6 +36,7 @@ public class SequenceExecutor extends BaseExecutor implements ExecutorGroup {
 
 	private List<Executor> children = new ArrayList<Executor>();
 	private boolean ignoreFailure = false;
+	private static final Logger logger = LoggerFactory.getLogger(SequenceExecutor.class);
 	
 	public SequenceExecutor(ExecutorGroup parent, ExecutorContext context, Operation<ExecutionContext> condition, Executor...children) {
 		super(parent, context, condition);
@@ -68,9 +72,7 @@ public class SequenceExecutor extends BaseExecutor implements ExecutorGroup {
 					break;
 				}
 				else if (child.shouldExecute(context)) {
-					ScriptRuntime.getRuntime().getFormatter().before(child);
-					child.execute(context);
-					ScriptRuntime.getRuntime().getFormatter().after(child);
+					executeChild(child, context);
 				}
 			}
 		}
@@ -79,7 +81,7 @@ public class SequenceExecutor extends BaseExecutor implements ExecutorGroup {
 			boolean handled = false;
 			for (Executor child : children) {
 				if (child instanceof CatchExecutor) {
-					((CatchExecutor) child).execute(context);
+					executeChild(child, context);
 					handled = true;
 				}
 			}
@@ -91,10 +93,31 @@ public class SequenceExecutor extends BaseExecutor implements ExecutorGroup {
 		finally {
 			for (Executor child : children) {
 				if (child instanceof FinallyExecutor) {
-					((FinallyExecutor) child).execute(context);
+					executeChild(child, context);
 				}
 			}
 		}
+	}
+
+	public static void executeChild(Executor child, ExecutionContext context) throws ExecutionException {
+		ScriptRuntime.getRuntime().getFormatter().before(child);
+		try {
+			child.execute(context);
+		}
+		catch (Exception e) {
+			try {
+				ScriptRuntime.getRuntime().getFormatter().error(child, e);
+			}
+			catch (Exception callbackError) {
+				logger.error("Could not handle failed Glue executor", callbackError);
+				e.addSuppressed(callbackError);
+			}
+			if (e instanceof ExecutionException) {
+				throw (ExecutionException) e;
+			}
+			throw new ExecutionException(e);
+		}
+		ScriptRuntime.getRuntime().getFormatter().after(child);
 	}
 
 	public boolean isIgnoreFailure() {
